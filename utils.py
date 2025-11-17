@@ -196,6 +196,56 @@ def plot_temp_mssm(model_stp, fig, titleSize=12, labelSize=9, ind_interest=0):
     fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 
 
+def plot_temp_tm(model_stp, fig, titleSize=12, labelSize=9, ind_interest=0):
+    time_vector = model_stp.time_vector
+    output = model_stp.get_output()
+
+    ax = fig.add_subplot(131)
+    if ind_interest is None:
+        ax.fill_between(time_vector, np.min(model_stp.U, axis=0), np.max(model_stp.U, axis=0), color="darkgrey",
+                        alpha=0.3)
+        ax.plot(time_vector, np.mean(model_stp.U, axis=0), c='black')
+    else:
+        ax.plot(time_vector, model_stp.U[ind_interest, :])
+    ax.set_title(r'U(t) - Utilisation', fontsize=titleSize)
+    ax.set_xlabel('time (s)', c='gray', fontsize=labelSize)
+    # ax.set_ylabel(r'', c='gray', fontsize=labelSize)
+    ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+    ax.yaxis.offsetText.set_fontsize(8)
+    ax.grid()
+
+    ax = fig.add_subplot(132)
+    if ind_interest is None:
+        ax.fill_between(time_vector, np.min(model_stp.R, axis=0), np.max(model_stp.R, axis=0), color="darkgrey",
+                        alpha=0.3)
+        ax.plot(time_vector, np.mean(model_stp.R, axis=0), c='black')
+    else:
+        ax.plot(time_vector, model_stp.R[ind_interest, :])
+    ax.set_title(r'R(t) - Resources', fontsize=titleSize)
+    ax.set_xlabel('time (s)', c='gray', fontsize=labelSize)
+    # ax.set_ylabel(r'', fontsize=labelSize)
+    ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+    ax.yaxis.offsetText.set_fontsize(8)
+    ax.grid()
+
+    ax = fig.add_subplot(133)
+    if ind_interest is None:
+        ax.fill_between(time_vector, np.min(model_stp.I_out, axis=0), np.max(model_stp.I_out, axis=0), color="darkgrey",
+                        alpha=0.3)
+        ax.plot(time_vector, np.mean(model_stp.I_out, axis=0), c='black')
+    else:
+        ax.plot(time_vector, model_stp.P[ind_interest, :])
+    ax.set_title('$output(t)$', fontsize=titleSize)
+    ax.set_xlabel('time (s)', c='gray', fontsize=labelSize)
+    ax.ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+    ax.yaxis.offsetText.set_fontsize(8)
+    ax.grid()
+
+    fig.subplots_adjust(top=0.92)
+    # Final adjustments
+    fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+
+
 # **********************************************************************************************************************
 # LOADING EXAMPLES OF FITTING
 class Example_fitting:
@@ -288,8 +338,8 @@ class Example_fitting:
             min_n = 2 * dt
             self.dict_params = {'model_str': self.model_str,
                                 'params_name': params_name_mssm,
-                                'bo': ((2 * dt, 0.0, 0.02, 2 * dt, 0.0, 1.0, 1e-1, 2 * dt,  1e-3, 2 * dt),
-                                       (0.1,    10,  1e2,  1.0,    1.0, 1e2, 1.0,  10 * dt, 1e0,  10 * dt)),
+                                'bo': ((2 * dt, 0.0,  0.02, 2 * dt, 0.0,  1.0, 1e-1, 2 * dt,  1e-3, 2 * dt),
+                                       (1e-1,   1e-1,  1e1,  1.0,   2e-2, 1e2,  1.0,  10 * dt, 1e0,  10 * dt)),
                                 'ODE_mode': 'ODE',
                                 'ind_experiment': 0,
                                 'only_spikes': False,

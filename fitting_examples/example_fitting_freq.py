@@ -14,11 +14,11 @@ path_store_models = "../outputs/fitting_freq_response/"
 
 # **********************************************************************************************************************
 # GLOBAL PARAMETERS
-model_str = "MSSM"  # String defining the model to use (e.g. MSSM, TM, LAP)
+model_str = "TM"  # String defining the model to use (e.g. MSSM, TM, LAP)
 
 # AUXILIAR VARIABLES FOR THE EXAMPLE
 ind = 0                 # Auxiliar index to define the Synaptic Dynamics mechanism (0: depression, 1: facilitation)
-ind_experiment = 1      # Index of experiment to run/load
+ind_experiment = 4      # Index of experiment to run/load
 num_experiments = 1     # Number of experiments to run
 prefix = prefix_v[ind]  # string defining a description of the SD model: "depression" or "facilitation"
 
@@ -29,7 +29,7 @@ prefix = prefix_v[ind]  # string defining a description of the SD model: "depres
 # output_factor (float) scaling factor of reference signal
 # description (String) sufix for the name of the file, that is stored once the fitting process finishes.
 # r (int) frequency of spike train
-sim_args = [sfreq_ext[ind], max_t_ext[ind], input_factor_ext[ind], output_factor_ext[ind], str(ind), 20]  # 300]
+sim_args = [sfreq_ext[ind], max_t_ext[ind], input_factor_ext[ind], output_factor_ext[ind], str(ind), 100]  # 300]
 
 # ******************************************************************************************************************
 # DICTIONARY OF PARAMETERS
@@ -40,7 +40,7 @@ example_fitting.params_DE()
 # For frequency analysis
 example_fitting.dict_params['frequency_reference'] = True
 if ind == 0:
-    example_fitting.dict_params['ref_freq_vector'] = vec_f_r_dep_gain_control
+    example_fitting.dict_params['ref_freq_vector'] = vec_f_ref_dep[ind_experiment][0]
 if ind == 1:
     example_fitting.dict_params['ref_freq_vector'] = vec_f_r_fac_2nd_2  # vec_f_r_fac_2nd # vec_f_r_fac_1st # vec_f_r_fac_2nd_2
 example_fitting.dict_params['output_factor'] = 1.0
@@ -56,7 +56,7 @@ input_signal = loadObject(prefix + "_input_lf", path_reference_data)
 input_signal = input_spike_train(sim_params['sfreq'], example_fitting.r, sim_params['max_t'])
 aux_ind = list(np.array(example_fitting.dict_params['ref_freq_vector']) - 1)
 if ind == 0:
-    reference_signal = np.array(f_r_dep_gain_control)
+    reference_signal = np.array(vec_f_ref_dep[ind_experiment][1])
 if ind == 1:
     # aux_ind = list(np.array(example_fitting.dict_params['ref_freq_vector']) - 1)
     reference_signal = np.array(f_r_fac_2nd)[aux_ind]  # (np.array(f_r_fac_2nd)[aux_ind] / np.array(f_r_fac_2nd)[4]) * 2.1  # np.array(f_r_fac_1st)[aux_ind]
@@ -126,9 +126,11 @@ print("Parameters found by the pipeline for the " + model_str + " model:\n",
 # Plot of the postsynaptic response
 label = prefix + r" - $E_{PSC}(t)$ for input at " + str(example_fitting.r) + "Hz"
 figsize = (10, 7.2)  # (10, 4.8)  # (4.8, 7.2)
+if model_str == "TM": figsize = (10, 3.8)
 fig = plt.figure(figsize=figsize)
 plt.suptitle(label, fontsize=12)
-plot_temp_mssm(pf.model_SD, fig, ind_interest=None)
+if model_str == "MSSM": plot_temp_mssm(pf.model_SD, fig, ind_interest=None)
+if model_str == "TM": plot_temp_tm(pf.model_SD, fig, ind_interest=None)
 
 plt.figure()
 plt.plot(pf.fa.loop_frequencies, pf.reference_signal, label='reference')
