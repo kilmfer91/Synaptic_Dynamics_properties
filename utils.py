@@ -79,6 +79,11 @@ def m_time():
     return time.time()
 
 
+def check_create_folder(aux_fold):
+    if not os.path.isdir(aux_fold):
+        os.mkdir(aux_fold)
+
+
 def print_time(ts, msg):
     ms_res = ts * 1000
     min_res = ts / 60

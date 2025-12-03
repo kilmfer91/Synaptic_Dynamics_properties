@@ -625,6 +625,9 @@ for graph in range(1, 5):
     ax.grid()
 
 fig2.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+
+check_create_folder('plots')
+plt.savefig('plots/test.png', format='png')
 # """
 
 # SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES

@@ -7,6 +7,8 @@
 /outputs/fitting_adjusted_MSSM/
 /outputs/fitting_freq_response/
 /outputs/fitting_Hallermann/
+/gain_control/variables/
+/gain_control/plots/test.png
 
 # OS generated files #
 ######################
@@ -19,4 +21,4 @@
 __pycache__/
 libraries/__pycache__/
 synaptic_dynamic_models/__pycache__/
-/gain_control/variables/
+
