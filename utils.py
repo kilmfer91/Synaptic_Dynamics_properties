@@ -105,6 +105,19 @@ def loadObject(name, path='./'):
     return res_object
 
 
+def saveObject(obj, name, path='./'):
+    """
+    This function saves an object in path
+    :param obj: object to be saved
+    :param name: (String) name of the object-file
+    :param path: (String)
+    """
+    if not os.path.isfile(path + name):
+        pickleFile = open(path + name, 'wb')
+        pickle.dump(obj, pickleFile)
+        pickleFile.close()
+
+
 def check_file(file):
     return os.path.isfile(file)
 

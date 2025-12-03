@@ -1,3 +1,7 @@
+#import sys
+
+#sys.path.append('/path/to/your/directory')
+
 import os.path
 import matplotlib.pyplot as plt
 import scipy.signal
@@ -19,7 +23,7 @@ model = 'MSSM'
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
 ind = 4
-save_vars = False
+save_vars = True
 run_experiment = False
 lif_parallel = True
 imputations = False
@@ -27,18 +31,20 @@ Stoch_input = True
 num_syn = 100
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 2e3
+sfreq = 5e3
 total_realizations = 4  # 100
 num_realizations = 4  # 4
 
 # Input modulations
-range_f = [10, 20, 50]  # [i for i in range(10, 100, 5)]
-range_f2 = [100, 200]  # [i for i in range(100, 500, 10)]  # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
-range_f3 = [300]  # [i for i in range(500, 2501, 50)]  # Max prop. freq. must be less than sfreq/4
+range_f = [50]  # [i for i in range(10, 100, 5)]
+range_f2 = [200]  # [i for i in range(100, 500, 10)] # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
+range_f3 = []  # [i for i in range(500, 2501, 50)]  # Max prop. freq. must be less than sfreq/4
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
-path_vars = "../gain_control/variables/"
+path_vars = "./gain_control/variables/"
+folder_plots = './gain_control/plots/'
+check_create_folder(folder_plots)
 file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn)
 if lif_parallel:
     file_name += "_p"
@@ -337,7 +343,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         # """
         fig = plt.figure(figsize=(10, 4))
         plt.suptitle("For model %s, index %d, frequency %dHz, for %d synapses" % (
-        model, ind, initial_frequencies[i], num_synapses))
+            model, ind, initial_frequencies[i], num_synapses))
         ax1 = fig.add_subplot(1, 2, 1)
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("Mem. potential (mV)")
@@ -581,7 +587,8 @@ fig2 = plt.figure(figsize=(7, 7))
 plt.suptitle(description)
 
 aux_ = [[dr['st_mid_prop'] - dr['st_ini_prop'], dr['st_mid_prop_min'] - dr['st_ini_prop_min'], dr['st_mid_prop_max'] -
-         dr['st_ini_prop_max'], dr['st_mid_prop_q1'] - dr['st_ini_prop_q1'], dr['st_mid_prop_q90'] - dr['st_ini_prop_q90']],
+         dr['st_ini_prop_max'], dr['st_mid_prop_q1'] - dr['st_ini_prop_q1'],
+         dr['st_mid_prop_q90'] - dr['st_ini_prop_q90']],
         [dr['st_mid_fix'] - dr['st_ini_fix'], dr['st_mid_fix_min'] - dr['st_ini_fix_min'], dr['st_mid_fix_max'] -
          dr['st_ini_fix_max'], dr['st_mid_fix_q1'] - dr['st_ini_fix_q1'], dr['st_mid_fix_q90'] - dr['st_ini_fix_q90']],
         [dr['mtr_mid_prop'] - dr['st_ini_prop'], dr['mtr_mid_prop'] - dr['st_ini_prop_max'], dr['mtr_mid_prop'] -
@@ -625,9 +632,7 @@ for graph in range(1, 5):
     ax.grid()
 
 fig2.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
-
-check_create_folder('plots')
-plt.savefig('plots/test.png', format='png')
+plt.savefig(folder_plots + 'test.png', format='png')
 # """
 
 # SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
