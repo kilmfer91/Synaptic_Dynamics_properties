@@ -106,6 +106,9 @@ class MSSM_model(SynDynModel):
         self.N_spike_events = []
         self.P_spike_events = []
         self.output_spike_events = []
+        self.output_spike_events_tonic = []
+        self.ind_spike_events = []
+        self.ind_spike_events_tonic = []
         self.time_spike_events = []
         self.C_steady_state = None
         self.V_steady_state = None

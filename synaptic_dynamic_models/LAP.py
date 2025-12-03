@@ -84,6 +84,9 @@ class LAP_model(SynDynModel):
         self.Prel_spike_events = []
         self.Krecov_spike_events = []
         self.output_spike_events = []  # [[] for _ in range(self.n_syn)][[] for _ in range(self.n_syn)]
+        self.output_spike_events_tonic = []
+        self.ind_spike_events = []
+        self.ind_spike_events_tonic = []
         self.time_spike_events = []  # [[] for _ in range(self.n_syn)]
         self.Cai_steady_state = None
         self.Rrel_steady_state = None

@@ -17,6 +17,9 @@ class SynDynModel:
         # Spike events
         self.edge_detection = False
         self.output_spike_events = None
+        self.ind_spike_events = None
+        self.output_spike_events_tonic = None
+        self.ind_spike_events_tonic = None
         self.time_spike_events = None
         self.output_steady_state = None
         self.efficacy = None
@@ -113,14 +116,31 @@ class SynDynModel:
         assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
                                                    "the length of param 'output'")
         if spike_range[1] == spike_range[0]:
+            # phasic component of spiking responses
             self.output_spike_events.append(output[:, spike_range[0]])
+            # tonic component of spiking responses
+            self.output_spike_events_tonic.appen(output[:, 0])
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic.append(spike_range[0] - 1)
+            self.ind_spike_events.append(a + spike_range[0])
+
         else:
+            # Tonic component of the spiking response
+            self.output_spike_events_tonic.append(output[:, spike_range[0] - 1])
+
             # EPSP
             if np.sum(output) > 0:
                 self.output_spike_events.append(np.max(output[:, spike_range[0]: spike_range[1]], axis=1))
+                a = np.argmax(output[:, spike_range[0]: spike_range[1]], axis=1)
             # EPSC
             else:
                 self.output_spike_events.append(np.min(output[:, spike_range[0]: spike_range[1]], axis=1))
+                a = np.argmin(output[:, spike_range[0]: spike_range[1]], axis=1)
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic.append(spike_range[0] - 1)
+            self.ind_spike_events.append(a + spike_range[0])
 
     @staticmethod
     def reach_steady_state(input_signals, size_window=10, epsilon=None):
@@ -173,27 +193,30 @@ class SynDynModel:
         """
         num_syn = self.n_syn
         output_spike_events = self.output_spike_events
+        output_spike_events_tonic = self.output_spike_events_tonic
+        ind_events_tonic = self.ind_spike_events_tonic
         model_output = self.get_output()
 
         # array of output spike events
-        output_aux = np.array(output_spike_events)
+        output_events = np.array(output_spike_events)
+        output_events_tonic = np.array(output_spike_events_tonic)
         # getting maximum after computing abs(output_aux)
-        maxi = np.max(np.abs(output_aux), axis=0)
+        maxi = np.max(np.abs(output_events), axis=0)
         # Setting the epsilon error
         epsilon = 1e-10 * maxi
         # Initializing time to reach steady-state
         t_ss = np.zeros(num_syn, dtype=int)  # IMPORTANT, initialize with zeros
         # Matrix of conditions, to check if synapses reach the steady-state value (last 10 spike events less than error)
-        conditions_matrix = np.zeros((num_syn, len(output_aux)), dtype=bool)
+        conditions_matrix = np.zeros((num_syn, len(output_events)), dtype=bool)
         evaluated_syn = np.zeros(num_syn, dtype=int)
         end_loop_break = False
 
         # Looping through the output spike events
-        for i in range(1, len(output_aux)):
+        for i in range(1, len(output_events)):
             # when there is at least 10 events
             if i >= 10:
                 # Check for each synapse if the epsilon condition is reached
-                conditions = np.max(output_aux[i - 10:i, :], axis=0) - np.min(output_aux[i - 10:i, :], axis=0) < epsilon
+                conditions = np.max(output_events[i - 10:i, :], axis=0) - np.min(output_events[i - 10:i, :], axis=0) < epsilon
 
                 # Update matrix of conditions
                 conditions_matrix[:, i] = conditions
@@ -201,7 +224,7 @@ class SynDynModel:
                 # If all synapses reach the steady-state value, then stop the loop
                 if np.sum(conditions) == num_syn:
                     # Update with True for all last positions in matrix of conditions
-                    conditions_matrix[:, i: len(output_aux)] = True
+                    conditions_matrix[:, i: len(output_events)] = True
                     end_loop_break = True
                     break
 
@@ -230,96 +253,35 @@ class SynDynModel:
 
                 evaluated_syn = np.logical_or(evaluated_syn, a)
 
-        efficacy = np.abs((output_aux[t_ss] / output_aux[0, :])[0])  # np.abs(output_aux[t_ss][0])  #
-        output_steady_state = output_aux[t_ss][0]
+        # Phasic component
+        efficacy = np.abs((output_events[t_ss] / output_events[0, :])[0])  # np.abs(output_aux[t_ss][0])  #
+        output_steady_state = output_events[t_ss][0]
         t_steady_state = t_ss
 
         # If the maximum response is similar to the last-input-spike response, then set the index to
         # the length of the input
-        ss_output_aux = np.array(output_spike_events)
+        # ss_output_aux = np.array(output_spike_events)
         abs_output = np.abs(model_output)
         ind_max_out = abs_output.argmax(axis=1)
-        out_last_spike = output_aux[-1]
+        out_last_spike = output_events[-1]
 
         conditions = abs_output[:, ind_max_out].diagonal() - output_steady_state < 1e-9
-        aux_time_max = np.logical_not(conditions) * ind_max_out + conditions * model_output.shape[1]
-        aux_eff_2 = output_steady_state / model_output[:, ind_max_out].diagonal()
-        aux_eff_3 = np.abs(model_output[:, ind_max_out].diagonal() / ss_output_aux[0, :])
+        ind_max = np.logical_not(conditions) * ind_max_out + conditions * model_output.shape[1]
+        eff_2 = output_steady_state / model_output[:, ind_max_out].diagonal()
+        # aux_eff_3 = np.abs(model_output[:, ind_max_out].diagonal() / ss_output_aux[0, :])
+        eff_3 = np.abs(model_output[:, ind_max_out].diagonal() / output_events[0, :])
 
-        return efficacy, aux_eff_2, aux_eff_3, output_steady_state, t_steady_state, aux_time_max
+        # Tonic component
+        eff_tonic = np.abs((output_events_tonic[t_ss] / output_events_tonic[1, :])[0])
+        output_steady_state_tonic = output_events_tonic[t_ss][0]
+        abs_output_tonic = np.abs(output_events_tonic)
+        ind_max_events_tonic = output_events_tonic.argmax(axis=0)
+        ind_max_out_tonic = np.array(ind_events_tonic)[ind_max_events_tonic]
+        eff_2_tonic = output_steady_state_tonic / output_events_tonic[ind_max_events_tonic, :].diagonal()
+        eff_3_tonic = np.abs(output_events_tonic[ind_max_events_tonic, :].diagonal() / output_events_tonic[1, :])
 
-    @staticmethod
-    def get_efficacy_time_ss(num_syn, output_spike_events):
-        """
-
-        Parameters
-        ----------
-        num_syn
-        output_spike_events
-
-        Returns
-        -------
-
-        """
-        # array of output spike events
-        output_aux = np.array(output_spike_events)
-        # getting maximum after computing abs(output_aux)
-        maxi = np.max(np.abs(output_aux), axis=0)
-        # Setting the epsilon error
-        epsilon = 1e-10 * maxi
-        # Initializing time to reach steady-state
-        t_ss = np.zeros(num_syn, dtype=int)  # IMPORTANT, initialize with zeros
-        # Matrix of conditions, to check if synapses reach the steady-state value (last 10 spike events less than error)
-        conditions_matrix = np.zeros((num_syn, len(output_aux)), dtype=bool)
-        evaluated_syn = np.zeros(num_syn, dtype=int)
-        end_loop_break = False
-
-        # Looping through the output spike events
-        for i in range(1, len(output_aux)):
-            # when there is at least 10 events
-            if i >= 10:
-                # Check for each synapse if the epsilon condition is reached
-                conditions = np.max(output_aux[i - 10:i, :], axis=0) - np.min(output_aux[i - 10:i, :], axis=0) < epsilon
-
-                # Update matrix of conditions
-                conditions_matrix[:, i] = conditions
-
-                # If all synapses reach the steady-state value, then stop the loop
-                if np.sum(conditions) == num_syn:
-                    # Update with True for all last positions in matrix of conditions
-                    conditions_matrix[:, i: len(output_aux)] = True
-                    end_loop_break = True
-                    break
-
-        # If the loop does not break, update with True all last positions of matrix of conditions
-        if not end_loop_break:
-            conditions_matrix[:, -1] = True
-
-        # Find unique values, to compute the sample when each synase reach the steady state value
-        unique_cond = np.unique(conditions_matrix, return_index=True, axis=1)
-
-        if num_syn == unique_cond[1][1:].shape[0]:
-            t_ss = unique_cond[1][1:]
-        else:
-            max_step_cond = np.max(unique_cond[1])
-            for j in range(1, len(unique_cond[1])):
-                a = np.logical_xor(unique_cond[0][:, j - 1], unique_cond[0][:, j])
-                b = np.logical_and(a, np.logical_not(evaluated_syn)) * unique_cond[1][j]
-                aux_t = t_ss + b
-
-                # checking if the computation of step steady-state is wrong
-                if np.max(aux_t) > max_step_cond:
-                    ind_wrong_tss = np.argmax(t_ss + b)
-                    aux_t[ind_wrong_tss] -= b[ind_wrong_tss]
-                t_ss = aux_t
-
-                evaluated_syn = np.logical_or(evaluated_syn, a)
-
-        efficacy = output_aux[t_ss][0]  # (output_aux[t_ss] / output_aux[0, :])[0]  #
-        output_steady_state = output_aux[t_ss][0]
-        t_steady_state = t_ss
-
-        return efficacy, output_steady_state, t_steady_state
+        return (efficacy, eff_2, eff_3, output_steady_state, t_steady_state, ind_max, eff_tonic, eff_2_tonic,
+                eff_3_tonic, output_steady_state_tonic, ind_max_out_tonic)
 
     # @staticmethod
     def run_model(self, time_vector, *args, **kwargs):

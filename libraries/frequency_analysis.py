@@ -40,16 +40,28 @@ class Freq_analysis:
         # Output
         self.time_max = None
         self.time_ss = None
+        self.time_max_tonic = None
         self.efficacy = None
         self.efficacy_2 = None
         self.efficacy_3 = None
+        self.eff_st = None
+        self.efficacy_tonic = None
+        self.efficacy_2_tonic = None
+        self.efficacy_3_tonic = None
+        self.eff_st_tonic = None
 
         # Output - trials
         self.fa_eff1 = []
         self.fa_eff2 = []
         self.fa_eff3 = []
+        self.eff_st = []
         self.fa_t_ss = []
         self.fa_t_max = []
+        self.fa_eff1_tonic = []
+        self.fa_eff2_tonic = []
+        self.fa_eff3_tonic = []
+        self.eff_st_tonic = []
+        self.fa_t_max_tonic = []
         self.MSSM_syn_with_weird_freq = [[], []]
 
         self.loop_frequencies = [i for i in range(1, 101)]
@@ -126,9 +138,15 @@ class Freq_analysis:
         self.ss_t = np.empty(self.L)
         self.time_max = []
         self.time_ss = []
+        self.time_max_tonic = []
         self.efficacy = []
         self.efficacy_2 = []
         self.efficacy_3 = []
+        self.eff_st = []
+        self.efficacy_tonic = []
+        self.efficacy_2_tonic = []
+        self.efficacy_3_tonic = []
+        self.eff_st_tonic = []
 
     def set_input_vector(self, stochastic=False, seed=None, input_factor=1.0):
         """
@@ -176,14 +194,26 @@ class Freq_analysis:
                 self.fa_eff1.append(self.efficacy)
                 self.fa_eff2.append(self.efficacy_2)
                 self.fa_eff3.append(self.efficacy_3)
+                self.fa_eff_st.append(self.eff_st)
                 self.fa_t_ss.append(self.time_ss)
                 self.fa_t_max.append(self.time_max)
+                self.fa_eff1_tonic.append(self.efficacy_tonic)
+                self.fa_eff2_tonic.append(self.efficacy_2_tonic)
+                self.fa_eff3_tonic.append(self.efficacy_3_tonic)
+                self.fa_eff_st_tonic.append(self.eff_st_tonic)
+                self.fa_t_max_tonic.append(self.time_max_tonic)
 
             self.fa_eff1 = np.array(self.fa_eff1)
             self.fa_eff2 = np.array(self.fa_eff2)
             self.fa_eff3 = np.array(self.fa_eff3)
+            self.eff_st = np.array(self.eff_st)
             self.fa_t_ss = np.array(self.fa_t_ss)
             self.fa_t_max = np.array(self.fa_t_max)
+            self.fa_eff1_tonic = np.array(self.fa_eff1_tonic)
+            self.fa_eff2_tonic = np.array(self.fa_eff2_tonic)
+            self.fa_eff3_tonic = np.array(self.fa_eff3_tonic)
+            self.eff_st_tonic = np.array(self.eff_st_tonic)
+            self.fa_t_max_tonic = np.array(self.fa_t_max_tonic)
         else:
             self.run_analysis(freq_interest=f_int)
 
@@ -231,17 +261,27 @@ class Freq_analysis:
             ind_max_out = abs_output.argmax(axis=1)
 
             # Time to reach steady-state values
-            aux_eff, aux_eff_2, aux_eff_3, output_st, t_st, aux_t_max = self.model_stp.get_efficacy_time_st()
-            aux_time_ss = t_st / r
-            aux_time_max = aux_t_max * self.dt
+            efficacies = self.model_stp.get_efficacy_time_st()
+            phasic_eff, phasic_eff2, phasic_eff3, phasic_st, phasic_ind_st, phasic_ind_max = efficacies[:6]
+            tonic_eff, tonic_eff2, tonic_eff3, tonic_st, tonic_ind_max = efficacies[6:]
+
+            aux_time_ss = phasic_ind_st / r
+            aux_time_max = phasic_ind_max * self.dt
+            aux_time_max_tonic = tonic_ind_max * self.dt
 
             # Update times of maximum and stedy-state
             self.time_max.append(aux_time_max)
             self.time_ss.append(aux_time_ss)
+            self.time_max_tonic.append(aux_time_max_tonic)
             # Update synaptic efficacies
-            self.efficacy.append(aux_eff)
-            self.efficacy_2.append(aux_eff_2)
-            self.efficacy_3.append(aux_eff_3)
+            self.efficacy.append(phasic_eff)
+            self.efficacy_2.append(phasic_eff2)
+            self.efficacy_3.append(phasic_eff3)
+            self.eff_st.append(phasic_st)
+            self.efficacy_tonic.append(tonic_eff)
+            self.efficacy_2_tonic.append(tonic_eff2)
+            self.efficacy_3_tonic.append(tonic_eff3)
+            self.eff_st_tonic.append(tonic_st)
             # """
 
             # """
@@ -270,3 +310,10 @@ class Freq_analysis:
         self.efficacy = np.array(self.efficacy).T
         self.efficacy_2 = np.array(self.efficacy_2).T
         self.efficacy_3 = np.array(self.efficacy_3).T
+        self.eff_st = np.array(self.eff_st).T
+        self.time_max_tonic = np.array(self.time_max_tonic).T
+        self.efficacy_tonic = np.array(self.efficacy_tonic).T
+        self.efficacy_2_tonic = np.array(self.efficacy_2_tonic).T
+        self.efficacy_3_tonic = np.array(self.efficacy_3_tonic).T
+        self.eff_st_tonic = np.array(self.eff_st_tonic).T
+

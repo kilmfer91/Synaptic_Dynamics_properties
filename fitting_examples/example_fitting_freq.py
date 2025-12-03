@@ -14,7 +14,7 @@ path_store_models = "../outputs/fitting_freq_response/"
 
 # **********************************************************************************************************************
 # GLOBAL PARAMETERS
-model_str = "TM"  # String defining the model to use (e.g. MSSM, TM, LAP)
+model_str = "MSSM"  # String defining the model to use (e.g. MSSM, TM, LAP)
 
 # AUXILIAR VARIABLES FOR THE EXAMPLE
 ind = 0                 # Auxiliar index to define the Synaptic Dynamics mechanism (0: depression, 1: facilitation)
@@ -29,7 +29,7 @@ prefix = prefix_v[ind]  # string defining a description of the SD model: "depres
 # output_factor (float) scaling factor of reference signal
 # description (String) sufix for the name of the file, that is stored once the fitting process finishes.
 # r (int) frequency of spike train
-sim_args = [sfreq_ext[ind], max_t_ext[ind], input_factor_ext[ind], output_factor_ext[ind], str(ind), 100]  # 300]
+sim_args = [sfreq_ext[ind], max_t_ext[ind], input_factor_ext[ind], output_factor_ext[ind], str(ind), 150]  # 300]
 
 # ******************************************************************************************************************
 # DICTIONARY OF PARAMETERS
@@ -65,12 +65,9 @@ if ind == 1:
 # SYNAPTIC DYNAMICS MODEL
 model_SD = None
 num_syn = int(len(dict_params['params_name']) * DE_params[2])
-if model_str == "MSSM":
-    model_SD = MSSM_model(n_syn=num_syn)
-if model_str == "TM":
-    model_SD = TM_model(n_syn=num_syn)
-if model_str == "LAP":
-    model_SD = LAP_model(n_syn=num_syn)
+if model_str == "MSSM": model_SD = MSSM_model(n_syn=num_syn)
+if model_str == "TM": model_SD = TM_model(n_syn=num_syn)
+if model_str == "LAP": model_SD = LAP_model(n_syn=num_syn)
 # Setting simulation parameters
 model_SD.set_simulation_params(sim_params)
 
@@ -131,15 +128,7 @@ fig = plt.figure(figsize=figsize)
 plt.suptitle(label, fontsize=12)
 if model_str == "MSSM": plot_temp_mssm(pf.model_SD, fig, ind_interest=None)
 if model_str == "TM": plot_temp_tm(pf.model_SD, fig, ind_interest=None)
+if model_str == "LAP": plot_temp_lap(pf.model_SD, fig, ind_interest=None)
 
-plt.figure()
-plt.plot(pf.fa.loop_frequencies, pf.reference_signal, label='reference')
-plt.plot(pf.fa.loop_frequencies, pf.fa.efficacy[0, :], label='example output')
-plt.plot(pf.fa.loop_frequencies, np.mean(pf.fa.efficacy, axis=0), c='black', label='output mean')
-plt.fill_between(pf.fa.loop_frequencies, np.min(pf.fa.efficacy, axis=0), np.max(pf.fa.efficacy, axis=0),
-                 color="darkgrey", alpha=0.3)
-plt.title("Frequency responses of reference and output")
-plt.xlabel("Frequency (Hz)")
-plt.ylabel("Efficacy")
-plt.legend()
-plt.grid()
+# Plot frequency responses of efficacies, for phasic and tonic components of each temporal response
+plot_freq_efficacies(pf)

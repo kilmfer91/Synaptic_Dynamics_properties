@@ -55,6 +55,9 @@ class TM_model(SynDynModel):
         self.R_spike_events = []
         self.U_spike_events = []
         self.output_spike_events = []
+        self.output_spike_events_tonic = []
+        self.ind_spike_events = []
+        self.ind_spike_events_tonic = []
         self.time_spike_events = []
         self.R_steady_state = None
         self.U_steady_state = None
