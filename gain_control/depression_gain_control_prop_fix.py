@@ -42,8 +42,8 @@ range_f3 = []  # [i for i in range(500, 2501, 50)]  # Max prop. freq. must be le
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
-path_vars = "./gain_control/variables/"
-folder_plots = './gain_control/plots/'
+path_vars = "../gain_control/variables/"
+folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
 file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn)
 if lif_parallel:
