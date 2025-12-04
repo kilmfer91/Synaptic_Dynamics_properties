@@ -4,6 +4,8 @@ import time
 import re
 from datetime import timedelta
 import pickle
+import matplotlib.patches as mpatches
+from utils_plot import *
 
 import numpy as np
 import scipy.signal as signal
@@ -13,6 +15,7 @@ import matplotlib.pyplot as plt
 # PATHS TO STORE/LOAD DATA
 path_signals_ext = "../../reference data/"
 path_outputs_ext = "../../outputs/fitting_test/"
+
 
 # **********************************************************************************************************************
 # EXAMPLE OF PARAMETERS FOR MSSM AND TM MODELS
@@ -403,6 +406,22 @@ def plot_freq_efficacies(pf):
     ax3.legend()
     ax3.grid()
     fig1.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+
+
+def plot_freq_analysis(fa, title_aux, plot=True, ind=0):
+    plot_title = "Frequency analysis of Model" + title_aux
+    subtitle_size = 12
+    subtitle_color = 'gray'
+    org_plots = 230
+    ind_plots = [org_plots + 1, org_plots + 2, org_plots + 3, org_plots + 4, org_plots + 5]
+    time_vectors = [fa.loop_frequencies for _ in range(len(ind_plots))]
+    plots = [fa.efficacy[ind, :], fa.efficacy_2[ind, :], fa.efficacy_3[ind, :], fa.time_ss[ind, :], fa.time_max[ind, :]]
+    subplot_title = ["Efficacy st/0", "Efficacy st/max", "Efficacy max/0", "time to steady state", "time to max"]
+    ylabels = ['EPSPst/EPSP0', 'EPSPst/EPSPmax', 'EPSPmax/EPSP0', 'time(s)', 'time(s)']
+    colorplot = ['black', 'black', 'black', 'black', 'black']
+    xlabels = ['freq (Hz)', 'freq (Hz)', 'freq (Hz)', 'freq (Hz)', 'freq (Hz)']
+    plot_syn_dyn(time_vectors, plot_title, ind_plots, plots, subplot_title=subplot_title, xlabels=xlabels,
+                 ylabels=ylabels, plot=plot, color_plot=colorplot)
 
 
 def poisson_generator2(dt, Lt, rate, n, myseed=None):

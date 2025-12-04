@@ -9,23 +9,23 @@ model = 'MSSM'
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 4
+ind = 2
 save_vars = True
 run_experiment = False
 lif_parallel = True
-imputations = False
+imputations = True
 Stoch_input = True
-num_syn = 100
+num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 5e3
 total_realizations = 100  # 100
-num_realizations = 1  # 4
+num_realizations = 8  # 8 for server, 4 for macbook air
 
 # Input modulations
 range_f = [i for i in range(10, 100, 5)]
 range_f2 = [i for i in range(100, 500, 10)] # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
-range_f3 = [i for i in range(500, 2501, 50)]  # Max prop. freq. must be less than sfreq/4
+range_f3 = [i for i in range(500, 801, 50)]  # Max prop. freq. must be less than sfreq/4  # 16kHz:2501, 5kHz:801
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
@@ -328,7 +328,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
                                                                 Le_time_win * 0.25, sim_params)
 
         print_time(m_time() - loop_experiments,
-                   "Realisation " + str(realization) + ", frequency " + str(initial_frequencies[i]))
+                   file_name + ", Realisation " + str(realization) + ", frequency " + str(initial_frequencies[i]))
 
         """
         fig = plt.figure(figsize=(10, 4))
@@ -356,7 +356,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         if lif_prop_n is not None:
             res_real_n[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_n[res_i, :].T
 
-    print_time(m_time() - loop_time, "Realisation " + str(realization))
+    print_time(m_time() - loop_time, file_name + ", Realisation " + str(realization))
 
     realization += 1
 
