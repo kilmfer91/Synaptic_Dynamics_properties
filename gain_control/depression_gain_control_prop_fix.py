@@ -1,17 +1,4 @@
-#import sys
-
-#sys.path.append('/path/to/your/directory')
-
-import os.path
-import matplotlib.pyplot as plt
-import scipy.signal
-import numpy as np
-from synaptic_dynamic_models.TM import TM_model
-from synaptic_dynamic_models.MSSM import MSSM_model
-from spiking_neuron_models.LIF import LIF_model
 # from synaptic_dynamic_models.simple_depression import Simple_Depression
-from libraries.frequency_analysis import Freq_analysis
-from utils import *
 from gain_control.utils_gc import *
 
 # ******************************************************************************************************************
@@ -32,17 +19,18 @@ num_syn = 100
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 5e3
-total_realizations = 4  # 100
-num_realizations = 4  # 4
+total_realizations = 100  # 100
+num_realizations = 1  # 4
 
 # Input modulations
-range_f = [50]  # [i for i in range(10, 100, 5)]
-range_f2 = [200]  # [i for i in range(100, 500, 10)] # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
-range_f3 = []  # [i for i in range(500, 2501, 50)]  # Max prop. freq. must be less than sfreq/4
+range_f = [i for i in range(10, 100, 5)]
+range_f2 = [i for i in range(100, 500, 10)] # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
+range_f3 = [i for i in range(500, 2501, 50)]  # Max prop. freq. must be less than sfreq/4
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
 path_vars = "../gain_control/variables/"
+check_create_folder(path_vars)
 folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
 file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn)
@@ -56,23 +44,24 @@ else:
     file_name += "_cni"
 
 print("For file %s and index %d" % (file_name, ind))
-# 2KHz from 10 to 601
-# 100 syn, 2 realizations, one experiment 0:01.30, 120 exps. aprox. 2.6 min, 100 realizations aprox. 2.16 hours / one exp. 0:00.9;
-# 100 syn, 3 realizations, one experiment 0:01.60, 120 exps. aprox. 3.4 min, 102 realizations aprox. 1.81 hours / one exp. 0:01.16;
-# 100 syn, 4 realizations, one experiment 0:01.70, 120 exps. aprox. 3.4 min, 100 realizations aprox. 1.42 hours / one exp. 0:01.32;
-# 100 syn, 5 realizations, one experiment 0:02.15, 120 exps. aprox. 4.3 min, 100 realizations aprox. 1.46 hours / one exp. 0:01.65;
-# 100 syn, 8 realizations, one experiment 0:06.00, 120 exps. aprox. 12 min, 100 realizations aprox. 2.5 hours / one exp. 0:04.03;
-# 100 syn, 10 realizations, one experiment 0:10.00, 120 exps. aprox. 20 min, 100 realizations aprox. 3.3 hours / one exp. 0:05.00;
-# 100 syn, 20 realizations, one experiment 0:20.00, / one exp. 0:11.52;
-# 100 syn, 30 realizations, one experiment 0:30.00, / one exp. 0:18.5;
-# 100 syn, 35 realizations, one experiment 0:42.00,
-# 100 syn, 40 realizations, one experiment 0:55.00,
-# 100 syn, 50 realizations, one experiment 1:35.00,
-# 100 syn, 100 realizations, one experiment 5:35.00,/ one exp. 2:47.00;
-
-# 100 syn, 120 experiments, one realization aprox. 1:30.00, 100 realization aprox. 2.5 hours
-
-
+# 2KHz from 10 to 200, 100 syn, 120 exp. old-mac / new-mac / server
+# 2 rea, 1 exp 0:01.30, 100 rea 2.16 hours / 1 exp. 0:01.34, 100 rea 2.23 hours / 1 exp 0:01.87, 100 rea 3.12 hours
+# 3 rea, 1 exp 0:01.60, 102 rea 1.81 hours / 1 exp. 0:01.72, 102 rea 1.95 hours / 1 exp 0:02.20, 102 rea 2.5 hours
+# 4 rea, 1 exp 0:01.70, 100 rea 1.42 hours / 1 exp. 0:02.0, 100 rea 1.66 hours / 1 exp 0:02.47, 100 rea 2.06 hours
+# 5 rea, 1 exp 0:02.15, 100 rea 1.46 hours / 1 exp. 0:02.46, 100 rea 1.64 hours / 1 exp 0:02.75, 100 rea 1.84 hours
+# 6 rea, 1 exp 0:0x.xx, 100 rea x.x hours / 1 exp. 0:06.78, 102 rea 3.84 hours / 1 exp 0:03.13, 102 rea 1.77 hours
+# 7 rea, 1 exp 0:0x.xx, 100 rea x.x hours / 1 exp. 0:09.38, 102 rea 4.69 hours / 1 exp 0:03.4, 105 rea 1.7 hours
+# 8 rea, 1 exp 0:06.00, 100 rea 2.5 hours / 1 exp. 0:10.5.2, 104 rea 4.55 hours / 1 exp 0:03.70, 104 rea 1.51 hours
+# 9 rea, 1 exp 0:06.00, 100 rea 2.5 hours / 1 exp. 0:11.50, 104 rea 4.6 hours / 1 exp 0:05.22, 108 rea 2.08 hours
+# 10 rea, 1 exp 0:10.00, 100 rea 3.3 hours / 1 exp. 0:14.5, 100 rea 4.84 hours / 1 exp 0:05.64, 100 rea 1.88 hours
+# 20 rea, 1 exp 0:20.00, / 1 exp. 0:32.40, 100 rea 3.12 hours / 1 exp 0:30.60, 100 rea 5.1 hours
+# 30 rea, 1 exp 0:30.00, / 1 exp. 0:46.20, 100 rea 3.12 hours / 1 exp 0:44.50, 100 rea 5.94 hours
+# 35 rea, 1 exp 0:42.00,
+# 40 rea, 1 exp 0:55.00,
+# 50 rea, 1 exp 1:35.00 / 1 exp. 2:08.60 / 1 exp. 2:02.20, 100 rea 8.15 hours
+# 100 rea, 1 exp. 5:35.00,/ one exp. 9:00.00 / 1 exp. 6:36.30, 100 rea 13.21 hours
+# nohub &
+# 120 experiments, one rea 1:30.00, 100 rea 2.5 hours
 # ******************************************************************************************************************
 # Local variables
 stat_list = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_prop_q1', 'st_mid_prop_q1', 'st_end_prop_q1',
@@ -150,6 +139,7 @@ else:
     # For gain control, 100 inputs to a single LIF neuron
     dyn_synapse = True
     num_synapses = num_syn  # 100
+    dr = {}
 
     # Model parameters
     syn_params, description, name_params = get_params_stp(model, ind)
@@ -340,7 +330,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         print_time(m_time() - loop_experiments,
                    "Realisation " + str(realization) + ", frequency " + str(initial_frequencies[i]))
 
-        # """
+        """
         fig = plt.figure(figsize=(10, 4))
         plt.suptitle("For model %s, index %d, frequency %dHz, for %d synapses" % (
             model, ind, initial_frequencies[i], num_synapses))
@@ -637,7 +627,7 @@ plt.savefig(folder_plots + 'test.png', format='png')
 
 # SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
 # AND THE DIFFERENCES BETWEEN MAX OF MID WINDOW AND MEDIAN OF INI WINDOW
-# """
+"""
 dims = total_realizations
 factor = 1  # initial_frequencies  # 1
 fig2 = plt.figure(figsize=(4.5, 4.5))

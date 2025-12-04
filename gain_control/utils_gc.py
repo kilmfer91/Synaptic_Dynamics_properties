@@ -487,3 +487,8 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
             np.median(ff, axis=1), np.quantile(ff, 0.1, axis=1), np.quantile(ff, 0.9, axis=1),
                      np.min(ff, axis=1), np.max(ff, axis=1)]
                     )
+
+
+def sec2hour(secs, exp, realizations):
+    rep = int(np.ceil(100 / realizations))
+    return secs * exp * rep / 3600
