@@ -9,7 +9,7 @@ model = 'MSSM'
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 2
+ind = 4
 save_vars = True
 run_experiment = False
 lif_parallel = True
@@ -18,13 +18,14 @@ Stoch_input = True
 num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 5e3
+sfreq = 2e3
+tau_lif = 1  # ms
 total_realizations = 100  # 100
 num_realizations = 8  # 8 for server, 4 for macbook air
 
 # Input modulations
-range_f = [i for i in range(10, 100, 5)]
-range_f2 = [i for i in range(100, 500, 10)] # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
+range_f = []  # [i for i in range(10, 100, 5)]
+range_f2 = [i for i in range(100, 500, 10)]  # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
 range_f3 = [i for i in range(500, 801, 50)]  # Max prop. freq. must be less than sfreq/4  # 16kHz:2501, 5kHz:801
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
@@ -33,7 +34,7 @@ path_vars = "../gain_control/variables/"
 check_create_folder(path_vars)
 folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
-file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn)
+file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn) + ";_tauLiF_" + str(tau_lif) + "ms"
 if lif_parallel:
     file_name += "_p"
 else:
@@ -162,13 +163,13 @@ else:
     # ******************************************************************************************************************
     # PARAMS FOR LIF MODEL
     lif_params = {'V_threshold': np.array([1000 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
-                  'tau_m': np.array([30e-3 for _ in range(1)]),
+                  'tau_m': np.array([tau_lif * 1e-3 for _ in range(1)]),
                   'g_L': np.array([2.7e-2 for _ in range(1)]),
                   'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
                   't_refractory': np.array([0.01 for _ in range(1)])}
 
     lif_params2 = {'V_threshold': np.array([1000 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
-                   'tau_m': np.array([30e-3 for _ in range(1)]),
+                   'tau_m': np.array([tau_lif * 1e-3 for _ in range(1)]),
                    'g_L': np.array([2.7e-2 for _ in range(1)]),  # 3.21e-3
                    'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
                    't_refractory': np.array([0.001 for _ in range(1)])}

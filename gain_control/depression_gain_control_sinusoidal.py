@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import scipy.signal
 import numpy as np
 
+from gain_control.depression_gain_control_prop_fix import lif_params
 from synaptic_dynamic_models.TM import TM_model
 from synaptic_dynamic_models.MSSM import MSSM_model
 from spiking_neuron_models.LIF import LIF_model
@@ -57,13 +58,13 @@ def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisso
 
 # ******************************************************************************************************************
 # Depression using the MSSM
-model = 'TM'
+model = 'MSSM'
 # (Experiment 2) freq. response decay around 100Hz
 # (Experiment 3) freq. response decay around 10Hz
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 3
+ind = 2
 
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = True
@@ -156,25 +157,21 @@ s_dep.set_simulation_params(sim_params)
 
 # Frequency ranges
 range_f0 = []  # [1, 2, 3, 4]
-range_f1 = [10]  # [i for i in range(10, 100, 5)]
+range_f1 = [100]  # [i for i in range(10, 100, 5)]
 range_f2 = []  # [i for i in range(100, 800, 20)]  # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
 loop_frequencies = np.array(range_f0 + range_f1 + range_f2)
 
 
 # ******************************************************************************************************************
 # PARAMS FOR LIF MODEL
-lif_params = {'V_threshold': np.array([50 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),  # V_th = -55
+# V_th = -55
+lif_params = {'V_threshold': np.array([50 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
               'tau_m': np.array([30e-3 for _ in range(1)]),
               'g_L': np.array([g_L for _ in range(1)]),
               'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
               't_refractory': np.array([0.01 for _ in range(1)])}
 
-lif_params2 = {'V_threshold': np.array([50 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),  # V_th = -55
-               'tau_m': np.array([30e-3 for _ in range(1)]),
-               'g_L': np.array([g_L for _ in range(1)]),  # 3.21e-3
-               'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
-               't_refractory': np.array([0.01 for _ in range(1)])}
-
+lif_params2 = lif_params
 
 # Creating LIF model
 lif = LIF_model(n_neu=1)  # (n_neu=100)
@@ -196,12 +193,12 @@ lif2.set_simulation_params(sim_params)
 # fix_rates =  [[8,50,8], [10,100,10], [12,150,12], [14,200,14], [16,250,16], [18,300,18], [20,350,20], [22,400,22], [24,450,24], [26,500,26], [28,550,28], [30,600,30]]
 
 # Params for sinusoidal envelope of input stimuli
-ini_high_rate = 50 # 50
-step_high_rate = 50 # 10 # 50
-ini_low_rate = 8 # 8
-step_low_rate = 2 # 1  # 2
+ini_high_rate = 50  # 50
+step_high_rate = 50  # 10 # 50
+ini_low_rate = 8  # 8
+step_low_rate = 2  # 1  # 2
 proportion = 0.5  # 0.5
-iterator = 10 # 56  # 12
+iterator = 10  # 56  # 12
 # auxiliars
 ihr = ini_high_rate
 shr = step_high_rate
@@ -210,10 +207,10 @@ slr = step_low_rate
 pr = proportion
 mean_rates = [[(shr * i) + ihr, (slr * i) + ilr, (shr * i) + ihr] for i in range(iterator)]
 max_oscils = [[((shr * i) + ihr) * pr, ((slr * i) + ilr) * pr, ((slr * i) + ilr) * pr] for i in range(iterator)]
-fix_rates =  [[(slr * i) + ilr, (shr * i) + ihr, (slr * i) + ilr] for i in range(iterator)]
-mean_rates = [[50,10,50], [100,10,100],[300,10,300],[500,10,500]] # [[100,10,100]]
-max_oscils = [[25,5,5],   [50,5,5],    [150,5,5],   [250,5,5]]  # [[50,5,5]]
-fix_rates =  [[10,50,10], [10,100,10], [10,300,10], [10,500,10]]  # [[10,100,10]]
+fix_rates = [[(slr * i) + ilr, (shr * i) + ihr, (slr * i) + ilr] for i in range(iterator)]
+mean_rates = [[50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]  # [[100,10,100]]
+max_oscils = [[25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]  # [[50,5,5]]
+fix_rates = [[10,  50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]  # [[10,100,10]]
 
 # Overall variables
 vec_median_mempot, vec_mean_mempot, vec_std_mempot = [], [], []
@@ -256,7 +253,7 @@ if gaincontrol_sinusoidal:
             fig.suptitle(model)
             fig3 = plt.figure(figsize=(6.5, 5))  # 3.5, 7)))
             # fig3 = plt.figure(figsize=(15, 3.2))
-            fig3.suptitle("Types of input")  # , fontsize=21) #  (using windows of 30ms for each change of rate)", fontsize=21)
+            fig3.suptitle("Types of input")  # (using windows of 30ms for each change of rate)", fontsize=21)
             fig4 = plt.figure(figsize=(15, 2))
 
         for i in range(len(mean_rate)):
@@ -828,14 +825,10 @@ if freq_analysis:
     empty_patch = mpatches.Patch(color='none', label=r'$freq_{st}=$%dHz' % freq_st)
     ax1s2.legend(handles=[empty_patch], loc='upper right', fontsize=fonts)
     fig_esann2.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
-
-
-
 # """
 
 # ******************************************************************************************************************
 # FIGURES
-
 """
 plot_title = "Simulation " + model
 subtitle_size = 12
@@ -852,7 +845,6 @@ xlabels = ['time (ms)', 'time (ms)', 'time (ms)', 'time (ms)', 'time (ms)', 'tim
 plot_syn_dyn(time_vectors, plot_title, ind_plots, plots, subplot_title=subplot_title, xlabels=xlabels, ylabels=ylabels,
              plot=True)
 # """
-
 
 """
 freq_fac_vec = [10, 15, 22, 28, 30]
