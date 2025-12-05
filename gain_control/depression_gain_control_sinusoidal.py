@@ -57,21 +57,21 @@ def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisso
 
 # ******************************************************************************************************************
 # Depression using the MSSM
-model = 'MSSM'
+model = 'TM'
 # (Experiment 2) freq. response decay around 100Hz
 # (Experiment 3) freq. response decay around 10Hz
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 4
+ind = 6
 
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = True
 dyn_synapse = True
-gaincontrol_sinusoidal = True
+gaincontrol_sinusoidal = False
 
 # Hyperparameters for frequency analysis and poisson input spike
-freq_analysis = False
+freq_analysis = True
 Poisson = True
 num_syn = 200
 
@@ -144,18 +144,20 @@ L = time_vector.shape[0]
 params = dict(zip(name_params, val_params))
 sim_params = {'sfreq': sfreq, 'max_t': max_t, 'L': L, 'time_vector': time_vector}
 
-# Creating MSSM
-mssm = MSSM_model(n_syn=num_syn)
-mssm.set_model_params(params)
-mssm.set_simulation_params(sim_params)
+# Creating STP model
+stp_model = MSSM_model(n_syn=num_syn)
+if model == "TM": stp_model = TM_model(n_syn=num_syn)
+
+stp_model.set_model_params(params)
+stp_model.set_simulation_params(sim_params)
 # Creating simple depression model
 s_dep = Simple_Depression(n_syn=num_syn)
 s_dep.set_simulation_params(sim_params)
 
 # Frequency ranges
-range_f0 = [1, 2, 3, 4]
-range_f1 = [i for i in range(10, 100, 5)]
-range_f2 = [i for i in range(100, 800, 20)]  # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
+range_f0 = []  # [1, 2, 3, 4]
+range_f1 = [10]  # [i for i in range(10, 100, 5)]
+range_f2 = []  # [i for i in range(100, 800, 20)]  # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
 loop_frequencies = np.array(range_f0 + range_f1 + range_f2)
 
 
@@ -251,7 +253,7 @@ if gaincontrol_sinusoidal:
         if plots_net:
             # Plotting
             fig = plt.figure(figsize=(10, 5))
-            fig.suptitle("MSSM")
+            fig.suptitle(model)
             fig3 = plt.figure(figsize=(6.5, 5))  # 3.5, 7)))
             # fig3 = plt.figure(figsize=(15, 3.2))
             fig3.suptitle("Types of input")  # , fontsize=21) #  (using windows of 30ms for each change of rate)", fontsize=21)
@@ -288,7 +290,7 @@ if gaincontrol_sinusoidal:
 
             # Running STP model
             if dyn_synapse:
-                model_stp(mssm, lif, params, Input_test)
+                model_stp(stp_model, lif, params, Input_test)
             else:
                 static_synapse(lif, Input_test, 0.0125)
 
@@ -396,8 +398,8 @@ if gaincontrol_sinusoidal:
                 plot_mod2 = modulation_signal2
                 plot_s1 = modulated_signal1[0, :]
                 plot_s2 = modulated_signal2[0, :]
-                plot_SD1 = mssm.get_output()[0, :]
-                plot_SD2 = mssm.get_output()[100, :]
+                plot_SD1 = stp_model.get_output()[0, :]
+                plot_SD2 = stp_model.get_output()[100, :]
                 legend_1 = legend1
                 legend_2 = legend2
 
@@ -406,8 +408,8 @@ if gaincontrol_sinusoidal:
                     plot_mod2 = modulation_signal1
                     plot_s1 = modulated_signal2[0, :]
                     plot_s2 = modulated_signal1[0, :]
-                    plot_SD1 = mssm.get_output()[100, :]
-                    plot_SD2 = mssm.get_output()[0, :]
+                    plot_SD1 = stp_model.get_output()[100, :]
+                    plot_SD2 = stp_model.get_output()[0, :]
                     legend_1 = legend2
                     legend_2 = legend1
 
@@ -420,8 +422,8 @@ if gaincontrol_sinusoidal:
                 if i == 0: ax1.set_title("Input", c='gray')
 
                 ax2 = fig.add_subplot(3, 3, (i * 3) + 2)
-                ax2.plot(time_vector, np.mean(mssm.get_output()[:100, :], axis=0), alpha=0.8)
-                ax2.plot(time_vector, np.mean(mssm.get_output()[100:, :], axis=0), alpha=0.8)
+                ax2.plot(time_vector, np.mean(stp_model.get_output()[:100, :], axis=0), alpha=0.8)
+                ax2.plot(time_vector, np.mean(stp_model.get_output()[100:, :], axis=0), alpha=0.8)
                 ax2.grid()
                 if i == 0: ax2.set_title(r'Sine of $\mu$ %d and A %d' % (mean_rate[i], max_oscil[i]), c='gray')
 
@@ -781,11 +783,11 @@ fig2.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 # FREQUENCY ANALYSIS
 ini_loop_time = m_time()
 if freq_analysis:
-    fa = Freq_analysis(max_t=max_t, end_t=max_imp, sfreq=sfreq, loop_f=loop_frequencies, n_syn=num_syn)  # loop_frequencies
-    fa.set_model(model_str="MSSM", sim_params=sim_params, name_params=list(params.keys()),
+    fa = Freq_analysis(sim_params=stp_model.sim_params, loop_f=loop_frequencies, n_syn=num_syn)  # loop_frequencies
+    fa.set_model(model_str=model, sim_params=sim_params, name_params=list(params.keys()),
                  model_params=list(params.values()))
     fa.run()
-    plot_freq_analysis(fa, " MSSM a")
+    plot_freq_analysis(fa, " " + model + " a")
     print_time(m_time() - ini_loop_time, "Time for frequency analysis")
 
     netmem = fa.efficacy[0, :] * loop_frequencies
@@ -835,15 +837,15 @@ if freq_analysis:
 # FIGURES
 
 """
-plot_title = "Simulation MSSM"
+plot_title = "Simulation " + model
 subtitle_size = 12
 subtitle_color = 'gray'
 org_plots = 330
 ind_plots = [org_plots + 1, org_plots + 2, org_plots + 3, org_plots + 4, org_plots + 5, org_plots + 6, org_plots + 7]
 time_vectors = [time_vector for _ in range(len(ind_plots))]
-plots = [Input[0, :], np.mean(mssm.C, axis=0), np.mean(mssm.V, axis=0), np.mean(mssm.P, axis=0),
-         np.mean(mssm.N, axis=0), np.mean(mssm.EPSP, axis=0), np.mean(lif.membrane_potential, axis=0)]
-subplot_title = ["Input of MSSM", "Calcium", "Vesicles", "Probability", "Neurotransmitters", "EPSP", 
+plots = [Input[0, :], np.mean(stp_model.C, axis=0), np.mean(stp_model.V, axis=0), np.mean(stp_model.P, axis=0),
+         np.mean(stp_model.N, axis=0), np.mean(stp_model.EPSP, axis=0), np.mean(lif.membrane_potential, axis=0)]
+subplot_title = ["Input of " + model, "Calcium", "Vesicles", "Probability", "Neurotransmitters", "EPSP", 
                  "membrane potential"]
 ylabels = [None, None, None, None, None, None, None]
 xlabels = ['time (ms)', 'time (ms)', 'time (ms)', 'time (ms)', 'time (ms)', 'time (ms)', 'time (ms)']

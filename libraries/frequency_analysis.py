@@ -269,6 +269,15 @@ class Freq_analysis:
             aux_time_max = phasic_ind_max * self.dt
             aux_time_max_tonic = tonic_ind_max * self.dt
 
+            """
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.plot(self.time_vector, model_output[0, :], label="phasic effect")
+            ax.set_xlabel("time (s)")
+            ax.set_ylabel(r"$E_{psp}$(t)")
+            ax.grid(True)
+            # """
+
             # Update times of maximum and stedy-state
             self.time_max.append(aux_time_max)
             self.time_ss.append(aux_time_ss)

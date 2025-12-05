@@ -22,47 +22,54 @@ def get_params_stp(name_model, ind):
 
     # (Experiment 2) freq. response decay around 100Hz {5: 0.99, 10: 0.9, 20: 0.8, 50: 0.7, 100: 0.5, 200: 0.2}
     if name_model == "MSSM" and ind == 2:
-        description = str(ind) + " Experiment, decay around 100Hz"
+        description = "MSSM " + str(ind) + " Experiment, decay around 100Hz"
         syn_params = [5.42451963e-02, 2.92925980e+00, 6.67821125e+01, 1.80143000e-02, 7.54167519e-01,
                       5.99119322e+01, 9.94215228e-01, 1.03825167e-03,
                       (4.52507712e-01 * 0.075) / 779.1984, 1.00243185e-03]  # 4.52507712e-01, g_L = 5e-6 homogeneous / 4.6e-3 poisson
     if name_model == "TM" and ind == 2:
-        description = str(ind) + " Experiment, decay around 100Hz"
-        syn_params = [1.32748878e-01, 2.19116160e-02, 1.32465006e-01, 2.16882855e-00, 1.00766466e-03]  #
+        description = "TM " + str(ind) + " Experiment, decay around 100Hz"
+        syn_params = [1.32748878e-01, 2.19116160e-02, 1.32465006e-01, 2.16882855e-00 * 2.60498474e-1, 1.00766466e-03]  #
     # (Experiment 3) freq. response decay around 10Hz {2: 0.88946682, 5: 0.70155924, 10: 0.57552428, 15: 0.2, 20: 0.1, 50: 0.07}
     if name_model == "MSSM" and ind == 3:
-        description = str(ind) + " Experiment, decay around 10Hz"
+        description = "MSSM " + str(ind) + " Experiment, decay around 10Hz"
         syn_params = [6.53659368e-03, 1.75660742e-01, 3.17123087e+01, 1.78659320e-01, 2.50362727e-01,
-                      9.12004545e+01, 9.13420672e-01, 2.14204288e-03,
-                      5.20907890e-03 / 4.29, 4.32890680e-03]  # 5.20907890e-01, g_L = 2.6e-2 homogeneous / 4.6e-2 poisson
+                      9.12004545e+01, 9.13420672e-01, 2.14204288e-03, 5.20907890e-03 / 4.29, 4.32890680e-03]  # 5.20907890e-01, g_L = 2.6e-2 homogeneous / 4.6e-2 poisson
     if name_model == "TM" and ind == 3:
-        description = str(ind) + " Experiment, decay around 10Hz"
-        syn_params = [2.37698417e-01, 3.30564024e-01, 8.51177265e-01, 3.67454564e-01, 3.04982285e-03]  #
+        description = "TM " + str(ind) + " Experiment, decay around 10Hz"
+        syn_params = [2.37698417e-01, 3.30564024e-01, 8.51177265e-01, 3.67454564e-01 * 8.58679963e-1, 3.04982285e-03]  #
     # (Experiment 4) freq. response from Gain Control paper {5: 0.785, 10: 0.6, 20: 0.415, 50: 0.205, 100: 0.115}
     if name_model == "MSSM" and ind == 4:
-        description = str(ind) + " Experiment, Gain-Control paper"
+        description = "MSSM " + str(ind) + " Experiment, Gain-Control paper"
         syn_params = [7.85735182e-02, 4.56599128e-01, 1.46835212e+00, 1.63998958e-01, 2.41885797e-04,
                       5.84619146e+01, 8.00871281e-01, 1.50280526e-03,
                       (5.94890729e-02 * 0.075) / 1.0217, 1.75609424e-03]  # 5.94890729e-01, g_L = 5.4e-4 homogeneous / 3.21e-3 poisson [1.36e-3 for subthreshold]  # g_L = 5.4e-5 for static synapse
     if name_model == "TM" and ind == 4:
-        description = str(ind) + " Experiment, Gain-Control paper"
-        syn_params = [3.79643805e-01, 3.71724581e-02, 2.31713484e-01, 4.71504487e-01, 3.55003518e-03]  #
+        description = "TM " + str(ind) + " Experiment, Gain-Control paper"
+        syn_params = [3.79643805e-01, 3.71724581e-02, 2.31713484e-01, 4.71504487e-01 * 4.18985618e-1, 3.55003518e-03]  #
     # (Experiment 5) freq. response decay around 100Hz {5: 0.99, 10: 0.9, 20: 0.8, 50: 0.7, 100: 0.5, 200: 0.2}
     if name_model == "MSSM" and ind == 5:
-        description = str(ind) + " Experiment, decay around 100Hz"
+        description = "MSSM " + str(ind) + " Experiment, decay around 100Hz"
         syn_params = [3.03503488e-02, 1.49534243e-01, 1.27807004e+00, 8.32749189e-02,
                       1.03652329e-03, 7.06246475e+01, 9.84186889e-01, 1.00258903e-03,
                       (4.42926340e-01 * 0.075) / 2.975, 1.00046291e-03]  # g_L = 2.46e-1 poisson
     if name_model == "TM" and ind == 5:
-        description = str(ind) + " Experiment, decay around 100Hz"
-        syn_params = [1.31247486e-01, 2.18003024e-02, 1.33872486e-01, 3.17757124e-00,  1.01522251e-03]  #
+        description = "TM " + str(ind) + " Experiment, decay around 100Hz"
+        syn_params = [1.31247486e-01, 2.18003024e-02, 1.33872486e-01, 3.17757124e-00 * 1.79835313e-1, 1.01522251e-03]  #
     # (Experiment 6) freq. response decay around 10Hz {[2:0.88946682, 4:0.70155924, 5.4:0.57552428, 10:0.2, 15:0.1, 30:0.06, 50:0.035]
     if name_model == "MSSM" and ind == 6:
-        description = str(ind) + " Experiment, decay around 10Hz"
+        description = "MSSM " + str(ind) + " Experiment, decay around 10Hz"
         syn_params = [3.61148253e-03, 9.98782883e-02, 9.99236857e+00, 2.81436921e-01,
                       1.97666651e-02, 1.00657445e+01, 7.39059950e-01, 1.07519099e-03,
                       3.11356220e-01 * 1e-2, 1.74116605e-03]  # g_L = 1.4e-1 poisson [6.4e-2 subthreshold]
-
+    if name_model == "TM" and ind == 6:
+        description = "TM " + str(ind) + " Experiment, decay around 100Hz"
+        syn_params = [3.94924669e-01, 8.23537249e-01, 7.81110270e-01, 8.16033593e+03 * 2.32722819e-05, 1.77108850e-03]
+    # (Experiment 7) freq. response facilitation {5:2.65, 8:3.72, 9:4.05, 10:4.34, 23:6.44, 50:5.88, 100:4.05, 149:3.08}
+    if name_model == "MSSM" and ind == 7:
+        description = "MSSM " + str(ind) + " Experiment, facilitation"
+        syn_params = [4.99904393e-02, 1.28833999e-02, 2.92508311e+00, 4.88095651e-02,
+                      2.11579945e-04, 6.46772602e+01, 7.71595702e-01, 1.52095675e-03,
+                      1.76132558e-01 * 9e-2, 4.36917566e-03]
     # params_s_dep = {'tau_g': 2e-3, 'tau_alpha': 300e-3, 'g0': 0.075, 'f': 0.75}
     assert syn_params is not None, "Not parameters for model %s and index %d" % (name_model, ind)
 
@@ -70,7 +77,6 @@ def get_params_stp(name_model, ind):
 
 
 def static_synapse(lif, Input, g):
-
     # Number of samples
     L = Input.shape[1]
 
@@ -89,7 +95,6 @@ def static_synapse(lif, Input, g):
 
 
 def model_stp(mssm, lif, params, Input, lif_n=None):
-
     # Update parameters and initial conditions
     mssm.set_model_params(params)
 
@@ -110,7 +115,6 @@ def model_stp(mssm, lif, params, Input, lif_n=None):
         if lif_n is not None:
             lif_n.update_state(mssm.N[:, it], it)
 
-
     # Computing output spike event in the last ISI
     it = L
     lif.membrane_potential[0, -1] = lif.membrane_potential[0, -2]
@@ -121,7 +125,6 @@ def model_stp(mssm, lif, params, Input, lif_n=None):
 
 
 def model_stp_parallel(stp_model, lif, params, Input, lif_n=None):
-
     # Update parameters and initial conditions
     stp_model.set_model_params(params)
 
@@ -163,7 +166,8 @@ def model_stp_parallel(stp_model, lif, params, Input, lif_n=None):
             # Converting model output into matrix alike
             aux_input_n = np.resize(np.repeat(stp_model.N[:, it], num_neu), (num_syn * num_neu, num_neu))
             c = aux_input_n * connectivity
-            input_lif_n = np.matmul(c.T, id_rep).T * stp_model.params['k_EPSP'] / 2  # k_EPSP/2, factor to transform N(t) into the small range as Epsp(t)
+            input_lif_n = np.matmul(c.T, id_rep).T * stp_model.params[
+                'k_EPSP'] / 2  # k_EPSP/2, factor to transform N(t) into the small range as Epsp(t)
 
             # Evaluating change in LIF neuron - membrane potential
             # lif.update_state(mssm.get_output()[:, it], it)
@@ -179,7 +183,6 @@ def model_stp_parallel(stp_model, lif, params, Input, lif_n=None):
 
 
 def model_simple_dep(s_dep, lif, params, Input):
-
     # Update parameters and initial conditions
     s_dep.set_model_params(params)
 
@@ -280,7 +283,6 @@ def correct_poisson_spike_trains(Input_aux, num_realizations, seed=None, imputat
 
 def simple_spike_train(sfreq, rate, L, num_realizations=1, poisson=False, seeds=None, correction=False,
                        imputation=True):
-
     seed = None
     if seeds is not None:
         assert isinstance(seeds, list), "seeds must be a list"
@@ -463,28 +465,28 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     o = sig_cons[:, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr) / dt)]  # [, 4s:4.5s]
 
     return np.array([np.median(a, axis=1), np.median(b, axis=1), np.median(c, axis=1),
-            np.quantile(a, 0.1, axis=1), np.quantile(b, 0.1, axis=1), np.quantile(c, 0.1, axis=1),
-            np.quantile(a, 0.9, axis=1), np.quantile(b, 0.9, axis=1), np.quantile(c, 0.9, axis=1),
-            np.min(a, axis=1), np.min(b, axis=1), np.min(c, axis=1),
-            np.max(a, axis=1), np.max(b, axis=1), np.max(c, axis=1),
-            np.median(d, axis=1), np.median(e, axis=1), np.median(f, axis=1),
-            np.quantile(d, 0.1, axis=1), np.quantile(e, 0.1, axis=1), np.quantile(f, 0.1, axis=1),
-            np.quantile(d, 0.9, axis=1), np.quantile(e, 0.9, axis=1), np.quantile(f, 0.9, axis=1),
-            np.min(d, axis=1), np.min(e, axis=1), np.min(f, axis=1),
-            np.max(d, axis=1), np.max(e, axis=1), np.max(f, axis=1),
-            np.max(g, axis=1), np.max(h, axis=1), np.min(k, axis=1),
-            np.max(m, axis=1), np.max(n, axis=1), np.min(o, axis=1),
-            np.median(aa, axis=1), np.quantile(aa, 0.1, axis=1), np.quantile(aa, 0.9, axis=1),
+                     np.quantile(a, 0.1, axis=1), np.quantile(b, 0.1, axis=1), np.quantile(c, 0.1, axis=1),
+                     np.quantile(a, 0.9, axis=1), np.quantile(b, 0.9, axis=1), np.quantile(c, 0.9, axis=1),
+                     np.min(a, axis=1), np.min(b, axis=1), np.min(c, axis=1),
+                     np.max(a, axis=1), np.max(b, axis=1), np.max(c, axis=1),
+                     np.median(d, axis=1), np.median(e, axis=1), np.median(f, axis=1),
+                     np.quantile(d, 0.1, axis=1), np.quantile(e, 0.1, axis=1), np.quantile(f, 0.1, axis=1),
+                     np.quantile(d, 0.9, axis=1), np.quantile(e, 0.9, axis=1), np.quantile(f, 0.9, axis=1),
+                     np.min(d, axis=1), np.min(e, axis=1), np.min(f, axis=1),
+                     np.max(d, axis=1), np.max(e, axis=1), np.max(f, axis=1),
+                     np.max(g, axis=1), np.max(h, axis=1), np.min(k, axis=1),
+                     np.max(m, axis=1), np.max(n, axis=1), np.min(o, axis=1),
+                     np.median(aa, axis=1), np.quantile(aa, 0.1, axis=1), np.quantile(aa, 0.9, axis=1),
                      np.min(aa, axis=1), np.max(aa, axis=1),
-            np.median(bb, axis=1), np.quantile(bb, 0.1, axis=1), np.quantile(bb, 0.9, axis=1),
+                     np.median(bb, axis=1), np.quantile(bb, 0.1, axis=1), np.quantile(bb, 0.9, axis=1),
                      np.min(bb, axis=1), np.max(bb, axis=1),
-            np.median(cc, axis=1), np.quantile(cc, 0.1, axis=1), np.quantile(cc, 0.9, axis=1),
+                     np.median(cc, axis=1), np.quantile(cc, 0.1, axis=1), np.quantile(cc, 0.9, axis=1),
                      np.min(cc, axis=1), np.max(cc, axis=1),
-            np.median(dd, axis=1), np.quantile(dd, 0.1, axis=1), np.quantile(dd, 0.9, axis=1),
+                     np.median(dd, axis=1), np.quantile(dd, 0.1, axis=1), np.quantile(dd, 0.9, axis=1),
                      np.min(dd, axis=1), np.max(dd, axis=1),
-            np.median(ee, axis=1), np.quantile(ee, 0.1, axis=1), np.quantile(ee, 0.9, axis=1),
+                     np.median(ee, axis=1), np.quantile(ee, 0.1, axis=1), np.quantile(ee, 0.9, axis=1),
                      np.min(ee, axis=1), np.max(ee, axis=1),
-            np.median(ff, axis=1), np.quantile(ff, 0.1, axis=1), np.quantile(ff, 0.9, axis=1),
+                     np.median(ff, axis=1), np.quantile(ff, 0.1, axis=1), np.quantile(ff, 0.9, axis=1),
                      np.min(ff, axis=1), np.max(ff, axis=1)]
                     )
 
