@@ -63,7 +63,7 @@ model = 'TM'
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 6
+ind = 3
 
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = True
