@@ -3,38 +3,38 @@ from gain_control.utils_gc import *
 
 # ******************************************************************************************************************
 # STP model and extra global variables
-model = 'MSSM'
+model = 'TM'
 # (Experiment 2) freq. response decay around 100Hz
 # (Experiment 3) freq. response decay around 10Hz
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 4
+ind = 5
 save_vars = True
 run_experiment = False
 lif_parallel = True
-imputations = True
+imputations = False
 Stoch_input = True
-num_syn = 1
+num_syn = 100
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 2e3
+sfreq = 5e3
 tau_lif = 1  # ms
 total_realizations = 100  # 100
 num_realizations = 8  # 8 for server, 4 for macbook air
 
 # Input modulations
-range_f = []  # [i for i in range(10, 100, 5)]
-range_f2 = [i for i in range(100, 500, 10)]  # [i for i in range(100, 500, 10)] [i for i in range(100, 321, 10)]
+range_f = [i for i in range(10, 100, 5)]
+range_f2 = [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
 range_f3 = [i for i in range(500, 801, 50)]  # Max prop. freq. must be less than sfreq/4  # 16kHz:2501, 5kHz:801
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
-path_vars = "../gain_control/variables/"
+path_vars = "./gain_control/variables/"
 check_create_folder(path_vars)
-folder_plots = '../gain_control/plots/'
+folder_plots = './gain_control/plots/'
 check_create_folder(folder_plots)
-file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn) + ";_tauLiF_" + str(tau_lif) + "ms"
+file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn) + "_tauLiF_" + str(tau_lif) + "ms"
 if lif_parallel:
     file_name += "_p"
 else:
