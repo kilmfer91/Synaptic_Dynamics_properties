@@ -3,36 +3,36 @@ from gain_control.utils_gc import *
 
 # ******************************************************************************************************************
 # STP model and extra global variables
-model = 'TM'
+model = 'MSSM'
 # (Experiment 2) freq. response decay around 100Hz
 # (Experiment 3) freq. response decay around 10Hz
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 5
+ind = 4
 save_vars = True
 run_experiment = False
 lif_parallel = True
-imputations = False
+imputations = True
 Stoch_input = True
-num_syn = 100
+num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 5e3
 tau_lif = 1  # ms
-total_realizations = 100  # 100
-num_realizations = 8  # 8 for server, 4 for macbook air
+total_realizations = 1  # 100
+num_realizations = 1  # 8 for server, 4 for macbook air
 
 # Input modulations
-range_f = [i for i in range(10, 100, 5)]
-range_f2 = [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
-range_f3 = [i for i in range(500, 801, 50)]  # Max prop. freq. must be less than sfreq/4  # 16kHz:2501, 5kHz:801
+range_f = [10, 50, 80]  # [i for i in range(10, 100, 5)]
+range_f2 = [100, 200]  # [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
+range_f3 = [400]  # [i for i in range(500, 801, 50)]  # Max prop. freq. must be less than sfreq/4  # 16kHz:2501, 5kHz:801
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
-path_vars = "./gain_control/variables/"
+path_vars = "../gain_control/variables/"
 check_create_folder(path_vars)
-folder_plots = './gain_control/plots/'
+folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
 file_name = model + "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn) + "_tauLiF_" + str(tau_lif) + "ms"
 if lif_parallel:
@@ -65,33 +65,46 @@ print("For file %s and index %d" % (file_name, ind))
 # 120 experiments, one rea 1:30.00, 100 rea 2.5 hours
 # ******************************************************************************************************************
 # Local variables
-stat_list = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_prop_q1', 'st_mid_prop_q1', 'st_end_prop_q1',
-             'st_ini_prop_q90', 'st_mid_prop_q90', 'st_end_prop_q90', 'st_ini_prop_min', 'st_mid_prop_min',
-             'st_end_prop_min', 'st_ini_prop_max', 'st_mid_prop_max', 'st_end_prop_max',
-             'st_ini_fix', 'st_mid_fix', 'st_end_fix', 'st_ini_fix_q1', 'st_mid_fix_q1', 'st_end_fix_q1',
-             'st_ini_fix_q90', 'st_mid_fix_q90', 'st_end_fix_q90', 'st_ini_fix_min', 'st_mid_fix_min',
-             'st_end_fix_min', 'st_ini_fix_max', 'st_mid_fix_max', 'st_end_fix_max',
-             'mtr_ini_prop', 'mtr_mid_prop', 'mtr_end_prop', 'mtr_ini_fix', 'mtr_mid_fix', 'mtr_end_fix',
-             'w_ini_prop', 'w_ini_prop_q1', 'w_ini_prop_q90', 'w_ini_prop_min', 'w_ini_prop_max',
-             'w_mid_prop', 'w_mid_prop_q1', 'w_mid_prop_q90', 'w_mid_prop_min', 'w_mid_prop_max',
-             'w_end_prop', 'w_end_prop_q1', 'w_end_prop_q90', 'w_end_prop_min', 'w_end_prop_max',
-             'w_ini_fix', 'w_ini_fix_q1', 'w_ini_fix_q90', 'w_ini_fix_min', 'w_ini_fix_max',
-             'w_mid_fix', 'w_mid_fix_q1', 'w_mid_fix_q90', 'w_mid_fix_min', 'w_mid_fix_max',
-             'w_end_fix', 'w_end_fix_q1', 'w_end_fix_q90', 'w_end_fix_min', 'w_end_fix_max',
-             'st_n_ini_prop', 'st_n_mid_prop', 'st_n_end_prop', 'st_n_ini_prop_q1', 'st_n_mid_prop_q1',
-             'st_n_end_prop_q1',
-             'st_n_ini_prop_q90', 'st_n_mid_prop_q90', 'st_n_end_prop_q90', 'st_n_ini_prop_min', 'st_n_mid_prop_min',
-             'st_n_end_prop_min', 'st_n_ini_prop_max', 'st_n_mid_prop_max', 'st_n_end_prop_max',
-             'st_n_ini_fix', 'st_n_mid_fix', 'st_n_end_fix', 'st_n_ini_fix_q1', 'st_n_mid_fix_q1', 'st_n_end_fix_q1',
-             'st_n_ini_fix_q90', 'st_n_mid_fix_q90', 'st_n_end_fix_q90', 'st_n_ini_fix_min', 'st_n_mid_fix_min',
-             'st_n_end_fix_min', 'st_n_ini_fix_max', 'st_n_mid_fix_max', 'st_n_end_fix_max',
-             'mtr_n_ini_prop', 'mtr_n_mid_prop', 'mtr_n_end_prop', 'mtr_n_ini_fix', 'mtr_n_mid_fix', 'mtr_n_end_fix',
-             'w_n_ini_prop', 'w_n_ini_prop_q1', 'w_n_ini_prop_q90', 'w_n_ini_prop_min', 'w_n_ini_prop_max',
-             'w_n_mid_prop', 'w_n_mid_prop_q1', 'w_n_mid_prop_q90', 'w_n_mid_prop_min', 'w_n_mid_prop_max',
-             'w_n_end_prop', 'w_n_end_prop_q1', 'w_n_end_prop_q90', 'w_n_end_prop_min', 'w_n_end_prop_max',
-             'w_n_ini_fix', 'w_n_ini_fix_q1', 'w_n_ini_fix_q90', 'w_n_ini_fix_min', 'w_n_ini_fix_max',
-             'w_n_mid_fix', 'w_n_mid_fix_q1', 'w_n_mid_fix_q90', 'w_n_mid_fix_min', 'w_n_mid_fix_max',
-             'w_n_end_fix', 'w_n_end_fix_q1', 'w_n_end_fix_q90', 'w_n_end_fix_min', 'w_n_end_fix_max',
+stat_list = ['st_ini_prop_mean', 'st_mid_prop_mean', 'st_end_prop_mean',
+             'st_ini_prop_med', 'st_mid_prop_med', 'st_end_prop_med',
+             'st_ini_prop_q1', 'st_mid_prop_q1', 'st_end_prop_q1',
+             'st_ini_prop_q90', 'st_mid_prop_q90', 'st_end_prop_q90',
+             'st_ini_prop_min', 'st_mid_prop_min', 'st_end_prop_min',
+             'st_ini_prop_max', 'st_mid_prop_max', 'st_end_prop_max',
+             'st_ini_fix_mean', 'st_mid_fix_mean', 'st_end_fix_mean',
+             'st_ini_fix_med', 'st_mid_fix_med', 'st_end_fix_med',
+             'st_ini_fix_q1', 'st_mid_fix_q1', 'st_end_fix_q1',
+             'st_ini_fix_q90', 'st_mid_fix_q90', 'st_end_fix_q90',
+             'st_ini_fix_min', 'st_mid_fix_min', 'st_end_fix_min',
+             'st_ini_fix_max', 'st_mid_fix_max', 'st_end_fix_max',
+             'mtr_ini_prop', 'mtr_mid_prop', 'mtr_end_prop',
+             'mtr_ini_fix', 'mtr_mid_fix', 'mtr_end_fix',
+             'w_ini_prop_mean', 'w_ini_prop_med', 'w_ini_prop_q1', 'w_ini_prop_q90', 'w_ini_prop_min', 'w_ini_prop_max',
+             'w_mid_prop_mean', 'w_mid_prop_med', 'w_mid_prop_q1', 'w_mid_prop_q90', 'w_mid_prop_min', 'w_mid_prop_max',
+             'w_end_prop_mean', 'w_end_prop_med', 'w_end_prop_q1', 'w_end_prop_q90', 'w_end_prop_min', 'w_end_prop_max',
+             'w_ini_fix_mean', 'w_ini_fix_med', 'w_ini_fix_q1', 'w_ini_fix_q90', 'w_ini_fix_min', 'w_ini_fix_max',
+             'w_mid_fix_mean', 'w_mid_fix_med', 'w_mid_fix_q1', 'w_mid_fix_q90', 'w_mid_fix_min', 'w_mid_fix_max',
+             'w_end_fix_mean', 'w_end_fix_med', 'w_end_fix_q1', 'w_end_fix_q90', 'w_end_fix_min', 'w_end_fix_max',
+             # 'st_n_ini_prop_mean', 'st_n_mid_prop_mean', 'st_n_end_prop_mean',
+             # 'st_n_ini_prop_med', 'st_n_mid_prop_med', 'st_n_end_prop_med',
+             # 'st_n_ini_prop_q1', 'st_n_mid_prop_q1', 'st_n_end_prop_q1',
+             # 'st_n_ini_prop_q90', 'st_n_mid_prop_q90', 'st_n_end_prop_q90',
+             # 'st_n_ini_prop_min', 'st_n_mid_prop_min', 'st_n_end_prop_min',
+             # 'st_n_ini_prop_max', 'st_n_mid_prop_max', 'st_n_end_prop_max',
+             # 'st_n_ini_fix_mean', 'st_n_mid_fix_mean', 'st_n_end_fix_mean',
+             # 'st_n_ini_fix_med', 'st_n_mid_fix_med', 'st_n_end_fix_med',
+             # 'st_n_ini_fix_q1', 'st_n_mid_fix_q1', 'st_n_end_fix_q1',
+             # 'st_n_ini_fix_q90', 'st_n_mid_fix_q90', 'st_n_end_fix_q90',
+             # 'st_n_ini_fix_min', 'st_n_mid_fix_min', 'st_n_end_fix_min',
+             # 'st_n_ini_fix_max', 'st_n_mid_fix_max', 'st_n_end_fix_max',
+             # 'mtr_n_ini_prop', 'mtr_n_mid_prop', 'mtr_n_end_prop',
+             # 'mtr_n_ini_fix', 'mtr_n_mid_fix', 'mtr_n_end_fix',
+             # 'w_n_ini_prop_mean', 'w_n_ini_prop_med', 'w_n_ini_prop_q1', 'w_n_ini_prop_q90', 'w_n_ini_prop_min', 'w_n_ini_prop_max',
+             # 'w_n_mid_prop_mean', 'w_n_mid_prop_med', 'w_n_mid_prop_q1', 'w_n_mid_prop_q90', 'w_n_mid_prop_min', 'w_n_mid_prop_max',
+             # 'w_n_end_prop_mean', 'w_n_end_prop_med', 'w_n_end_prop_q1', 'w_n_end_prop_q90', 'w_n_end_prop_min', 'w_n_end_prop_max',
+             # 'w_n_ini_fix_mean', 'w_n_ini_fix_med', 'w_n_ini_fix_q1', 'w_n_ini_fix_q90', 'w_n_ini_fix_min', 'w_n_ini_fix_max',
+             # 'w_n_mid_fix_mean', 'w_n_mid_fix_med', 'w_n_mid_fix_q1', 'w_n_mid_fix_q90', 'w_n_mid_fix_min', 'w_n_mid_fix_max',
+             # 'w_n_end_fix_mean', 'w_n_end_fix_med', 'w_n_end_fix_q1', 'w_n_end_fix_q90', 'w_n_end_fix_min', 'w_n_end_fix_max',
              'initial_frequencies', 'stp_model', 'name_params', 'dyn_synapse', 'num_synapses', 'syn_params',
              'sim_params', 'lif_params', 'lif_params2', 'prop_rate_change_a', 'fix_rate_change_a', 'num_changes_rate',
              'description', 'seeds', 'realizations', 't_realizations']
@@ -216,20 +229,20 @@ lif_prop = LIF_model(n_neu=1)
 if lif_parallel: lif_prop = LIF_model(n_neu=num_realizations)
 lif_prop.set_model_params(lif_params)
 lif_prop_n = None
-if model == "MSSM":
-    lif_prop_n = LIF_model(n_neu=1)
-    if lif_parallel: lif_prop_n = LIF_model(n_neu=num_realizations)
-    lif_prop_n.set_model_params(lif_params)
+# if model == "MSSM":
+#     lif_prop_n = LIF_model(n_neu=1)
+#     if lif_parallel: lif_prop_n = LIF_model(n_neu=num_realizations)
+#     lif_prop_n.set_model_params(lif_params)
 
 # Creating LIF models for constant rate change
 lif_fix = LIF_model(n_neu=1)
 if lif_parallel: lif_fix = LIF_model(n_neu=num_realizations)
 lif_fix.set_model_params(lif_params2)
 lif_fix_n = None
-if model == "MSSM":
-    lif_fix_n = LIF_model(n_neu=1)
-    if lif_parallel: lif_fix_n = LIF_model(n_neu=num_realizations)
-    lif_fix_n.set_model_params(lif_params2)
+# if model == "MSSM":
+#     lif_fix_n = LIF_model(n_neu=1)
+#     if lif_parallel: lif_fix_n = LIF_model(n_neu=num_realizations)
+#     lif_fix_n.set_model_params(lif_params2)
 
 # Setting proportional and fixed rates of change
 proportional_rate_change = prop_rate_change_a[0]  # [k]
@@ -238,10 +251,10 @@ constant_changes = proportional_rate_change * initial_frequencies + initial_freq
 fixed_changes = fixed_rate_change + initial_frequencies
 
 # Auxiliar variables for statistics
-res_per_reali = np.zeros((66, num_experiments, num_realizations))
-res_real = np.zeros((66, total_realizations, num_experiments))
-res_per_reali_n = np.zeros((66, num_experiments, num_realizations))
-res_real_n = np.zeros((66, total_realizations, num_experiments))
+res_per_reali = np.zeros((78, num_experiments, num_realizations))
+res_real = np.zeros((78, total_realizations, num_experiments))
+# res_per_reali_n = np.zeros((78, num_experiments, num_realizations))
+# res_real_n = np.zeros((78, total_realizations, num_experiments))
 
 ini_loop_time = m_time()
 print("Ini big loop")
@@ -303,9 +316,9 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
             lif_prop.set_simulation_params(sim_params)
             stp_fix.set_initial_conditions()
             lif_fix.set_simulation_params(sim_params)
-            if model == "MSSM":
-                lif_prop_n.set_simulation_params(sim_params)
-                lif_fix_n.set_simulation_params(sim_params)
+            # if model == "MSSM":
+                # lif_prop_n.set_simulation_params(sim_params)
+                # lif_fix_n.set_simulation_params(sim_params)
             # Running the models
             if lif_parallel:
                 model_stp_parallel(stp_prop, lif_prop, params, cons_input, lif_prop_n)
@@ -331,7 +344,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         print_time(m_time() - loop_experiments,
                    file_name + ", Realisation " + str(realization) + ", frequency " + str(initial_frequencies[i]))
 
-        """
+        # """
         fig = plt.figure(figsize=(10, 4))
         plt.suptitle("For model %s, index %d, frequency %dHz, for %d synapses" % (
             model, ind, initial_frequencies[i], num_synapses))
@@ -339,10 +352,52 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("Mem. potential (mV)")
         plt.plot(time_vector, lif_prop.membrane_potential[0, :], c="tab:blue")
+        plt.plot([0.5, 2], [res_per_reali[0, i, 0], res_per_reali[0, i, 0]], c="tab:orange")  # mean ini window
+        plt.plot([2.5, 4], [res_per_reali[1, i, 0], res_per_reali[1, i, 0]], c="tab:orange")  # mean mid window
+        plt.plot([4.5, 6], [res_per_reali[2, i, 0], res_per_reali[2, i, 0]], c="tab:orange")  # mean end window
+        plt.plot([0, 2], [res_per_reali[47, i, 0], res_per_reali[47, i, 0]], c="red", alpha=0.5)  # max ini window
+        plt.plot([2, 4], [res_per_reali[53, i, 0], res_per_reali[53, i, 0]], c="red", alpha=0.5)  # max mid window
+        plt.plot([4, 6], [res_per_reali[59, i, 0], res_per_reali[59, i, 0]], c="red", alpha=0.5)  # max end window
+        plt.plot([0.5, 2], [res_per_reali[15, i, 0], res_per_reali[15, i, 0]], c="tab:red")  # max ini window
+        plt.plot([2.5, 4], [res_per_reali[16, i, 0], res_per_reali[16, i, 0]], c="tab:red")  # max mid window
+        plt.plot([4.5, 6], [res_per_reali[17, i, 0], res_per_reali[17, i, 0]], c="tab:red")  # max end window
+        plt.plot([0, 2], [res_per_reali[44, i, 0], res_per_reali[44, i, 0]], c="green", alpha=0.5)  # q1 ini window
+        plt.plot([2, 4], [res_per_reali[50, i, 0], res_per_reali[50, i, 0]], c="green", alpha=0.5)  # q1 mid window
+        plt.plot([4, 6], [res_per_reali[56, i, 0], res_per_reali[56, i, 0]], c="green", alpha=0.5)  # q1 end window
+        plt.plot([0.5, 2], [res_per_reali[9, i, 0], res_per_reali[9, i, 0]], c="tab:green")  # q1 ini window
+        plt.plot([2.5, 4], [res_per_reali[10, i, 0], res_per_reali[10, i, 0]], c="tab:green")  # q1 mid window
+        plt.plot([4.5, 6], [res_per_reali[11, i, 0], res_per_reali[11, i, 0]], c="tab:green")  # q1 end window
+        plt.plot([0, 2], [res_per_reali[45, i, 0], res_per_reali[45, i, 0]], c="green", alpha=0.5)  # q90 ini window
+        plt.plot([2, 4], [res_per_reali[51, i, 0], res_per_reali[51, i, 0]], c="green", alpha=0.5)  # q90 mid window
+        plt.plot([4, 6], [res_per_reali[57, i, 0], res_per_reali[57, i, 0]], c="green", alpha=0.5)  # q90 end window
+        plt.plot([0.5, 2], [res_per_reali[6, i, 0], res_per_reali[6, i, 0]], c="tab:green")  # q90 ini window
+        plt.plot([2.5, 4], [res_per_reali[7, i, 0], res_per_reali[7, i, 0]], c="tab:green")  # q90 mid window
+        plt.plot([4.5, 6], [res_per_reali[8, i, 0], res_per_reali[8, i, 0]], c="tab:green")  # q90 end window
         plt.grid()
         ax1.set_title("Proportional changes", color="gray")
         ax2 = fig.add_subplot(1, 2, 2)
-        plt.plot(time_vector, lif_fix.membrane_potential[0, :], c="tab:blue")
+        ax2.plot(time_vector, lif_fix.membrane_potential[0, :], c="tab:blue")
+        ax2.plot([0.5, 2], [res_per_reali[18, i, 0], res_per_reali[18, i, 0]], c="tab:orange")  # median ini window
+        ax2.plot([2.5, 4], [res_per_reali[19, i, 0], res_per_reali[19, i, 0]], c="tab:orange")  # median mid window
+        ax2.plot([4.5, 6], [res_per_reali[20, i, 0], res_per_reali[20, i, 0]], c="tab:orange")  # median end window
+        ax2.plot([0, 2], [res_per_reali[65, i, 0], res_per_reali[65, i, 0]], c="red", alpha=0.5)  # max ini window
+        ax2.plot([2, 4], [res_per_reali[71, i, 0], res_per_reali[71, i, 0]], c="red", alpha=0.5)  # max mid window
+        ax2.plot([4, 6], [res_per_reali[77, i, 0], res_per_reali[77, i, 0]], c="red", alpha=0.5)  # max end window
+        ax2.plot([0.5, 2], [res_per_reali[33, i, 0], res_per_reali[33, i, 0]], c="tab:red")  # max ini window
+        ax2.plot([2.5, 4], [res_per_reali[34, i, 0], res_per_reali[34, i, 0]], c="tab:red")  # max mid window
+        ax2.plot([4.5, 6], [res_per_reali[35, i, 0], res_per_reali[35, i, 0]], c="tab:red")  # max end window
+        ax2.plot([0, 2], [res_per_reali[62, i, 0], res_per_reali[62, i, 0]], c="green", alpha=0.5)  # q1 ini window
+        ax2.plot([2, 4], [res_per_reali[68, i, 0], res_per_reali[68, i, 0]], c="green", alpha=0.5)  # q1 mid window
+        ax2.plot([4, 6], [res_per_reali[74, i, 0], res_per_reali[74, i, 0]], c="green", alpha=0.5)  # q1 end window
+        ax2.plot([0.5, 2], [res_per_reali[24, i, 0], res_per_reali[24, i, 0]], c="tab:green")  # q1 ini window
+        ax2.plot([2.5, 4], [res_per_reali[25, i, 0], res_per_reali[25, i, 0]], c="tab:green")  # q1 mid window
+        ax2.plot([4.5, 6], [res_per_reali[26, i, 0], res_per_reali[26, i, 0]], c="tab:green")  # q1 end window
+        ax2.plot([0, 2], [res_per_reali[63, i, 0], res_per_reali[63, i, 0]], c="green", alpha=0.5)  # q90 ini window
+        ax2.plot([2, 4], [res_per_reali[69, i, 0], res_per_reali[69, i, 0]], c="green", alpha=0.5)  # q90 mid window
+        ax2.plot([4, 6], [res_per_reali[75, i, 0], res_per_reali[75, i, 0]], c="green", alpha=0.5)  # q90 end window
+        ax2.plot([0.5, 2], [res_per_reali[27, i, 0], res_per_reali[27, i, 0]], c="tab:green")  # q90 ini window
+        ax2.plot([2.5, 4], [res_per_reali[28, i, 0], res_per_reali[28, i, 0]], c="tab:green")  # q90 mid window
+        ax2.plot([4.5, 6], [res_per_reali[29, i, 0], res_per_reali[29, i, 0]], c="tab:green")  # q90 end window
         ax2.set_title("Constant changes", color="gray")
         ax2.set_xlabel("Time (s)")
         ax2.set_ylabel("Mem. potential (mV)")
@@ -577,43 +632,43 @@ factor = 1  # initial_frequencies  # 1
 fig2 = plt.figure(figsize=(7, 7))
 plt.suptitle(description)
 
-aux_ = [[dr['st_mid_prop'] - dr['st_ini_prop'], dr['st_mid_prop_min'] - dr['st_ini_prop_min'], dr['st_mid_prop_max'] -
+aux_ = [[dr['st_mid_prop_mean'] - dr['st_ini_prop_mean'], dr['st_mid_prop_min'] - dr['st_ini_prop_min'], dr['st_mid_prop_max'] -
          dr['st_ini_prop_max'], dr['st_mid_prop_q1'] - dr['st_ini_prop_q1'],
          dr['st_mid_prop_q90'] - dr['st_ini_prop_q90']],
-        [dr['st_mid_fix'] - dr['st_ini_fix'], dr['st_mid_fix_min'] - dr['st_ini_fix_min'], dr['st_mid_fix_max'] -
+        [dr['st_mid_fix_mean'] - dr['st_ini_fix_mean'], dr['st_mid_fix_min'] - dr['st_ini_fix_min'], dr['st_mid_fix_max'] -
          dr['st_ini_fix_max'], dr['st_mid_fix_q1'] - dr['st_ini_fix_q1'], dr['st_mid_fix_q90'] - dr['st_ini_fix_q90']],
-        [dr['mtr_mid_prop'] - dr['st_ini_prop'], dr['mtr_mid_prop'] - dr['st_ini_prop_max'], dr['mtr_mid_prop'] -
-         dr['w_mid_prop_max'], dr['mtr_mid_prop'] - dr['st_mid_prop'], dr['mtr_mid_prop'] - dr['st_mid_prop_q90']],
-        [dr['mtr_mid_fix'] - dr['st_ini_fix'], dr['mtr_mid_fix'] - dr['st_ini_fix_max'], dr['mtr_mid_fix'] -
-         dr['w_mid_fix_max'], dr['mtr_mid_fix'] - dr['st_mid_fix'], dr['mtr_mid_fix'] - dr['st_mid_fix_q90']]
+        [dr['mtr_mid_prop'] - dr['st_ini_prop_mean'], dr['mtr_mid_prop'] - dr['st_ini_prop_max'], dr['mtr_mid_prop'] -
+         dr['w_mid_prop_max'], dr['mtr_mid_prop'] - dr['st_mid_prop_mean'], dr['mtr_mid_prop'] - dr['st_mid_prop_q90']],
+        [dr['mtr_mid_fix'] - dr['st_ini_fix_mean'], dr['mtr_mid_fix'] - dr['st_ini_fix_max'], dr['mtr_mid_fix'] -
+         dr['w_mid_fix_max'], dr['mtr_mid_fix'] - dr['st_mid_fix_mean'], dr['mtr_mid_fix'] - dr['st_mid_fix_q90']]
         ]
-aux_ = [[dr['st_mid_prop'] - dr['st_ini_prop'], dr['st_mid_prop_q90'] - dr['st_mid_prop_q1'], dr['st_ini_prop_q90'] -
-         dr['st_ini_prop_q1'], dr['mtr_mid_prop'] - dr['st_ini_prop'], dr['mtr_mid_prop'] - dr['st_mid_prop']],
-        [dr['st_mid_fix'] - dr['st_ini_fix'], dr['st_mid_fix_q90'] - dr['st_mid_fix_q1'], dr['st_ini_fix_q90'] -
-         dr['st_ini_fix_q1'], dr['mtr_mid_fix'] - dr['st_ini_fix'], dr['mtr_mid_fix'] - dr['st_mid_fix']],
-        [dr['mtr_mid_prop'] - dr['st_ini_prop'], dr['w_mid_prop_max'] - dr['st_ini_prop'], dr['w_mid_prop_max'] -
-         dr['st_ini_prop_max'], dr['mtr_mid_prop'] - dr['st_ini_prop_max'], dr['w_mid_prop_max'] - dr['mtr_mid_prop']],
-        [dr['mtr_mid_fix'] - dr['st_ini_fix'], dr['w_mid_fix_max'] - dr['st_ini_fix'], dr['w_mid_fix_max'] -
-         dr['st_ini_fix_max'], dr['mtr_mid_fix'] - dr['st_ini_fix_max'], dr['w_mid_fix_max'] - dr['mtr_mid_fix']]
-        ]
+lbl_aux = [[r'$mean_{mid}$ - $mean_{ini}$', r'$min_{mid}$ - $min_{ini}$', r'$max_{mid}$ - $max_{ini}$',
+            r'$q1_{mid}$ - $q1_{ini}$', r'$q90_{mid}$ - $q90_{ini}$'],
+           [r'$mean_{mid}$ - $mean_{ini}$', r'$min_{mid}$ - $min_{ini}$', r'$max_{mid}$ - $max_{ini}$',
+            r'$q1_{mid}$ - $q1_{ini}$', r'$q90_{mid}$ - $q90_{ini}$'],
+           [r'$max_{tr-mid}$ - $mean_{ini}$', r'$max_{tr-mid}$ - $max_{ini}$', r'$max_{tr-mid}$ - $max_{mid}$',
+            r'$max_{tr-mid}$ - $mean_{mid}$', r'$max_{tr-max}$ - $q90_{mid}$'],
+           [r'$max_{tr-mid}$ - $mean_{ini}$', r'$max_{tr-mid}$ - $max_{ini}$', r'$max_{tr-mid}$ - $max_{mid}$',
+            r'$max_{tr-mid}$ - $mean_{mid}$', r'$max_{tr-max}$ - $q90_{mid}$']]
+
 aux_titles = [r"$mid_{st}-ini_{st}$ (Prop.)", r"$mid_{st}-ini_{st}$ (Cons.)", r"Transient (Prop.)", r"Transient (Cons)"]
 for graph in range(1, 5):
     i_a = graph - 1
-    aux, aux_min, aux_max, aux_1, aux_90 = aux_[i_a][0], aux_[i_a][1], aux_[i_a][2], aux_[i_a][3], aux_[i_a][4]
+    aux_mean, aux_min, aux_max, aux_1, aux_90 = aux_[i_a][0], aux_[i_a][1], aux_[i_a][2], aux_[i_a][3], aux_[i_a][4]
     ax = fig2.add_subplot(2, 2, graph)
-    ax.plot(initial_frequencies, np.mean(aux, axis=0) * factor, alpha=0.8, c="black")
-    ax.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0) * factor,
-                    np.quantile(aux, 0.9, axis=0) * factor, color="gray", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_min, axis=0) * factor, alpha=0.8, c="tab:red")
+    ax.plot(initial_frequencies, np.mean(aux_mean, axis=0) * factor, alpha=0.8, c="black", label=lbl_aux[i_a][0])
+    ax.fill_between(initial_frequencies, np.quantile(aux_mean, 0.1, axis=0) * factor,
+                    np.quantile(aux_mean, 0.9, axis=0) * factor, color="gray", alpha=0.3)
+    ax.plot(initial_frequencies, np.mean(aux_min, axis=0) * factor, alpha=0.8, c="tab:red", label=lbl_aux[i_a][1])
     ax.fill_between(initial_frequencies, np.quantile(aux_min, 0.1, axis=0) * factor,
                     np.quantile(aux_min, 0.9, axis=0) * factor, color="tab:red", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_max, axis=0) * factor, alpha=0.8, c="tab:orange")
+    ax.plot(initial_frequencies, np.mean(aux_max, axis=0) * factor, alpha=0.8, c="tab:orange", label=lbl_aux[i_a][2])
     ax.fill_between(initial_frequencies, np.quantile(aux_max, 0.1, axis=0) * factor,
                     np.quantile(aux_max, 0.9, axis=0) * factor, color="tab:orange", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_1, axis=0) * factor, alpha=0.8, c="tab:blue")
+    ax.plot(initial_frequencies, np.mean(aux_1, axis=0) * factor, alpha=0.8, c="tab:blue", label=lbl_aux[i_a][3])
     ax.fill_between(initial_frequencies, np.quantile(aux_1, 0.1, axis=0) * factor,
                     np.quantile(aux_1, 0.9, axis=0) * factor, color="tab:blue", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_90, axis=0) * factor, alpha=0.8, c="tab:green")
+    ax.plot(initial_frequencies, np.mean(aux_90, axis=0) * factor, alpha=0.8, c="tab:green", label=lbl_aux[i_a][4])
     ax.fill_between(initial_frequencies, np.quantile(aux_90, 0.1, axis=0) * factor,
                     np.quantile(aux_90, 0.9, axis=0) * factor, color="tab:green", alpha=0.3)
     ax.set_xscale('log')
@@ -621,6 +676,7 @@ for graph in range(1, 5):
     ax.set_ylabel("Mem. pot. diff. (mV)")
     ax.set_title(aux_titles[i_a], c="gray")
     ax.grid()
+    ax.legend()
 
 fig2.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 plt.savefig(folder_plots + 'test.png', format='png')
@@ -628,15 +684,16 @@ plt.savefig(folder_plots + 'test.png', format='png')
 
 # SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
 # AND THE DIFFERENCES BETWEEN MAX OF MID WINDOW AND MEDIAN OF INI WINDOW
-"""
+# """
 dims = total_realizations
+sufix = "_med"
 factor = 1  # initial_frequencies  # 1
 fig2 = plt.figure(figsize=(4.5, 4.5))
-plt.suptitle(description)
+plt.suptitle(description + " " + str(tau_lif) + "ms")
 
 ax3 = fig2.add_subplot(2, 2, 1)
-a = dr['st_mid_prop']
-b = dr['st_ini_prop']
+a = dr['st_mid_prop' + sufix]
+b = dr['st_ini_prop' + sufix]
 aux = a - b
 ax3.plot(initial_frequencies, np.mean(aux, axis=0) * factor, alpha=0.8, c="black")
 ax3.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0) * factor, np.quantile(aux, 0.9, axis=0) * factor,
@@ -648,8 +705,8 @@ ax3.set_xscale('log')
 ax3.grid()
 
 ax4 = fig2.add_subplot(2, 2, 2)
-a = dr['st_mid_fix']
-b = dr['st_ini_fix']
+a = dr['st_mid_fix' + sufix]
+b = dr['st_ini_fix' + sufix]
 aux = a - b
 ax4.plot(initial_frequencies, np.mean(aux, axis=0) * factor, alpha=0.8, c="black")
 ax4.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0) * factor, np.quantile(aux, 0.9, axis=0) * factor,
@@ -662,7 +719,8 @@ ax4.grid()
 
 ax5 = fig2.add_subplot(2, 2, 3)
 a = dr['mtr_mid_prop']
-b = dr['st_ini_prop']
+b = dr['st_ini_prop' + sufix]
+aux = a - b
 aux = a - b
 ax5.plot(initial_frequencies, np.mean(aux, axis=0) * factor, alpha=0.8, c="black")
 ax5.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0) * factor, np.quantile(aux, 0.9, axis=0) * factor,
@@ -674,7 +732,8 @@ ax5.grid()
 
 ax6 = fig2.add_subplot(2, 2, 4)
 a = dr['mtr_mid_fix']
-b = dr['st_ini_fix']
+b = dr['st_ini_fix' + sufix]
+aux = a - b
 aux = a - b
 ax6.plot(initial_frequencies, np.mean(aux, axis=0) * factor, alpha=0.8, c="black")
 ax6.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0) * factor, np.quantile(aux, 0.9, axis=0) * factor,

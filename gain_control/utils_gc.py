@@ -458,36 +458,38 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
 
     # Extracting transition parts of stimuli windows
     g = sig_prop[:, 0:int(th_tr / dt)]  # [, 0s:0.5s]
-    h = sig_prop[:, int(Le_time_win / dt):int((Le_time_win + th_tr) / dt)]  # [, 2.5s:3.0s]
-    k = sig_prop[:, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr) / dt)]  # [, 2.5s:3.0s]
+    h = sig_prop[:, int(Le_time_win / dt):int((Le_time_win + th_tr) / dt)]  # [, 2s:2.5s]
+    k = sig_prop[:, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr) / dt)]  # [, 4s:4.5s]
     m = sig_cons[:, 0:int(th_tr / dt)]  # [, 0s:0.5s]
     n = sig_cons[:, int(Le_time_win / dt):int((Le_time_win + th_tr) / dt)]  # [, 2s:2.5s]
     o = sig_cons[:, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr) / dt)]  # [, 4s:4.5s]
 
-    return np.array([np.median(a, axis=1), np.median(b, axis=1), np.median(c, axis=1),
-                     np.quantile(a, 0.1, axis=1), np.quantile(b, 0.1, axis=1), np.quantile(c, 0.1, axis=1),
-                     np.quantile(a, 0.9, axis=1), np.quantile(b, 0.9, axis=1), np.quantile(c, 0.9, axis=1),
-                     np.min(a, axis=1), np.min(b, axis=1), np.min(c, axis=1),
-                     np.max(a, axis=1), np.max(b, axis=1), np.max(c, axis=1),
-                     np.median(d, axis=1), np.median(e, axis=1), np.median(f, axis=1),
-                     np.quantile(d, 0.1, axis=1), np.quantile(e, 0.1, axis=1), np.quantile(f, 0.1, axis=1),
-                     np.quantile(d, 0.9, axis=1), np.quantile(e, 0.9, axis=1), np.quantile(f, 0.9, axis=1),
-                     np.min(d, axis=1), np.min(e, axis=1), np.min(f, axis=1),
-                     np.max(d, axis=1), np.max(e, axis=1), np.max(f, axis=1),
-                     np.max(g, axis=1), np.max(h, axis=1), np.min(k, axis=1),
-                     np.max(m, axis=1), np.max(n, axis=1), np.min(o, axis=1),
-                     np.median(aa, axis=1), np.quantile(aa, 0.1, axis=1), np.quantile(aa, 0.9, axis=1),
-                     np.min(aa, axis=1), np.max(aa, axis=1),
-                     np.median(bb, axis=1), np.quantile(bb, 0.1, axis=1), np.quantile(bb, 0.9, axis=1),
-                     np.min(bb, axis=1), np.max(bb, axis=1),
-                     np.median(cc, axis=1), np.quantile(cc, 0.1, axis=1), np.quantile(cc, 0.9, axis=1),
-                     np.min(cc, axis=1), np.max(cc, axis=1),
-                     np.median(dd, axis=1), np.quantile(dd, 0.1, axis=1), np.quantile(dd, 0.9, axis=1),
-                     np.min(dd, axis=1), np.max(dd, axis=1),
-                     np.median(ee, axis=1), np.quantile(ee, 0.1, axis=1), np.quantile(ee, 0.9, axis=1),
-                     np.min(ee, axis=1), np.max(ee, axis=1),
-                     np.median(ff, axis=1), np.quantile(ff, 0.1, axis=1), np.quantile(ff, 0.9, axis=1),
-                     np.min(ff, axis=1), np.max(ff, axis=1)]
+    return np.array([np.mean(a, axis=1), np.mean(b, axis=1), np.mean(c, axis=1),  # 2
+                     np.median(a, axis=1), np.median(b, axis=1), np.median(c, axis=1),  # 5
+                     np.quantile(a, 0.1, axis=1), np.quantile(b, 0.1, axis=1), np.quantile(c, 0.1, axis=1),  # 8
+                     np.quantile(a, 0.9, axis=1), np.quantile(b, 0.9, axis=1), np.quantile(c, 0.9, axis=1),  # 11
+                     np.min(a, axis=1), np.min(b, axis=1), np.min(c, axis=1),  # 14
+                     np.max(a, axis=1), np.max(b, axis=1), np.max(c, axis=1),  # 17
+                     np.mean(d, axis=1), np.mean(e, axis=1), np.mean(f, axis=1),  # 20
+                     np.median(d, axis=1), np.median(e, axis=1), np.median(f, axis=1),  # 23
+                     np.quantile(d, 0.1, axis=1), np.quantile(e, 0.1, axis=1), np.quantile(f, 0.1, axis=1),  # 26
+                     np.quantile(d, 0.9, axis=1), np.quantile(e, 0.9, axis=1), np.quantile(f, 0.9, axis=1),  # 29
+                     np.min(d, axis=1), np.min(e, axis=1), np.min(f, axis=1),  # 32
+                     np.max(d, axis=1), np.max(e, axis=1), np.max(f, axis=1),  # 35
+                     np.max(g, axis=1), np.max(h, axis=1), np.min(k, axis=1),  # 38
+                     np.max(m, axis=1), np.max(n, axis=1), np.min(o, axis=1),  # 41
+                     np.mean(aa, axis=1), np.median(aa, axis=1), np.quantile(aa, 0.1, axis=1),  # 44
+                     np.quantile(aa, 0.9, axis=1),  np.min(aa, axis=1), np.max(aa, axis=1),  # 47
+                     np.mean(bb, axis=1), np.median(bb, axis=1), np.quantile(bb, 0.1, axis=1),  # 50
+                     np.quantile(bb, 0.9, axis=1), np.min(bb, axis=1), np.max(bb, axis=1),  # 53
+                     np.mean(cc, axis=1), np.median(cc, axis=1), np.quantile(cc, 0.1, axis=1),  # 56
+                     np.quantile(cc, 0.9, axis=1), np.min(cc, axis=1), np.max(cc, axis=1),  # 59
+                     np.mean(dd, axis=1), np.median(dd, axis=1), np.quantile(dd, 0.1, axis=1),  # 62
+                     np.quantile(dd, 0.9, axis=1), np.min(dd, axis=1), np.max(dd, axis=1),  # 65
+                     np.mean(ee, axis=1), np.median(ee, axis=1), np.quantile(ee, 0.1, axis=1),  # 68
+                     np.quantile(ee, 0.9, axis=1), np.min(ee, axis=1), np.max(ee, axis=1),  # 71
+                     np.mean(ff, axis=1), np.median(ff, axis=1), np.quantile(ff, 0.1, axis=1),  # 74
+                     np.quantile(ff, 0.9, axis=1), np.min(ff, axis=1), np.max(ff, axis=1)]  # 77
                     )
 
 
