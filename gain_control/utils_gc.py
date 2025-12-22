@@ -5,9 +5,46 @@ import numpy as np
 from synaptic_dynamic_models.TM import TM_model
 from synaptic_dynamic_models.MSSM import MSSM_model
 from spiking_neuron_models.LIF import LIF_model
-# from synaptic_dynamic_models.simple_depression import Simple_Depression
+from synaptic_dynamic_models.simple_depression import Simple_Depression
 from libraries.frequency_analysis import Freq_analysis
 from utils import *
+
+
+# ******************************************************************************************************************
+# Local variables
+stat_list = ['st_ini_prop_mean', 'st_mid_prop_mean', 'st_end_prop_mean',
+             'st_ini_prop_med', 'st_mid_prop_med', 'st_end_prop_med',
+             'st_ini_prop_q1', 'st_mid_prop_q1', 'st_end_prop_q1',
+             'st_ini_prop_q90', 'st_mid_prop_q90', 'st_end_prop_q90',
+             'st_ini_prop_min', 'st_mid_prop_min', 'st_end_prop_min',
+             'st_ini_prop_max', 'st_mid_prop_max', 'st_end_prop_max',
+             'st_ini_fix_mean', 'st_mid_fix_mean', 'st_end_fix_mean',
+             'st_ini_fix_med', 'st_mid_fix_med', 'st_end_fix_med',
+             'st_ini_fix_q1', 'st_mid_fix_q1', 'st_end_fix_q1',
+             'st_ini_fix_q90', 'st_mid_fix_q90', 'st_end_fix_q90',
+             'st_ini_fix_min', 'st_mid_fix_min', 'st_end_fix_min',
+             'st_ini_fix_max', 'st_mid_fix_max', 'st_end_fix_max',
+             'mtr_ini_prop', 'mtr_mid_prop', 'mtr_end_prop',
+             'mtr_ini_fix', 'mtr_mid_fix', 'mtr_end_fix',
+             'w_ini_prop_mean', 'w_ini_prop_med', 'w_ini_prop_q1', 'w_ini_prop_q90', 'w_ini_prop_min', 'w_ini_prop_max',
+             'w_mid_prop_mean', 'w_mid_prop_med', 'w_mid_prop_q1', 'w_mid_prop_q90', 'w_mid_prop_min', 'w_mid_prop_max',
+             'w_end_prop_mean', 'w_end_prop_med', 'w_end_prop_q1', 'w_end_prop_q90', 'w_end_prop_min', 'w_end_prop_max',
+             'w_ini_fix_mean', 'w_ini_fix_med', 'w_ini_fix_q1', 'w_ini_fix_q90', 'w_ini_fix_min', 'w_ini_fix_max',
+             'w_mid_fix_mean', 'w_mid_fix_med', 'w_mid_fix_q1', 'w_mid_fix_q90', 'w_mid_fix_min', 'w_mid_fix_max',
+             'w_end_fix_mean', 'w_end_fix_med', 'w_end_fix_q1', 'w_end_fix_q90', 'w_end_fix_min', 'w_end_fix_max',
+             'initial_frequencies', 'stp_model', 'name_params', 'dyn_synapse', 'num_synapses', 'syn_params',
+             'sim_params', 'lif_params', 'lif_params2', 'prop_rate_change_a', 'fix_rate_change_a', 'num_changes_rate',
+             'description', 'seeds', 'realizations', 't_realizations', 'time_transition']
+
+stat_list_sin = ['vec_max_mp_pos', 'vec_min_mp_neg', 'vec_q1_mp_pos', 'vec_q90_mp_pos',
+                 'vec_q1_mp_neg', 'vec_q90_mp_neg', 'vec_max_mp', 'vec_min_mp', 'vec_q1_mp', 'vec_q90_mp']
+
+# Parameters for LiF neuron
+lif_params = {'V_threshold': np.array([50 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
+              'tau_m': np.array([30e-3 for _ in range(1)]),
+              'g_L': np.array([7.5e-2 for _ in range(1)]),
+              'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
+              't_refractory': np.array([0.01 for _ in range(1)])}
 
 
 def get_params_stp(name_model, ind):
@@ -70,6 +107,16 @@ def get_params_stp(name_model, ind):
         syn_params = [4.99904393e-02, 1.28833999e-02, 2.92508311e+00, 4.88095651e-02,
                       2.11579945e-04, 6.46772602e+01, 7.71595702e-01, 1.52095675e-03,
                       1.76132558e-01 * 9e-2, 4.36917566e-03]
+    if name_model == "TM" and ind == 7:
+        description = "TM " + str(ind) + " Experiment, decay around 100Hz"
+        syn_params = []
+    # (Experiment 8) differential signaling
+    if name_model == "MSSM" and ind == 8:
+        description = "MSSM " + str(ind) + " Experiment, facilitation diff. signaling"
+        syn_params = []
+    if name_model == "TM" and ind == 8:
+        description = "TM " + str(ind) + " Experiment, facilitation diff. signaling"
+        syn_params = [0.03, 530e-3, 130e-3, 1540 * 2.32722819e-05, 2.5e-3]
     # params_s_dep = {'tau_g': 2e-3, 'tau_alpha': 300e-3, 'g0': 0.075, 'f': 0.75}
     assert syn_params is not None, "Not parameters for model %s and index %d" % (name_model, ind)
 
@@ -382,43 +429,54 @@ def inter_spike_intervals(spike_trains, dt, bin_size, max_time_hist=None):
     return all_isis, histograms
 
 
-def plot_isi_histogram(histograms, ind):
-    """
-    Plot histograms of ISI from function inter_spike_intervals()
-    Parameters
-    ----------
-    histograms
-    ind
-
-    Returns
-    -------
-
-    """
-    counts, bin_edges = histograms[ind]
-    if len(counts) == 0:
-        print(f"No data for histogram index {ind}")
-        return
-    width = np.diff(bin_edges)
-    bin_centers = bin_edges[:-1] + width / 2
-    plt.figure()
-    plt.bar(bin_centers, counts, width=width, edgecolor='black')
-    plt.xlabel('Inter-spike interval (seconds)')
-    plt.ylabel('Count')
-    plt.title(f'ISI Histogram {ind}')
-    plt.grid()
-    plt.show()
-
-
-def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
-    sos = scipy.signal.butter(poles, cutoff, 'lowpass', fs=sample_rate, output='sos')
-    filtered_data = scipy.signal.sosfiltfilt(sos, data)
-    return filtered_data
-
-
 def highpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
     sos = scipy.signal.butter(poles, cutoff, 'highpass', fs=sample_rate, output='sos')
     filtered_data = scipy.signal.sosfiltfilt(sos, data)
     return filtered_data
+
+
+def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisson=False, seeds=None, correction=False,
+                            imputation=True):
+
+    seed = None
+    if seeds is not None:
+        assert isinstance(seeds, list), "seeds must be a list"
+        seed = np.random.choice(seeds)
+    seed_print = []
+    Input_test = np.array([[]])
+    L = len(modulation_signal)
+    i = 0
+    while Input_test.shape[1] < L:
+        if poisson:
+            if seeds is not None:
+                seed = np.random.choice(seeds)
+                seed_print.append(seed)
+            # aux_s = poisson_generator2(1 / sfreq, int(3 * sfreq / modulation_signal[i]), modulation_signal[i],
+            #                            num_realizations, myseed=seed)
+            aux_s = poisson_generator2(1 / sfreq, int(0.03 * sfreq), modulation_signal[i],
+                                       num_realizations, myseed=seed)
+
+            # Correcting Poisson spike train to avoid consecutive spikes
+            if correction:
+                aux_s = correct_poisson_spike_trains(aux_s, num_realizations, seed=seed, imputation=imputation)
+
+            desired_len_aux_s = aux_s.shape[1]
+        else:
+            aux_s = input_spike_train(sfreq, modulation_signal[i], 3 / modulation_signal[i], min_time=0.0)
+            aux_s = np.repeat(np.expand_dims(aux_s, axis=0), num_realizations, axis=0)
+
+            if i == 0: aux_s = np.roll(aux_s, 1)
+            desired_len_aux_s = np.where(aux_s == 1)[1][-1]
+            aux_s = aux_s[:, :desired_len_aux_s]
+        #
+        if i == 0:
+            Input_test = aux_s
+        else:
+            # Input_test = np.concatenate((Input_test, aux_s))
+            Input_test = np.hstack((Input_test, aux_s))
+        i += desired_len_aux_s
+    # print(seed_print)
+    return Input_test[:, :L]
 
 
 def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transition, sim_params):
@@ -436,7 +494,6 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     -------
 
     """
-    th_tr = threshold_transition
     max_t = sim_params['max_t']
     dt = 1 / sim_params['sfreq']
 
@@ -444,9 +501,17 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     aa = sig_prop[:, 0:int(Le_time_win / dt)]  # [, 0s:2s]
     bb = sig_prop[:, int(Le_time_win / dt):int(2 * Le_time_win / dt)]  # [, 2s:4s]
     cc = sig_prop[:, int(2 * Le_time_win / dt):int(max_t / dt)]  # [, 4s:6s]
-    dd = sig_cons[:, 0:int(Le_time_win / dt)]  # [, 0bs:2s]
+    dd = sig_cons[:, 0:int(Le_time_win / dt)]  # [, 0s:2s]
     ee = sig_cons[:, int(Le_time_win / dt):int(2 * Le_time_win / dt)]  # [, 2s:4s]
     ff = sig_cons[:, int(2 * Le_time_win / dt):int(max_t / dt)]  # [, 4s:6s]
+
+    # Getting time range of transition period
+    ini_minus_end_windows = aa - cc
+    ind_tr = np.where(ini_minus_end_windows <= 0.01)  # find indices where the difference is lower than 1%
+    ind_max = np.argmax(ini_minus_end_windows)  # find index of maximum for the difference
+    first_indtr = np.where(ind_tr > ind_max)[1][0]  # getting indices after the index of maximum
+    if threshold_transition is None: th_tr = ind_tr[1][first_indtr] * dt  # getting time of transition period
+    else: th_tr = threshold_transition
 
     # Extracting steady-state parts of stimuli windows
     a = sig_prop[:, int(th_tr / dt):int(Le_time_win / dt)]  # [, 0.5s:2s]
@@ -490,9 +555,54 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
                      np.quantile(ee, 0.9, axis=1), np.min(ee, axis=1), np.max(ee, axis=1),  # 71
                      np.mean(ff, axis=1), np.median(ff, axis=1), np.quantile(ff, 0.1, axis=1),  # 74
                      np.quantile(ff, 0.9, axis=1), np.min(ff, axis=1), np.max(ff, axis=1)]  # 77
-                    )
+                    ), th_tr
+
+
+def aux_statistics_sin(mp_signal, coff, sfreq):
+    low_pass_mempot = lowpass(mp_signal, coff, sfreq)
+    high_pass_mempot = highpass(mp_signal, coff, sfreq)
+    dt = 1 / sfreq
+    pos_mempot = None
+    mem_pot_low_filt = None
+    mem_pot_high_filt = None
+    neg_mempot = mp_signal[int(5 / dt): int(10 / dt)]
+    pos_mempot_low_filt = None
+    neg_mempot_low_filt = low_pass_mempot[int(5 / dt): int(10 / dt)]
+    pos_mempot_high_filt = None
+    neg_mempot_high_filt = high_pass_mempot[int(5 / dt): int(10 / dt)]
+
+    pos_mempot = mp_signal[int(10 / dt): int(15 / dt)]
+    pos_mempot_low_filt = low_pass_mempot[int(10 / dt): int(15 / dt)]
+    pos_mempot_high_filt = high_pass_mempot[int(10 / dt): int(15 / dt)]
+    mem_pot_low_filt = low_pass_mempot[int(5 / dt): int(15 / dt)]
+    mem_pot_high_filt = high_pass_mempot[int(5 / dt): int(15 / dt)]
+
+    st = np.array([np.max(pos_mempot_low_filt), np.min(neg_mempot_low_filt),
+                   np.quantile(pos_mempot_high_filt, 0.1), np.quantile(pos_mempot_high_filt, 0.9),
+                   np.quantile(neg_mempot_high_filt, 0.1), np.quantile(neg_mempot_high_filt, 0.9),
+                   np.max(mem_pot_low_filt), np.min(mem_pot_low_filt),
+                   np.quantile(mem_pot_high_filt, 0.1), np.quantile(mem_pot_high_filt, 0.9)])
+
+    return st, low_pass_mempot, high_pass_mempot
 
 
 def sec2hour(secs, exp, realizations):
     rep = int(np.ceil(100 / realizations))
     return secs * exp * rep / 3600
+
+
+# ini_high_rate = 50  # 50
+# step_high_rate = 50  # 10 # 50
+# ini_low_rate = 8  # 8
+# step_low_rate = 2  # 1  # 2
+# proportion = 0.5  # 0.5
+# iterator = 10  # 56  # 12
+# # auxiliars
+# ihr = ini_high_rate
+# shr = step_high_rate
+# ilr = ini_low_rate
+# slr = step_low_rate
+# pr = proportion
+# mean_rates = [[(shr * i) + ihr, (slr * i) + ilr, (shr * i) + ihr] for i in range(iterator)]
+# max_oscils = [[((shr * i) + ihr) * pr, ((slr * i) + ilr) * pr, ((slr * i) + ilr) * pr] for i in range(iterator)]
+# fix_rates = [[(slr * i) + ilr, (shr * i) + ihr, (slr * i) + ilr] for i in range(iterator)]

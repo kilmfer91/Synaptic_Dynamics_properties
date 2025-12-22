@@ -9,6 +9,8 @@
 /outputs/fitting_Hallermann/
 /gain_control/variables/
 /gain_control/plots/test.png
+performance_in_pc.txt
+/gain_control/filtering_and_gain.py
 
 # OS generated files #
 ######################
@@ -21,4 +23,5 @@
 __pycache__/
 libraries/__pycache__/
 synaptic_dynamic_models/__pycache__/
+
 

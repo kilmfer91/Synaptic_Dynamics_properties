@@ -4,7 +4,6 @@ import time
 import re
 from datetime import timedelta
 import pickle
-import matplotlib.patches as mpatches
 from utils_plot import *
 
 import numpy as np
@@ -454,6 +453,12 @@ def poisson_generator2(dt, Lt, rate, n, myseed=None):
     poisson_train = 1. * (u_rand < (rate * dt))
 
     return poisson_train
+
+
+def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5):
+    sos = signal.butter(poles, cutoff, 'lowpass', fs=sample_rate, output='sos')
+    filtered_data = signal.sosfiltfilt(sos, data)
+    return filtered_data
 
 
 # **********************************************************************************************************************

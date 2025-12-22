@@ -9,14 +9,14 @@ from synaptic_dynamic_models.SynDynModel import SynDynModel
 # PATHS TO STORE/LOAD DATA
 path_reference_data = "reference_data/"
 path_store_models = "outputs/fitting_test/"
-path_store_models = "outputs/fitting_adjusted_MSSM/"
+# path_store_models = "outputs/fitting_adjusted_MSSM/"
 
 # **********************************************************************************************************************
 # GLOBAL PARAMETERS
 model_str = "MSSM"  # String defining the model to use (e.g. MSSM, TM)
 
 # AUXILIAR VARIABLES FOR THE EXAMPLE
-ind = 0                 # Auxiliar index to define the Synaptic Dynamics mechanism (0: depression, 1: facilitation)
+ind = 1                 # Auxiliar index to define the Synaptic Dynamics mechanism (0: depression, 1: facilitation)
 ind_experiment = 0      # Index of experiment to run/load
 prefix = prefix_v[ind]  # string defining a description of the SD model: "depression" or "facilitation"
 
@@ -26,7 +26,7 @@ prefix = prefix_v[ind]  # string defining a description of the SD model: "depres
 # input_factor (float) scaling factor of input signal
 # output_factor (float) scaling factor of reference signal
 # description (String) sufix for the name of the file, that is stored once the fitting process finishes.
-sim_args = [sfreq_ext[ind], max_t_ext[ind], input_factor_ext[ind], output_factor_ext[ind], str(ind)]
+sim_args = [sfreq_ext[ind], max_t_ext[ind], input_factor_ext[ind], output_factor_ext[ind], str(ind), 10]
 
 # ******************************************************************************************************************
 # DICTIONARY OF PARAMETERS

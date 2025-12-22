@@ -276,6 +276,8 @@ class Freq_analysis:
             ax.set_xlabel("time (s)")
             ax.set_ylabel(r"$E_{psp}$(t)")
             ax.grid(True)
+            ax.set_title("Rate at " + str(r) + "Hz")
+            ax.legend()
             # """
 
             # Update times of maximum and stedy-state
