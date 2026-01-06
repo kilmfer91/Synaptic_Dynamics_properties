@@ -544,6 +544,8 @@ ax_st2.legend(loc='upper right')
 # ax_st2.set_ylim(ylims)
 fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
 if save_figs: fig_st2.savefig(folder_plots + file_name + '_windows_statistics3.png', format='png')
+"""
+
 # PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
 """
 dims = total_realizations
