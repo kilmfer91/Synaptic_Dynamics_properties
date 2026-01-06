@@ -13,15 +13,16 @@ model = 'MSSM'
 # (Experiment 6) freq. response decay around 10Hz
 ind = 4
 save_vars = False
-run_experiment = True
+run_experiment = False
 save_figs = False
 imputations = True
 Stoch_input = True
 lif_output = True
 num_syn = 1
+gain = 0.5
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 5e3
+sfreq = 6e3
 tau_lif = 1  # ms
 total_realizations = 10  # 100
 num_realizations = 5  # 8 for server, 4 for macbook air
@@ -29,9 +30,10 @@ t_tra = None  # None  # 0.25
 t_tra_mid_win = None
 
 # Input modulations
-range_f = [10, 20, 30, 40]  # [i for i in range(10, 100, 5)]
-range_f2 = [100, 150, 200, 300]  # [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
-range_f3 = [500]  # [i for i in range(500, 801, 50)]  # Max prop freq. must be less than sfreq/4  # 16kHz:2501, 5kHz:801
+range_f = [i for i in range(10, 100, 5)]
+range_f2 = [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
+range_f3 = [i for i in range(500, 950, 50)]  # Max prop freq. must be less than sfreq/4,
+                  # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 950
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
@@ -39,7 +41,7 @@ path_vars = "../gain_control/variables/"
 check_create_folder(path_vars)
 folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
-aux_name = "_gain_control_" + str(int(sfreq / 1000)) + "k_ind_" + str(ind) + "_syn_" + str(num_syn)
+aux_name = "_ind_" + str(ind) + "_gain_" + str(int(gain * 100)) + "_sf_" + str(int(sfreq / 1000)) + "k_syn_" + str(num_syn)
 if lif_output: aux_name += "_tauLiF_" + str(tau_lif) + "ms"
 file_name = (model + aux_name)
 if not Stoch_input: file_name = (model + '_det' + aux_name)
@@ -140,7 +142,7 @@ else:
     # Time conditions
     num_changes_rate = 3
     Le_time_win = int(max_t / num_changes_rate)
-    prop_rate_change_a = [0.5]  # [0.5, 1, 2]
+    prop_rate_change_a = [gain]  # [0.5, 1, 2]
     fix_rate_change_a = [5]  # [5, 10, 20]
 
     num_experiments = initial_frequencies.shape[0]
@@ -480,7 +482,7 @@ fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 # """
 
 # PLOT OF CHARACTERISTICS FOR INI, MID, AND END WINDOWS. SPLITTED BY PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
-# """
+"""
 fig_st = plt.figure(figsize=(10, 6))
 plt.suptitle(description + " " + str(tau_lif) + "ms")
 lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_fix', 'st_mid_fix', 'st_end_fix']
@@ -601,7 +603,7 @@ plt.savefig(folder_plots + 'test.png', format='png')
 
 # SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
 # AND THE DIFFERENCES BETWEEN MAX OF MID WINDOW AND MEDIAN OF INI WINDOW
-# """
+"""
 dims = total_realizations
 factor = 1  # initial_frequencies  # 1
 fig2 = plt.figure(figsize=(6.5, 2.5))  # 6.5, 5
