@@ -1,4 +1,7 @@
 # from synaptic_dynamic_models.simple_depression import Simple_Depression
+import numpy as np
+from statsmodels.stats.proportion import proportions_chisquare_allpairs
+
 from gain_control.utils_gc import *
 
 # ******************************************************************************************************************
@@ -11,7 +14,7 @@ model = 'MSSM'
 # (Experiment 6) freq. response decay around 10Hz
 ind = 4
 save_vars = False
-run_experiment = False
+run_experiment = True
 save_figs = False
 imputations = True
 Stoch_input = True
@@ -21,13 +24,14 @@ num_syn = 1
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 5e3
 tau_lif = 1  # ms
-total_realizations = 1  # 100
-num_realizations = 1  # 8 for server, 4 for macbook air
-t_tra = .25  # None  # 0.25
+total_realizations = 10  # 100
+num_realizations = 5  # 8 for server, 4 for macbook air
+t_tra = None  # None  # 0.25
+t_tra_mid_win = None
 
 # Input modulations
-range_f = [10]  # [i for i in range(10, 100, 5)]
-range_f2 = [100]  # [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
+range_f = [10, 20, 30, 40]  # [i for i in range(10, 100, 5)]
+range_f2 = [100, 150, 200, 300]  # [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
 range_f3 = [500]  # [i for i in range(500, 801, 50)]  # Max prop freq. must be less than sfreq/4  # 16kHz:2501, 5kHz:801
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
@@ -137,11 +141,13 @@ else:
     # Time conditions
     num_changes_rate = 3
     Le_time_win = int(max_t / num_changes_rate)
-    if t_tra is not None: t_tra = Le_time_win * 0.25
     prop_rate_change_a = [0.5]  # [0.5, 1, 2]
     fix_rate_change_a = [5]  # [5, 10, 20]
 
     num_experiments = initial_frequencies.shape[0]
+
+    # array for time of transition-states
+    t_tra = [[] for _ in range(num_experiments)]
 
     # For poisson or deterministic inputs
     # if not lif_parallel: num_realizations = 1
@@ -191,26 +197,24 @@ lif_fix_n = None
 # Setting proportional and fixed rates of change
 proportional_rate_change = prop_rate_change_a[0]  # [k]
 fixed_rate_change = fix_rate_change_a[0]  # [k]
-constant_changes = proportional_rate_change * initial_frequencies + initial_frequencies
-fixed_changes = fixed_rate_change + initial_frequencies
+proportional_changes = proportional_rate_change * initial_frequencies + initial_frequencies
+constant_changes = fixed_rate_change + initial_frequencies
 
 # Auxiliar variables for statistics
-res_per_reali = np.zeros((78, num_experiments, num_realizations))
-res_real = np.zeros((78, total_realizations, num_experiments))
-# res_per_reali_n = np.zeros((78, num_experiments, num_realizations))
-# res_real_n = np.zeros((78, total_realizations, num_experiments))
+res_per_reali = np.zeros((144, num_experiments, num_realizations))
+res_real = np.zeros((144, total_realizations, num_experiments))
 
 ini_loop_time = m_time()
 print("Ini big loop")
 realization = 0
-# for realization in range(num_realizations):  # range(len(prop_rate_change_a)):
 while realization < num_loop_realizations and (not file_loaded or run_experiment):
     loop_time = m_time()
+    t_tra_mid_win = None
 
     # Building reference signal for constant and fixed rate changes
-    i = 0
+    i = num_experiments - 1
     # for i in range(num_experiments):
-    while i < num_experiments:
+    while i >= 0:  # while i < num_experiments:
         loop_experiments = m_time()
 
         # # Updating maximum time of simulation
@@ -237,10 +241,10 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
                                          imputation=imputations)
         # ISIs, histograms = inter_spike_intervals(ref_signals, dt, 1e-3)
         # plot_isi_histogram(histograms, 0)
-        cons_aux = simple_spike_train(sfreq, constant_changes[i], int(L / num_changes_rate),
+        cons_aux = simple_spike_train(sfreq, proportional_changes[i], int(L / num_changes_rate),
                                       num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds2, correction=True,
                                       imputation=imputations)
-        fix_aux = simple_spike_train(sfreq, fixed_changes[i], int(L / num_changes_rate),
+        fix_aux = simple_spike_train(sfreq, constant_changes[i], int(L / num_changes_rate),
                                      num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds3, correction=True,
                                      imputation=imputations)
 
@@ -285,17 +289,29 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
             signal_prop = lif_prop.membrane_potential
             signal_fix = lif_fix.membrane_potential
 
-        res_per_reali[:, i, :], t_tra = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, t_tra,
-                                                                 sim_params)
-        if lif_prop_n is not None:
-            res_per_reali_n[:, i, :], t_tra = aux_statistics_prop_cons(lif_prop_n.membrane_potential,
-                                                                       lif_fix_n.membrane_potential, Le_time_win,
-                                                                       t_tra, sim_params)
+        # getting transition time for rate of proportional  change if possible
+        aux_cond = np.where(proportional_changes[i] <= initial_frequencies)
+        if len(aux_cond[0]) > 0:
+            aux_i = aux_cond[0][0]
+            t_tra_mid_win = np.max(t_tra[aux_i])
 
+        # Computing statistics of each window, either for the whole window or for the transition- and steady-states
+        res_per_reali[:, i, :], t_tr_ = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win,
+                                                                 None, sim_params, t_tra_mid_win)
+        if lif_prop_n is not None:
+            res_per_reali_n[:, i, :], t_tr_ = aux_statistics_prop_cons(lif_prop_n.membrane_potential,
+                                                                       lif_fix_n.membrane_potential, Le_time_win,
+                                                                       None, sim_params, t_tra_mid_win)
+
+        # Updating array of time_transitions
+        t_tra[i].append(t_tr_)
+
+        # Final print of the loop
         print_time(m_time() - loop_experiments,
                    file_name + ", Realisation " + str(realization) + ", frequency " + str(initial_frequencies[i]))
 
-        # """
+        """
+        t_tr = t_tr_[0]
         figc = plt.figure(figsize=(10, 3))
         plt.suptitle("For model %s, index %d, frequency %dHz, for %d synapses" % (
             model, ind, initial_frequencies[i], num_synapses))
@@ -304,71 +320,71 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("Mem. potential (mV)")
         ax1.plot(time_vector, signal_prop[0, :], c="black", alpha=0.3)
-        ax1.plot([0 + t_tra, 2], [res_per_reali[0, i, 0], res_per_reali[0, i, 0]], c="tab:orange")  # mean ini window
-        ax1.plot([2 + t_tra, 4], [res_per_reali[1, i, 0], res_per_reali[1, i, 0]], c="tab:orange")  # mean mid window
-        ax1.plot([4 + t_tra, 6], [res_per_reali[2, i, 0], res_per_reali[2, i, 0]], c="tab:orange")  # mean end window
-        ax1.plot([0, 2], [res_per_reali[47, i, 0], res_per_reali[47, i, 0]], c="red", alpha=0.5)  # min w ini window
-        ax1.plot([2, 4], [res_per_reali[52, i, 0], res_per_reali[52, i, 0]], c="red", alpha=0.5)  # min w mid window
-        ax1.plot([4, 6], [res_per_reali[58, i, 0], res_per_reali[58, i, 0]], c="red", alpha=0.5)  # min w end window
-        ax1.plot([0 + t_tra, 2], [res_per_reali[12, i, 0], res_per_reali[12, i, 0]], c="tab:red")  # min ini window
-        ax1.plot([2 + t_tra, 4], [res_per_reali[13, i, 0], res_per_reali[13, i, 0]], c="tab:red")  # min mid window
-        ax1.plot([4 + t_tra, 6], [res_per_reali[14, i, 0], res_per_reali[14, i, 0]], c="tab:red")  # min end window
-        ax1.plot([0, 2], [res_per_reali[47, i, 0], res_per_reali[47, i, 0]], c="red", alpha=0.5)  # max w ini window
-        ax1.plot([2, 4], [res_per_reali[53, i, 0], res_per_reali[53, i, 0]], c="red", alpha=0.5)  # max w mid window
-        ax1.plot([4, 6], [res_per_reali[59, i, 0], res_per_reali[59, i, 0]], c="red", alpha=0.5)  # max w end window
-        ax1.plot([0 + t_tra, 2], [res_per_reali[15, i, 0], res_per_reali[15, i, 0]], c="tab:red")  # max ini window
-        ax1.plot([2 + t_tra, 4], [res_per_reali[16, i, 0], res_per_reali[16, i, 0]], c="tab:red")  # max mid window
-        ax1.plot([4 + t_tra, 6], [res_per_reali[17, i, 0], res_per_reali[17, i, 0]], c="tab:red")  # max end window
-        ax1.plot([0, 2], [res_per_reali[44, i, 0], res_per_reali[44, i, 0]], c="green", alpha=0.5)  # q1 w ini window
-        ax1.plot([2, 4], [res_per_reali[50, i, 0], res_per_reali[50, i, 0]], c="green", alpha=0.5)  # q1 w mid window
-        ax1.plot([4, 6], [res_per_reali[56, i, 0], res_per_reali[56, i, 0]], c="green", alpha=0.5)  # q1 w end window
-        ax1.plot([0 + t_tra, 2], [res_per_reali[9, i, 0], res_per_reali[9, i, 0]], c="tab:green")  # q1 ini window
-        ax1.plot([2 + t_tra, 4], [res_per_reali[10, i, 0], res_per_reali[10, i, 0]], c="tab:green")  # q1 mid window
-        ax1.plot([4 + t_tra, 6], [res_per_reali[11, i, 0], res_per_reali[11, i, 0]], c="tab:green")  # q1 end window
-        ax1.plot([0, 2], [res_per_reali[45, i, 0], res_per_reali[45, i, 0]], c="green", alpha=0.5)  # q90 w ini window
-        ax1.plot([2, 4], [res_per_reali[51, i, 0], res_per_reali[51, i, 0]], c="green", alpha=0.5)  # q90 w mid window
-        ax1.plot([4, 6], [res_per_reali[57, i, 0], res_per_reali[57, i, 0]], c="green", alpha=0.5)  # q90 w end window
-        ax1.plot([0 + t_tra, 2], [res_per_reali[6, i, 0], res_per_reali[6, i, 0]], c="tab:green")  # q90 ini window
-        ax1.plot([2 + t_tra, 4], [res_per_reali[7, i, 0], res_per_reali[7, i, 0]], c="tab:green")  # q90 mid window
-        ax1.plot([4 + t_tra, 6], [res_per_reali[8, i, 0], res_per_reali[8, i, 0]], c="tab:green")  # q90 end window
-        ax1.plot([0 + t_tra, 2], [res_per_reali[3, i, 0], res_per_reali[3, i, 0]], c="tab:blue")  # median ini window
-        ax1.plot([2 + t_tra, 4], [res_per_reali[4, i, 0], res_per_reali[4, i, 0]], c="tab:blue")  # median mid window
-        ax1.plot([4 + t_tra, 6], [res_per_reali[5, i, 0], res_per_reali[5, i, 0]], c="tab:blue")  # median end window
+        ax1.plot([0 + t_tr, 2], [res_per_reali[0, i, 0], res_per_reali[0, i, 0]], c="tab:orange")  # mean ini window
+        ax1.plot([2 + t_tr, 4], [res_per_reali[8, i, 0], res_per_reali[8, i, 0]], c="tab:orange")  # mean mid window
+        ax1.plot([4 + t_tr, 6], [res_per_reali[16, i, 0], res_per_reali[16, i, 0]], c="tab:orange")  # mean end window
+        ax1.plot([0, 2], [res_per_reali[54, i, 0], res_per_reali[54, i, 0]], c="red", alpha=0.5)  # min w ini window
+        ax1.plot([2, 4], [res_per_reali[62, i, 0], res_per_reali[62, i, 0]], c="red", alpha=0.5)  # min w mid window
+        ax1.plot([4, 6], [res_per_reali[70, i, 0], res_per_reali[70, i, 0]], c="red", alpha=0.5)  # min w end window
+        ax1.plot([0 + t_tr, 2], [res_per_reali[6, i, 0], res_per_reali[6, i, 0]], c="tab:red")  # min ini window
+        ax1.plot([2 + t_tr, 4], [res_per_reali[14, i, 0], res_per_reali[14, i, 0]], c="tab:red")  # min mid window
+        ax1.plot([4 + t_tr, 6], [res_per_reali[22, i, 0], res_per_reali[22, i, 0]], c="tab:red")  # min end window
+        ax1.plot([0, 2], [res_per_reali[55, i, 0], res_per_reali[55, i, 0]], c="red", alpha=0.5)  # max w ini window
+        ax1.plot([2, 4], [res_per_reali[63, i, 0], res_per_reali[63, i, 0]], c="red", alpha=0.5)  # max w mid window
+        ax1.plot([4, 6], [res_per_reali[71, i, 0], res_per_reali[71, i, 0]], c="red", alpha=0.5)  # max w end window
+        ax1.plot([0 + t_tr, 2], [res_per_reali[7, i, 0], res_per_reali[7, i, 0]], c="tab:red")  # max ini window
+        ax1.plot([2 + t_tr, 4], [res_per_reali[15, i, 0], res_per_reali[15, i, 0]], c="tab:red")  # max mid window
+        ax1.plot([4 + t_tr, 6], [res_per_reali[23, i, 0], res_per_reali[23, i, 0]], c="tab:red")  # max end window
+        ax1.plot([0, 2], [res_per_reali[51, i, 0], res_per_reali[51, i, 0]], c="green", alpha=0.5)  # q1 w ini window
+        ax1.plot([2, 4], [res_per_reali[59, i, 0], res_per_reali[59, i, 0]], c="green", alpha=0.5)  # q1 w mid window
+        ax1.plot([4, 6], [res_per_reali[67, i, 0], res_per_reali[67, i, 0]], c="green", alpha=0.5)  # q1 w end window
+        ax1.plot([0 + t_tr, 2], [res_per_reali[3, i, 0], res_per_reali[3, i, 0]], c="tab:green")  # q1 ini window
+        ax1.plot([2 + t_tr, 4], [res_per_reali[11, i, 0], res_per_reali[11, i, 0]], c="tab:green")  # q1 mid window
+        ax1.plot([4 + t_tr, 6], [res_per_reali[19, i, 0], res_per_reali[19, i, 0]], c="tab:green")  # q1 end window
+        ax1.plot([0, 2], [res_per_reali[52, i, 0], res_per_reali[52, i, 0]], c="green", alpha=0.5)  # q90 w ini window
+        ax1.plot([2, 4], [res_per_reali[60, i, 0], res_per_reali[60, i, 0]], c="green", alpha=0.5)  # q90 w mid window
+        ax1.plot([4, 6], [res_per_reali[68, i, 0], res_per_reali[68, i, 0]], c="green", alpha=0.5)  # q90 w end window
+        ax1.plot([0 + t_tr, 2], [res_per_reali[4, i, 0], res_per_reali[4, i, 0]], c="tab:green")  # q90 ini window
+        ax1.plot([2 + t_tr, 4], [res_per_reali[12, i, 0], res_per_reali[12, i, 0]], c="tab:green")  # q90 mid window
+        ax1.plot([4 + t_tr, 6], [res_per_reali[20, i, 0], res_per_reali[20, i, 0]], c="tab:green")  # q90 end window
+        ax1.plot([0 + t_tr, 2], [res_per_reali[1, i, 0], res_per_reali[1, i, 0]], c="tab:blue")  # median ini window
+        ax1.plot([2 + t_tr, 4], [res_per_reali[9, i, 0], res_per_reali[9, i, 0]], c="tab:blue")  # median mid window
+        ax1.plot([4 + t_tr, 6], [res_per_reali[17, i, 0], res_per_reali[17, i, 0]], c="tab:blue")  # median end window
         # ax1.grid()
         ax1.set_title("Proportional changes", color="gray")
         ax1.set_ylim(ylims)
         ax2 = figc.add_subplot(1, 2, 2)
         ax2.plot(time_vector, signal_fix[0, :], c="black", alpha=0.3)
-        ax2.plot([0 + t_tra, 2], [res_per_reali[18, i, 0], res_per_reali[18, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
-        ax2.plot([2 + t_tra, 4], [res_per_reali[19, i, 0], res_per_reali[19, i, 0]], c="tab:orange")  # mean mid window
-        ax2.plot([4 + t_tra, 6], [res_per_reali[20, i, 0], res_per_reali[20, i, 0]], c="tab:orange")  # mean end window
-        ax2.plot([0, 2], [res_per_reali[64, i, 0], res_per_reali[64, i, 0]], c="red", alpha=0.5)  # min w ini window
-        ax2.plot([2, 4], [res_per_reali[70, i, 0], res_per_reali[70, i, 0]], c="red", alpha=0.5)  # min w mid window
-        ax2.plot([4, 6], [res_per_reali[76, i, 0], res_per_reali[76, i, 0]], c="red", alpha=0.5)  # min w end window
-        ax2.plot([0 + t_tra, 2], [res_per_reali[30, i, 0], res_per_reali[30, i, 0]], c="tab:red")  # min ini window
-        ax2.plot([2 + t_tra, 4], [res_per_reali[31, i, 0], res_per_reali[31, i, 0]], c="tab:red")  # min mid window
-        ax2.plot([4 + t_tra, 6], [res_per_reali[32, i, 0], res_per_reali[32, i, 0]], c="tab:red")  # min end window
-        ax2.plot([0, 2], [res_per_reali[65, i, 0], res_per_reali[65, i, 0]], c="red", alpha=0.5)  # max w ini window
-        ax2.plot([2, 4], [res_per_reali[71, i, 0], res_per_reali[71, i, 0]], c="red", alpha=0.5)  # max w mid window
-        ax2.plot([4, 6], [res_per_reali[77, i, 0], res_per_reali[77, i, 0]], c="red", alpha=0.5)  # max w end window
-        ax2.plot([0 + t_tra, 2], [res_per_reali[33, i, 0], res_per_reali[33, i, 0]], c="tab:red", label='max')  # max ini window
-        ax2.plot([2 + t_tra, 4], [res_per_reali[34, i, 0], res_per_reali[34, i, 0]], c="tab:red")  # max mid window
-        ax2.plot([4 + t_tra, 6], [res_per_reali[35, i, 0], res_per_reali[35, i, 0]], c="tab:red")  # max end window
-        ax2.plot([0, 2], [res_per_reali[62, i, 0], res_per_reali[62, i, 0]], c="green", alpha=0.5)  # q1 w ini window
-        ax2.plot([2, 4], [res_per_reali[68, i, 0], res_per_reali[68, i, 0]], c="green", alpha=0.5)  # q1 w mid window
-        ax2.plot([4, 6], [res_per_reali[74, i, 0], res_per_reali[74, i, 0]], c="green", alpha=0.5)  # q1 w end window
-        ax2.plot([0 + t_tra, 2], [res_per_reali[24, i, 0], res_per_reali[24, i, 0]], c="tab:green", label=r'$q_1$')  # q1 ini window
-        ax2.plot([2 + t_tra, 4], [res_per_reali[25, i, 0], res_per_reali[25, i, 0]], c="tab:green")  # q1 mid window
-        ax2.plot([4 + t_tra, 6], [res_per_reali[26, i, 0], res_per_reali[26, i, 0]], c="tab:green")  # q1 end window
-        ax2.plot([0, 2], [res_per_reali[63, i, 0], res_per_reali[63, i, 0]], c="green", alpha=0.5)  # q90 w ini window
-        ax2.plot([2, 4], [res_per_reali[69, i, 0], res_per_reali[69, i, 0]], c="green", alpha=0.5)  # q90 w mid window
-        ax2.plot([4, 6], [res_per_reali[75, i, 0], res_per_reali[75, i, 0]], c="green", alpha=0.5)  # q90 w end window
-        ax2.plot([0 + t_tra, 2], [res_per_reali[27, i, 0], res_per_reali[27, i, 0]], c="tab:green", label=r'$q_{90}$')  # q90 ini window
-        ax2.plot([2 + t_tra, 4], [res_per_reali[28, i, 0], res_per_reali[28, i, 0]], c="tab:green")  # q90 mid window
-        ax2.plot([4 + t_tra, 6], [res_per_reali[29, i, 0], res_per_reali[29, i, 0]], c="tab:green")  # q90 end window
-        ax2.plot([0 + t_tra, 2], [res_per_reali[21, i, 0], res_per_reali[21, i, 0]], c="tab:blue", label='med')  # median ini window
-        ax2.plot([2 + t_tra, 4], [res_per_reali[22, i, 0], res_per_reali[22, i, 0]], c="tab:blue")  # median mid window
-        ax2.plot([4 + t_tra, 6], [res_per_reali[23, i, 0], res_per_reali[23, i, 0]], c="tab:blue")  # median end window
+        ax2.plot([0 + t_tr, 2], [res_per_reali[18, i, 0], res_per_reali[18, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
+        ax2.plot([2 + t_tr, 4], [res_per_reali[19, i, 0], res_per_reali[19, i, 0]], c="tab:orange")  # mean mid window
+        ax2.plot([4 + t_tr, 6], [res_per_reali[20, i, 0], res_per_reali[20, i, 0]], c="tab:orange")  # mean end window
+        ax2.plot([0, 2], [res_per_reali[58, i, 0], res_per_reali[58, i, 0]], c="red", alpha=0.5)  # min w ini window
+        ax2.plot([2, 4], [res_per_reali[64, i, 0], res_per_reali[64, i, 0]], c="red", alpha=0.5)  # min w mid window
+        ax2.plot([4, 6], [res_per_reali[70, i, 0], res_per_reali[70, i, 0]], c="red", alpha=0.5)  # min w end window
+        ax2.plot([0 + t_tr, 2], [res_per_reali[30, i, 0], res_per_reali[30, i, 0]], c="tab:red")  # min ini window
+        ax2.plot([2 + t_tr, 4], [res_per_reali[31, i, 0], res_per_reali[31, i, 0]], c="tab:red")  # min mid window
+        ax2.plot([4 + t_tr, 6], [res_per_reali[32, i, 0], res_per_reali[32, i, 0]], c="tab:red")  # min end window
+        ax2.plot([0, 2], [res_per_reali[59, i, 0], res_per_reali[59, i, 0]], c="red", alpha=0.5)  # max w ini window
+        ax2.plot([2, 4], [res_per_reali[65, i, 0], res_per_reali[65, i, 0]], c="red", alpha=0.5)  # max w mid window
+        ax2.plot([4, 6], [res_per_reali[71, i, 0], res_per_reali[71, i, 0]], c="red", alpha=0.5)  # max w end window
+        ax2.plot([0 + t_tr, 2], [res_per_reali[33, i, 0], res_per_reali[33, i, 0]], c="tab:red", label='max')  # max ini window
+        ax2.plot([2 + t_tr, 4], [res_per_reali[34, i, 0], res_per_reali[34, i, 0]], c="tab:red")  # max mid window
+        ax2.plot([4 + t_tr, 6], [res_per_reali[35, i, 0], res_per_reali[35, i, 0]], c="tab:red")  # max end window
+        ax2.plot([0, 2], [res_per_reali[56, i, 0], res_per_reali[56, i, 0]], c="green", alpha=0.5)  # q1 w ini window
+        ax2.plot([2, 4], [res_per_reali[62, i, 0], res_per_reali[62, i, 0]], c="green", alpha=0.5)  # q1 w mid window
+        ax2.plot([4, 6], [res_per_reali[68, i, 0], res_per_reali[68, i, 0]], c="green", alpha=0.5)  # q1 w end window
+        ax2.plot([0 + t_tr, 2], [res_per_reali[24, i, 0], res_per_reali[24, i, 0]], c="tab:green", label=r'$q_1$')  # q1 ini window
+        ax2.plot([2 + t_tr, 4], [res_per_reali[25, i, 0], res_per_reali[25, i, 0]], c="tab:green")  # q1 mid window
+        ax2.plot([4 + t_tr, 6], [res_per_reali[26, i, 0], res_per_reali[26, i, 0]], c="tab:green")  # q1 end window
+        ax2.plot([0, 2], [res_per_reali[57, i, 0], res_per_reali[57, i, 0]], c="green", alpha=0.5)  # q90 w ini window
+        ax2.plot([2, 4], [res_per_reali[63, i, 0], res_per_reali[63, i, 0]], c="green", alpha=0.5)  # q90 w mid window
+        ax2.plot([4, 6], [res_per_reali[69, i, 0], res_per_reali[69, i, 0]], c="green", alpha=0.5)  # q90 w end window
+        ax2.plot([0 + t_tr, 2], [res_per_reali[27, i, 0], res_per_reali[27, i, 0]], c="tab:green", label=r'$q_{90}$')  # q90 ini window
+        ax2.plot([2 + t_tr, 4], [res_per_reali[28, i, 0], res_per_reali[28, i, 0]], c="tab:green")  # q90 mid window
+        ax2.plot([4 + t_tr, 6], [res_per_reali[29, i, 0], res_per_reali[29, i, 0]], c="tab:green")  # q90 end window
+        ax2.plot([0 + t_tr, 2], [res_per_reali[21, i, 0], res_per_reali[21, i, 0]], c="tab:blue", label='med')  # median ini window
+        ax2.plot([2 + t_tr, 4], [res_per_reali[22, i, 0], res_per_reali[22, i, 0]], c="tab:blue")  # median mid window
+        ax2.plot([4 + t_tr, 6], [res_per_reali[23, i, 0], res_per_reali[23, i, 0]], c="tab:blue")  # median end window
         ax2.set_title("Constant changes", color="gray")
         ax2.set_xlabel("Time (s)")
         ax2.set_ylabel("Mem. potential (mV)")
@@ -378,7 +394,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         figc.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
         if save_figs: figc.savefig(folder_plots + file_name + '_' + str(initial_frequencies[i]) + '_.png', format='png')
         # """
-        i += 1
+        i -= 1  # i += 1
 
     # steady-state part
     for res_i in range(res_real.shape[0]):
@@ -390,6 +406,11 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
     print_time(m_time() - loop_time, file_name + ", Realisation " + str(realization))
 
     realization += 1
+
+# transition-state
+for i in range(num_experiments):
+    t_tra[i] = np.ravel(t_tra[i])
+t_tra = np.array(t_tra).T
 
 if not os.path.isfile(path_vars + file_name):
     dr = {'initial_frequencies': initial_frequencies,

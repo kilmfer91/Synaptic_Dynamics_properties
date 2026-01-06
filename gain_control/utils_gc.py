@@ -12,30 +12,27 @@ from utils import *
 
 # ******************************************************************************************************************
 # Local variables
-stat_list = ['st_ini_prop_mean', 'st_mid_prop_mean', 'st_end_prop_mean',
-             'st_ini_prop_med', 'st_mid_prop_med', 'st_end_prop_med',
-             'st_ini_prop_q1', 'st_mid_prop_q1', 'st_end_prop_q1',
-             'st_ini_prop_q90', 'st_mid_prop_q90', 'st_end_prop_q90',
-             'st_ini_prop_min', 'st_mid_prop_min', 'st_end_prop_min',
-             'st_ini_prop_max', 'st_mid_prop_max', 'st_end_prop_max',
-             'st_ini_fix_mean', 'st_mid_fix_mean', 'st_end_fix_mean',
-             'st_ini_fix_med', 'st_mid_fix_med', 'st_end_fix_med',
-             'st_ini_fix_q1', 'st_mid_fix_q1', 'st_end_fix_q1',
-             'st_ini_fix_q90', 'st_mid_fix_q90', 'st_end_fix_q90',
-             'st_ini_fix_min', 'st_mid_fix_min', 'st_end_fix_min',
-             'st_ini_fix_max', 'st_mid_fix_max', 'st_end_fix_max',
-             'mtr_ini_prop', 'mtr_mid_prop', 'mtr_end_prop',
-             'mtr_ini_fix', 'mtr_mid_fix', 'mtr_end_fix',
-             'w_ini_prop_mean', 'w_ini_prop_med', 'w_ini_prop_q1', 'w_ini_prop_q90', 'w_ini_prop_min', 'w_ini_prop_max',
-             'w_mid_prop_mean', 'w_mid_prop_med', 'w_mid_prop_q1', 'w_mid_prop_q90', 'w_mid_prop_min', 'w_mid_prop_max',
-             'w_end_prop_mean', 'w_end_prop_med', 'w_end_prop_q1', 'w_end_prop_q90', 'w_end_prop_min', 'w_end_prop_max',
-             'w_ini_fix_mean', 'w_ini_fix_med', 'w_ini_fix_q1', 'w_ini_fix_q90', 'w_ini_fix_min', 'w_ini_fix_max',
-             'w_mid_fix_mean', 'w_mid_fix_med', 'w_mid_fix_q1', 'w_mid_fix_q90', 'w_mid_fix_min', 'w_mid_fix_max',
-             'w_end_fix_mean', 'w_end_fix_med', 'w_end_fix_q1', 'w_end_fix_q90', 'w_end_fix_min', 'w_end_fix_max',
+stat_list = ['st_ini_prop_mean', 'st_ini_prop_med', 'st_ini_prop_q5', 'st_ini_prop_q10', 'st_ini_prop_q90', 'st_ini_prop_q95', 'st_ini_prop_min', 'st_ini_prop_max',
+             'st_mid_prop_mean', 'st_mid_prop_med', 'st_mid_prop_q5', 'st_mid_prop_q10', 'st_mid_prop_q90', 'st_mid_prop_q95', 'st_mid_prop_min', 'st_mid_prop_max',
+             'st_end_prop_mean', 'st_end_prop_med', 'st_end_prop_q5', 'st_end_prop_q10', 'st_end_prop_q90', 'st_end_prop_q95', 'st_end_prop_min', 'st_end_prop_max',
+             'st_ini_fix_mean', 'st_ini_fix_med', 'st_ini_fix_q5', 'st_ini_fix_q10', 'st_ini_fix_q90', 'st_ini_fix_q95', 'st_ini_fix_min', 'st_ini_fix_max',
+             'st_mid_fix_mean', 'st_mid_fix_med', 'st_mid_fix_q5', 'st_mid_fix_q10', 'st_mid_fix_q90', 'st_mid_fix_q95', 'st_mid_fix_min', 'st_mid_fix_max',
+             'st_end_fix_mean', 'st_end_fix_med', 'st_end_fix_q5', 'st_end_fix_q10', 'st_end_fix_q90', 'st_end_fix_q95', 'st_end_fix_min', 'st_end_fix_max',
+             'w_ini_prop_mean', 'w_ini_prop_med', 'w_ini_prop_q5', 'w_ini_prop_q10', 'w_ini_prop_q90', 'w_ini_prop_q95', 'w_ini_prop_min', 'w_ini_prop_max',
+             'w_mid_prop_mean', 'w_mid_prop_med', 'w_mid_prop_q5', 'w_mid_prop_q10', 'w_mid_prop_q90', 'w_mid_prop_q95', 'w_mid_prop_min', 'w_mid_prop_max',
+             'w_end_prop_mean', 'w_end_prop_med', 'w_end_prop_q5', 'w_end_prop_q10', 'w_end_prop_q90', 'w_end_prop_q95', 'w_end_prop_min', 'w_end_prop_max',
+             'w_ini_fix_mean', 'w_ini_fix_med', 'w_ini_fix_q5', 'w_ini_fix_q10', 'w_ini_fix_q90', 'w_ini_fix_q95', 'w_ini_fix_min', 'w_ini_fix_max',
+             'w_mid_fix_mean', 'w_mid_fix_med', 'w_mid_fix_q5', 'w_mid_fix_q10', 'w_mid_fix_q90', 'w_mid_fix_q95', 'w_mid_fix_min', 'w_mid_fix_max',
+             'w_end_fix_mean', 'w_end_fix_med', 'w_end_fix_q5', 'w_end_fix_q10', 'w_end_fix_q90', 'w_end_fix_q95', 'w_end_fix_min', 'w_end_fix_max',
+             'mtr_ini_prop_mean', 'mtr_ini_prop_med', 'mtr_ini_prop_q5', 'mtr_ini_prop_q10', 'mtr_ini_prop_q90', 'mtr_ini_prop_q95', 'mtr_ini_prop_min', 'mtr_ini_prop_max',
+             'mtr_mid_prop_mean', 'mtr_mid_prop_med', 'mtr_mid_prop_q5', 'mtr_mid_prop_q10', 'mtr_mid_prop_q90', 'mtr_mid_prop_q95', 'mtr_mid_prop_min', 'mtr_mid_prop_max',
+             'mtr_end_prop_mean', 'mtr_end_prop_med', 'mtr_end_prop_q5', 'mtr_end_prop_q10', 'mtr_end_prop_q90', 'mtr_end_prop_q95', 'mtr_end_prop_min', 'mtr_end_prop_max',
+             'mtr_ini_fix_mean', 'mtr_ini_fix_med', 'mtr_ini_fix_q5', 'mtr_ini_fix_q10', 'mtr_ini_fix_q90', 'mtr_ini_fix_q95', 'mtr_ini_fix_min', 'mtr_ini_fix_max',
+             'mtr_mid_fix_mean', 'mtr_mid_fix_med', 'mtr_mid_fix_q5', 'mtr_mid_fix_q10', 'mtr_mid_fix_q90', 'mtr_mid_fix_q95', 'mtr_mid_fix_min', 'mtr_mid_fix_max',
+             'mtr_end_fix_mean', 'mtr_end_fix_med', 'mtr_end_fix_q5', 'mtr_end_fix_q10', 'mtr_end_fix_q90', 'mtr_end_fix_q95', 'mtr_end_fix_min', 'mtr_end_fix_max',
              'initial_frequencies', 'stp_model', 'name_params', 'dyn_synapse', 'num_synapses', 'syn_params',
              'sim_params', 'lif_params', 'lif_params2', 'prop_rate_change_a', 'fix_rate_change_a', 'num_changes_rate',
              'description', 'seeds', 'realizations', 't_realizations', 'time_transition']
-
 stat_list_sin = ['vec_max_mp_pos', 'vec_min_mp_neg', 'vec_q1_mp_pos', 'vec_q90_mp_pos',
                  'vec_q1_mp_neg', 'vec_q90_mp_neg', 'vec_max_mp', 'vec_min_mp', 'vec_q1_mp', 'vec_q90_mp']
 
@@ -479,7 +476,7 @@ def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisso
     return Input_test[:, :L]
 
 
-def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transition, sim_params):
+def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transition, sim_params, t_transition_mid_win):
     """
 
     Parameters
@@ -489,7 +486,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     Le_time_win
     threshold_transition
     sim_params
-
+    t_transition_mid_win
     Returns
     -------
 
@@ -505,58 +502,133 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     ee = sig_cons[:, int(Le_time_win / dt):int(2 * Le_time_win / dt)]  # [, 2s:4s]
     ff = sig_cons[:, int(2 * Le_time_win / dt):int(max_t / dt)]  # [, 4s:6s]
 
+    # Initial values of time of transition vars
+    th_tr = threshold_transition
+    th_tr_a = [threshold_transition]
+
     # Getting time range of transition period
-    ini_minus_end_windows = aa - cc
-    ind_tr = np.where(ini_minus_end_windows <= 0.01)  # find indices where the difference is lower than 1%
-    ind_max = np.argmax(ini_minus_end_windows)  # find index of maximum for the difference
-    first_indtr = np.where(ind_tr > ind_max)[1][0]  # getting indices after the index of maximum
-    if threshold_transition is None: th_tr = ind_tr[1][first_indtr] * dt  # getting time of transition period
-    else: th_tr = threshold_transition
+    if threshold_transition is None:
+        ini_minus_end_windows = np.abs(aa[:, :-10] - cc[:, :-10])
+        ind_tr = np.where(ini_minus_end_windows > 1e-4)  # find indices where the difference is bigger than 1e-6
+        _, ind_unique = np.unique(ind_tr[0], return_index=True)  # Getting indices of unique values (i.e. realizations)
+        first_indtr = np.roll(ind_tr[1][list(np.array(ind_unique) - 1)], -1)  # getting last index (indicating that after that, diff. is lower than 1e-6)
+        th_tr_a = first_indtr * dt  # getting time of transition period
+        th_tr = np.max(th_tr_a)  # To extract steady-state and transition signals, use the max. transition time
 
     # Extracting steady-state parts of stimuli windows
-    a = sig_prop[:, int(th_tr / dt):int(Le_time_win / dt)]  # [, 0.5s:2s]
-    b = sig_prop[:, int((Le_time_win + th_tr) / dt):int(2 * Le_time_win / dt)]  # [, 2.5s:4.0s]
-    c = sig_prop[:, int((2 * Le_time_win + th_tr) / dt):int(max_t / dt)]  # [, 4.5s:6.0s]
-    d = sig_cons[:, int(th_tr / dt):int(Le_time_win / dt)]  # [, 0.5s:2s]
-    e = sig_cons[:, int((Le_time_win + th_tr) / dt):int(2 * Le_time_win / dt)]  # [, 2.5s:4.0s]
-    f = sig_cons[:, int((2 * Le_time_win + th_tr) / dt):int(max_t / dt)]  # [, 4.5s:6.0s]
+    mean_a, median_a, q5_a, q10_a, q90_a, q95_a, min_a, max_a = [], [], [], [], [], [], [], []
+    mean_b, median_b, q5_b, q10_b, q90_b, q95_b, min_b, max_b = [], [], [], [], [], [], [], []
+    mean_c, median_c, q5_c, q10_c, q90_c, q95_c, min_c, max_c = [], [], [], [], [], [], [], []
+    mean_d, median_d, q5_d, q10_d, q90_d, q95_d, min_d, max_d = [], [], [], [], [], [], [], []
+    mean_e, median_e, q5_e, q10_e, q90_e, q95_e, min_e, max_e = [], [], [], [], [], [], [], []
+    mean_f, median_f, q5_f, q10_f, q90_f, q95_f, min_f, max_f = [], [], [], [], [], [], [], []
+    mean_g, median_g, q5_g, q10_g, q90_g, q95_g, min_g, max_g = [], [], [], [], [], [], [], []
+    mean_h, median_h, q5_h, q10_h, q90_h, q95_h, min_h, max_h = [], [], [], [], [], [], [], []
+    mean_k, median_k, q5_k, q10_k, q90_k, q95_k, min_k, max_k = [], [], [], [], [], [], [], []
+    mean_m, median_m, q5_m, q10_m, q90_m, q95_m, min_m, max_m = [], [], [], [], [], [], [], []
+    mean_n, median_n, q5_n, q10_n, q90_n, q95_n, min_n, max_n = [], [], [], [], [], [], [], []
+    mean_o, median_o, q5_o, q10_o, q90_o, q95_o, min_o, max_o = [], [], [], [], [], [], [], []
+    
+    # Getting statistics for transition and steady-state components of mid window if time_transition is provided
+    if t_transition_mid_win is not None:
+        b = sig_prop[:, int((Le_time_win + t_transition_mid_win) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
+        e = sig_cons[:, int((Le_time_win + t_transition_mid_win) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
+        # Getting statistics
+        bu, eu = statistics_signal(b, axis=1), statistics_signal(e, axis=1)
+        mean_b, median_b, q5_b, q10_b, q90_b, q95_b, min_b, max_b = bu
+        mean_e, median_e, q5_e, q10_e, q90_e, q95_e, min_e, max_e = eu
 
-    # Extracting transition parts of stimuli windows
-    g = sig_prop[:, 0:int(th_tr / dt)]  # [, 0s:0.5s]
-    h = sig_prop[:, int(Le_time_win / dt):int((Le_time_win + th_tr) / dt)]  # [, 2s:2.5s]
-    k = sig_prop[:, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr) / dt)]  # [, 4s:4.5s]
-    m = sig_cons[:, 0:int(th_tr / dt)]  # [, 0s:0.5s]
-    n = sig_cons[:, int(Le_time_win / dt):int((Le_time_win + th_tr) / dt)]  # [, 2s:2.5s]
-    o = sig_cons[:, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr) / dt)]  # [, 4s:4.5s]
+        # Extracting transition parts of stimuli windows
+        h = sig_prop[:, int(Le_time_win / dt):int((Le_time_win + t_transition_mid_win) / dt)]  # [, 2s:t_tr]
+        n = sig_cons[:, int(Le_time_win / dt):int((Le_time_win + t_transition_mid_win) / dt)]  # [, 2s:t_tr]
+        # Getting statistics
+        hu, nu = statistics_signal(h, axis=1), statistics_signal(n, axis=1)
+        mean_h, median_h, q5_h, q10_h, q90_h, q95_h, min_h, max_h = hu
+        mean_n, median_n, q5_n, q10_n, q90_n, q95_n, min_n, max_n = nu
 
-    return np.array([np.mean(a, axis=1), np.mean(b, axis=1), np.mean(c, axis=1),  # 2
-                     np.median(a, axis=1), np.median(b, axis=1), np.median(c, axis=1),  # 5
-                     np.quantile(a, 0.1, axis=1), np.quantile(b, 0.1, axis=1), np.quantile(c, 0.1, axis=1),  # 8
-                     np.quantile(a, 0.9, axis=1), np.quantile(b, 0.9, axis=1), np.quantile(c, 0.9, axis=1),  # 11
-                     np.min(a, axis=1), np.min(b, axis=1), np.min(c, axis=1),  # 14
-                     np.max(a, axis=1), np.max(b, axis=1), np.max(c, axis=1),  # 17
-                     np.mean(d, axis=1), np.mean(e, axis=1), np.mean(f, axis=1),  # 20
-                     np.median(d, axis=1), np.median(e, axis=1), np.median(f, axis=1),  # 23
-                     np.quantile(d, 0.1, axis=1), np.quantile(e, 0.1, axis=1), np.quantile(f, 0.1, axis=1),  # 26
-                     np.quantile(d, 0.9, axis=1), np.quantile(e, 0.9, axis=1), np.quantile(f, 0.9, axis=1),  # 29
-                     np.min(d, axis=1), np.min(e, axis=1), np.min(f, axis=1),  # 32
-                     np.max(d, axis=1), np.max(e, axis=1), np.max(f, axis=1),  # 35
-                     np.max(g, axis=1), np.max(h, axis=1), np.min(k, axis=1),  # 38
-                     np.max(m, axis=1), np.max(n, axis=1), np.min(o, axis=1),  # 41
-                     np.mean(aa, axis=1), np.median(aa, axis=1), np.quantile(aa, 0.1, axis=1),  # 44
-                     np.quantile(aa, 0.9, axis=1),  np.min(aa, axis=1), np.max(aa, axis=1),  # 47
-                     np.mean(bb, axis=1), np.median(bb, axis=1), np.quantile(bb, 0.1, axis=1),  # 50
-                     np.quantile(bb, 0.9, axis=1), np.min(bb, axis=1), np.max(bb, axis=1),  # 53
-                     np.mean(cc, axis=1), np.median(cc, axis=1), np.quantile(cc, 0.1, axis=1),  # 56
-                     np.quantile(cc, 0.9, axis=1), np.min(cc, axis=1), np.max(cc, axis=1),  # 59
-                     np.mean(dd, axis=1), np.median(dd, axis=1), np.quantile(dd, 0.1, axis=1),  # 62
-                     np.quantile(dd, 0.9, axis=1), np.min(dd, axis=1), np.max(dd, axis=1),  # 65
-                     np.mean(ee, axis=1), np.median(ee, axis=1), np.quantile(ee, 0.1, axis=1),  # 68
-                     np.quantile(ee, 0.9, axis=1), np.min(ee, axis=1), np.max(ee, axis=1),  # 71
-                     np.mean(ff, axis=1), np.median(ff, axis=1), np.quantile(ff, 0.1, axis=1),  # 74
-                     np.quantile(ff, 0.9, axis=1), np.min(ff, axis=1), np.max(ff, axis=1)]  # 77
-                    ), th_tr
+    # Getting statistics for transition and steady-state components of signals
+    for r in range(sig_prop.shape[0]):
+        # Getting statistics for transition and steady-state components of initial and ending windows
+        # Extracting steady-state parts of stimuli windows
+        a = sig_prop[r, int(th_tr_a[r] / dt):int(Le_time_win / dt)]  # [, t_tr:2s]
+        c = sig_prop[r, int((2 * Le_time_win + th_tr_a[r]) / dt):int(max_t / dt)]  # [, t_tr:6.0s]
+        d = sig_cons[r, int(th_tr_a[r] / dt):int(Le_time_win / dt)]  # [, t_tr:2s]
+        f = sig_cons[r, int((2 * Le_time_win + th_tr_a[r]) / dt):int(max_t / dt)]  # [, t_tr:6.0s]
+        # Getting statistics
+        au, cu, du, fu = statistics_signal(a), statistics_signal(c), statistics_signal(d), statistics_signal(f)
+        # Updating final variables
+        mean_a.append(au[0]), median_a.append(au[1]), q5_a.append(au[2]), q10_a.append(au[3]), q90_a.append(au[4]), q95_a.append(au[5]), min_a.append(au[6]), max_a.append(au[7])
+        mean_c.append(cu[0]), median_c.append(cu[1]), q5_c.append(cu[2]), q10_c.append(cu[3]), q90_c.append(cu[4]), q95_c.append(cu[5]), min_c.append(cu[6]), max_c.append(cu[7])
+        mean_d.append(du[0]), median_d.append(du[1]), q5_d.append(du[2]), q10_d.append(du[3]), q90_d.append(du[4]), q95_d.append(du[5]), min_d.append(du[6]), max_d.append(du[7])
+        mean_f.append(fu[0]), median_f.append(fu[1]), q5_f.append(fu[2]), q10_f.append(fu[3]), q90_f.append(fu[4]), q95_f.append(fu[5]), min_f.append(fu[6]), max_f.append(fu[7])
 
+        # Extracting transition parts of stimuli windows
+        g = sig_prop[r, 0:int(th_tr_a[r] / dt)]  # [, 0s:t_tr]
+        k = sig_prop[r, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr_a[r]) / dt)]  # [, 4s:t_tr]
+        m = sig_cons[r, 0:int(th_tr_a[r] / dt)]  # [, 0s:t_tr]
+        o = sig_cons[r, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr_a[r]) / dt)]  # [, 4s:t_tr]
+        # Getting statistics
+        gu, ku, mu, ou = statistics_signal(g), statistics_signal(k), statistics_signal(m), statistics_signal(o)
+        # Updating final variables
+        mean_g.append(gu[0]), median_g.append(gu[1]), q5_g.append(gu[2]), q10_g.append(gu[3]), q90_g.append(gu[4]), q95_g.append(gu[5]), min_g.append(gu[6]), max_g.append(gu[7])
+        mean_k.append(ku[0]), median_k.append(ku[1]), q5_k.append(ku[2]), q10_k.append(ku[3]), q90_k.append(ku[4]), q95_k.append(ku[5]), min_k.append(ku[6]), max_k.append(ku[7])
+        mean_m.append(mu[0]), median_m.append(mu[1]), q5_m.append(mu[2]), q10_m.append(mu[3]), q90_m.append(mu[4]), q95_m.append(mu[5]), min_m.append(mu[6]), max_m.append(mu[7])
+        mean_o.append(ou[0]), median_o.append(ou[1]), q5_o.append(ou[2]), q10_o.append(ou[3]), q90_o.append(ou[4]), q95_o.append(ou[5]), min_o.append(ou[6]), max_o.append(ou[7])
+
+        # Getting statistics for transition and steady-state components of middle windows
+        if t_transition_mid_win is None:
+            # Extracting steady-state parts of stimuli windows
+            b = sig_prop[r, int((Le_time_win + th_tr_a[r]) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
+            e = sig_cons[r, int((Le_time_win + th_tr_a[r]) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
+            bu, eu = statistics_signal(b), statistics_signal(e)
+            # Getting statistics
+            mean_b.append(bu[0]), median_b.append(bu[1]), q5_b.append(bu[2]), q10_b.append(bu[3]), q90_b.append(bu[4]), q95_b.append(bu[5]), min_b.append(bu[6]), max_b.append(bu[7])
+            mean_e.append(eu[0]), median_e.append(eu[1]), q5_e.append(eu[2]), q10_e.append(eu[3]), q90_e.append(eu[4]), q95_e.append(eu[5]), min_e.append(eu[6]), max_e.append(eu[7])
+
+            # Extracting transition parts of stimuli windows
+            h = sig_prop[r, int(Le_time_win / dt):int((Le_time_win + th_tr_a[r]) / dt)]  # [, 2s:t_tr]
+            n = sig_cons[r, int(Le_time_win / dt):int((Le_time_win + th_tr_a[r]) / dt)]  # [, 2s:t_tr]
+            # Getting statistics
+            hu, nu = statistics_signal(h), statistics_signal(n)
+            # Updating final variables
+            mean_h.append(hu[0]), median_h.append(hu[1]), q5_h.append(hu[2]), q10_h.append(hu[3]), q90_h.append(hu[4]), q95_h.append(hu[5]), min_h.append(hu[6]), max_h.append(hu[7])
+            mean_n.append(nu[0]), median_n.append(nu[1]), q5_n.append(nu[2]), q10_n.append(nu[3]), q90_n.append(nu[4]), q95_n.append(nu[5]), min_n.append(nu[6]), max_n.append(nu[7])
+
+    return np.array([# For steady-state
+                     np.array(mean_a), np.array(median_a), np.array(q5_a), np.array(q10_a), np.array(q90_a), np.array(q95_a), np.array(min_a), np.array(max_a),  # 7
+                     np.array(mean_b), np.array(median_b), np.array(q5_b), np.array(q10_b), np.array(q90_b), np.array(q95_b), np.array(min_b), np.array(max_b),  # 15
+                     np.array(mean_c), np.array(median_c), np.array(q5_c), np.array(q10_c), np.array(q90_c), np.array(q95_c), np.array(min_c), np.array(max_c),  # 23
+                     np.array(mean_d), np.array(median_d), np.array(q5_d), np.array(q10_d), np.array(q90_d), np.array(q95_d), np.array(min_d), np.array(max_d),  # 31
+                     np.array(mean_e), np.array(median_e), np.array(q5_e), np.array(q10_e), np.array(q90_e), np.array(q95_e), np.array(min_e), np.array(max_e),  # 39
+                     np.array(mean_f), np.array(median_f), np.array(q5_f), np.array(q10_f), np.array(q90_f), np.array(q95_f), np.array(min_f), np.array(max_f),  # 47
+                     # For all window
+                     np.mean(aa, axis=1), np.median(aa, axis=1), np.quantile(aa, 0.05, axis=1), np.quantile(aa, 0.1, axis=1),  # 51
+                     np.quantile(aa, 0.9, axis=1), np.quantile(aa, 0.95, axis=1), np.min(aa, axis=1), np.max(aa, axis=1),  # 55
+                     np.mean(bb, axis=1), np.median(bb, axis=1), np.quantile(bb, 0.05, axis=1), np.quantile(bb, 0.1, axis=1),  # 59
+                     np.quantile(bb, 0.9, axis=1), np.quantile(bb, 0.95, axis=1), np.min(bb, axis=1), np.max(bb, axis=1),  # 63
+                     np.mean(cc, axis=1), np.median(cc, axis=1), np.quantile(cc, 0.05, axis=1), np.quantile(cc, 0.1, axis=1),  # 67
+                     np.quantile(cc, 0.9, axis=1), np.quantile(cc, 0.95, axis=1), np.min(cc, axis=1), np.max(cc, axis=1),  # 71
+                     np.mean(dd, axis=1), np.median(dd, axis=1), np.quantile(dd, 0.05, axis=1), np.quantile(dd, 0.1, axis=1),  # 75
+                     np.quantile(dd, 0.9, axis=1), np.quantile(dd, 0.95, axis=1), np.min(dd, axis=1), np.max(dd, axis=1),  # 79
+                     np.mean(ee, axis=1), np.median(ee, axis=1), np.quantile(ee, 0.05, axis=1), np.quantile(ee, 0.1, axis=1),  # 83
+                     np.quantile(ee, 0.9, axis=1), np.quantile(ee, 0.95, axis=1), np.min(ee, axis=1), np.max(ee, axis=1),  # 87
+                     np.mean(ff, axis=1), np.median(ff, axis=1), np.quantile(ff, 0.05, axis=1), np.quantile(ff, 0.1, axis=1),  # 91
+                     np.quantile(ff, 0.9, axis=1), np.quantile(ff, 0.95, axis=1), np.min(ff, axis=1), np.max(ff, axis=1),  # 95
+                     # For transition-state
+                     np.array(mean_g), np.array(median_g), np.array(q5_g), np.array(q10_g), np.array(q90_g), np.array(q95_g), np.array(min_g), np.array(max_g),  # 103
+                     np.array(mean_h), np.array(median_h), np.array(q5_h), np.array(q10_h), np.array(q90_h), np.array(q95_h), np.array(min_h), np.array(max_h),  # 111
+                     np.array(mean_k), np.array(median_k), np.array(q5_k), np.array(q10_k), np.array(q90_k), np.array(q95_k), np.array(min_k), np.array(max_k),  # 119
+                     np.array(mean_m), np.array(median_m), np.array(q5_m), np.array(q10_m), np.array(q90_m), np.array(q95_m), np.array(min_m), np.array(max_m),  # 127
+                     np.array(mean_n), np.array(median_n), np.array(q5_n), np.array(q10_n), np.array(q90_n), np.array(q95_n), np.array(min_n), np.array(max_n),  # 135
+                     np.array(mean_o), np.array(median_o), np.array(q5_o), np.array(q10_o), np.array(q90_o), np.array(q95_o), np.array(min_o), np.array(max_o)]  # 143
+                    ), th_tr_a
+
+
+def statistics_signal(signal, axis=0):
+    return (np.mean(signal, axis=axis), np.median(signal, axis=axis), np.quantile(signal, 0.05, axis=axis), 
+            np.quantile(signal, 0.1, axis=axis), np.quantile(signal, 0.9, axis=axis), 
+            np.quantile(signal, 0.95, axis=axis), np.min(signal, axis=axis), np.max(signal, axis=axis))
+    
 
 def aux_statistics_sin(mp_signal, coff, sfreq):
     low_pass_mempot = lowpass(mp_signal, coff, sfreq)
