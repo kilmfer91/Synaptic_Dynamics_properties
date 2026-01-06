@@ -11,12 +11,12 @@ model = 'MSSM'
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 5
+ind = 4
 save_vars = True
 run_experiment = False
 save_figs = False
 imputations = True
-Stoch_input = True
+Stoch_input = False
 lif_output = True
 num_syn = 1
 gain = 0.5
@@ -24,8 +24,8 @@ gain = 0.5
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 6e3
 tau_lif = 1  # ms
-total_realizations = 10  # 100
-num_realizations = 5  # 8 for server, 4 for macbook air
+total_realizations = 100  # 100
+num_realizations = 8  # 8 for server, 4 for macbook air
 t_tra = None  # None  # 0.25
 t_tra_mid_win = None
 
@@ -639,6 +639,7 @@ for i in range(len(lbl)):
     # ax_st.set_ylim(ylims)
 fig2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
 if save_figs: fig2.savefig(folder_plots + file_name + '_' + 'diff_st_log.png', format='png')
+# """
 
 """
 dims = total_realizations
