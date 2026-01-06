@@ -25,3 +25,5 @@ libraries/__pycache__/
 synaptic_dynamic_models/__pycache__/
 
 
+/gain_control/schedule_experiments_prop_fix.xlsx
+/gain_control/~$schedule_experiments_prop_fix.xlsx

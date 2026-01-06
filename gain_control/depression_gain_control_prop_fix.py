@@ -11,8 +11,8 @@ model = 'MSSM'
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 4
-save_vars = False
+ind = 5
+save_vars = True
 run_experiment = False
 save_figs = False
 imputations = True
@@ -32,8 +32,8 @@ t_tra_mid_win = None
 # Input modulations
 range_f = [i for i in range(10, 100, 5)]
 range_f2 = [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
-range_f3 = [i for i in range(500, 950, 50)]  # Max prop freq. must be less than sfreq/4,
-                  # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 950
+range_f3 = [i for i in range(500, 951, 50)]  # Max prop freq. must be less than sfreq/4,
+                  # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 951
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
