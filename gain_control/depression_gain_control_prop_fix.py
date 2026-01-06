@@ -1,6 +1,5 @@
 # from synaptic_dynamic_models.simple_depression import Simple_Depression
 import numpy as np
-from statsmodels.stats.proportion import proportions_chisquare_allpairs
 
 from gain_control.utils_gc import *
 
