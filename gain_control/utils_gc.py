@@ -504,7 +504,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
 
     # Initial values of time of transition vars
     th_tr = threshold_transition
-    th_tr_a = [threshold_transition]
+    th_tr_a = [threshold_transition for _ in range(sig_prop.shape[0])]
 
     # Getting time range of transition period
     if threshold_transition is None:
