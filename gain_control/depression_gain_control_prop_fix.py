@@ -11,19 +11,19 @@ model = 'MSSM'
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-ind = 4
+ind = 7
 save_vars = True
 run_experiment = False
 save_figs = False
 imputations = True
-Stoch_input = False
+Stoch_input = True
 lif_output = True
 num_syn = 1
 gain = 0.5
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 6e3
-tau_lif = 1  # ms
+tau_lif = 0.1  # ms
 total_realizations = 100  # 100
 num_realizations = 8  # 8 for server, 4 for macbook air
 t_tra = None  # None  # 0.25
