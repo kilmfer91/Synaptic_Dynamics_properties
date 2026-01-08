@@ -12,7 +12,7 @@ model = 'MSSM'
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
 ind = 7
-save_vars = False
+save_vars = True
 run_experiment = False
 save_figs = False
 imputations = True
@@ -23,16 +23,16 @@ gain = 0.5
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 6e3
-tau_lif = 0.1  # ms
+tau_lif = 1  # ms
 total_realizations = 1  # 100
 num_realizations = 1  # 8 for server, 4 for macbook air
 t_tra = None  # None  # 0.25
 t_tra_mid_win = None
 
 # Input modulations
-range_f = [10, 20, 30, 40, 50, 60, 70, 80, 90]  # [i for i in range(10, 100, 5)]
-range_f2 = [100, 120, 140, 160, 180, 200]  # [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
-range_f3 = [200, 225, 250, 275, 300]  # [i for i in range(500, 951, 50)]  # Max prop freq. must be less than sfreq/4,
+range_f = [i for i in range(10, 100, 5)]
+range_f2 = [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
+range_f3 = [i for i in range(500, 951, 50)]  # Max prop freq. must be less than sfreq/4,
 # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 951
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
@@ -314,7 +314,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         print_time(m_time() - loop_experiments,
                    file_name + ", Realisation " + str(realization) + ", frequency " + str(initial_frequencies[i]))
 
-        # """
+        """
         t_tr = t_tr_[0]
         figc = plt.figure(figsize=(10, 3))
         plt.suptitle("For model %s, index %d, frequency %dHz, for %d synapses" % (
