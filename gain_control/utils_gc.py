@@ -509,17 +509,25 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     # Getting time range of transition period
     if threshold_transition is None:
         ini_minus_end_windows = np.abs(aa[:, :-10] - cc[:, :-10])
-        ind_tr = np.where(ini_minus_end_windows > 1e-4)  # find indices where the difference is bigger than 1e-6
-        val_unique, ind_unique = np.unique(ind_tr[0], return_index=True)  # Getting indices of unique values (i.e. realizations)
-        first_indtr = np.roll(ind_tr[1][list(np.array(ind_unique) - 1)], -1)  # getting last index (indicating that after that, diff. is lower than 1e-6)
-        th_tr_a = first_indtr * dt  # getting time of transition period
-        th_tr = np.max(th_tr_a)  # To extract steady-state and transition signals, use the max. transition time
+        # find indices where the difference is bigger than 1e-6
+        ind_tr = np.where(ini_minus_end_windows > 1e-4)
+        # Getting indices of unique values (i.e. realizations)
+        val_unique, ind_unique = np.unique(ind_tr[0], return_index=True)
+        # getting last index (indicating that after that, diff. is lower than 1e-6)
+        first_indtr = np.roll(ind_tr[1][list(np.array(ind_unique) - 1)], -1)
+        # getting time of transition period
+        th_tr_a = first_indtr * dt
+        # To extract steady-state and transition signals, use the max. transition time
+        th_tr = np.max(th_tr_a)
         # In case a vector in aa and cc are equal, then the unique function ommits the position of that vector,
         # therefore the threshold of transition should be zero.
         # This code calculates which indices in val_unique are not in the list of all signals in sig_prop
         diff = [i for i in np.array(range(sig_prop.shape[0])) if i not in val_unique]
-        # if the diff has elements, then insert in th_tr_a zeros in the positions associated to the values of these elements
+        # if diff has elements, then insert in th_tr_a zeros in the positions associated to the values of these elements
         if len(diff) > 0: np.insert(th_tr_a, diff, 0)
+        # Not knowing yet why the size of th_tr_a is still lower than the size of sig_prop, then create a new array of
+        # size sig_prop (first dim) populated by th_tr (max. of the found transition times)
+        if len(th_tr_a) < sig_prop.shape[0]: th_tr_a = [th_tr for _ in range(sig_prop.shape[0])]
 
     # Extracting steady-state parts of stimuli windows
     mean_a, median_a, q5_a, q10_a, q90_a, q95_a, min_a, max_a = [], [], [], [], [], [], [], []

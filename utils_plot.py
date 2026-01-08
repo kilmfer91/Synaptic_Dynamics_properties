@@ -498,3 +498,26 @@ def plot_gc_sin_statistics(res_per_reali, mean_rates):
     # ax13.set_ylim(-66.7, -59.5)
 
     fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+
+
+def plot_features_windows_prop_fix(suptitle_, f_vector, dr, lbl, st_lbl, cols, path_save="", save_figs=False):
+    fig_st = plt.figure(figsize=(10, 6))
+    plt.suptitle(suptitle_)
+    ylims = [-70.15, -67.3]  # [-70.05, -52]
+    for i in range(len(lbl)):
+        ax_st = fig_st.add_subplot(2, 3, i + 1)
+        for j in range(len(st_lbl)):
+            ax_st.plot(f_vector, np.median(dr[lbl[i] + st_lbl[j]], axis=0), c=cols[j], label=st_lbl[j][1:])
+            ax_st.fill_between(f_vector, np.quantile(dr[lbl[i] + st_lbl[j]], 0.1, axis=0),
+                               np.quantile(dr[lbl[i] + st_lbl[j]], 0.9, axis=0), color=cols[j], alpha=0.3)
+        ax_st.set_xlabel("Frequency (Hz)")
+        ax_st.set_ylabel("mem. pot. (mV)")
+        # ax_st.set_ylim(ylims)
+        ax_st.set_title(lbl[i].split("_")[1] + " win. (" + lbl[i].split("_")[2] + ")", color='gray')
+        # ax_st.set_title("Frequency response", color='gray')
+        ax_st.grid()
+        ax_st.set_xscale('log')
+        if (i + 1) % 3 == 0: ax_st.legend(loc='upper right')
+        # ax_st.set_ylim(ylims)
+    fig_st.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    if save_figs: fig_st.savefig(path_save, format='png')

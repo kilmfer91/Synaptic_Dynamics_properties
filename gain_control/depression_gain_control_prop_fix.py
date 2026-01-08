@@ -12,7 +12,7 @@ model = 'MSSM'
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
 ind = 7
-save_vars = True
+save_vars = False
 run_experiment = False
 save_figs = False
 imputations = True
@@ -24,16 +24,16 @@ gain = 0.5
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 6e3
 tau_lif = 0.1  # ms
-total_realizations = 100  # 100
-num_realizations = 8  # 8 for server, 4 for macbook air
+total_realizations = 1  # 100
+num_realizations = 1  # 8 for server, 4 for macbook air
 t_tra = None  # None  # 0.25
 t_tra_mid_win = None
 
 # Input modulations
-range_f = [i for i in range(10, 100, 5)]
-range_f2 = [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
-range_f3 = [i for i in range(500, 951, 50)]  # Max prop freq. must be less than sfreq/4,
-                  # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 951
+range_f = [10, 20, 30, 40, 50, 60, 70, 80, 90]  # [i for i in range(10, 100, 5)]
+range_f2 = [100, 120, 140, 160, 180, 200]  # [i for i in range(100, 500, 10)]  # # sfreq>3kHz:501, 2kHz:321
+range_f3 = [200, 225, 250, 275, 300]  # [i for i in range(500, 951, 50)]  # Max prop freq. must be less than sfreq/4,
+# so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 951
 initial_frequencies = np.array(range_f + range_f2 + range_f3)
 
 # Path variables
@@ -41,13 +41,16 @@ path_vars = "../gain_control/variables/"
 check_create_folder(path_vars)
 folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
-aux_name = "_ind_" + str(ind) + "_gain_" + str(int(gain * 100)) + "_sf_" + str(int(sfreq / 1000)) + "k_syn_" + str(num_syn)
+aux_name = "_ind_" + str(ind) + "_gain_" + str(int(gain * 100)) + "_sf_" + str(int(sfreq / 1000)) + "k_syn_" + str(
+    num_syn)
 if lif_output: aux_name += "_tauLiF_" + str(tau_lif) + "ms"
 file_name = (model + aux_name)
 if not Stoch_input: file_name = (model + '_det' + aux_name)
 
-if imputations: file_name += "_cwi"
-else: file_name += "_cni"
+if imputations:
+    file_name += "_cwi"
+else:
+    file_name += "_cni"
 
 print("For file %s and index %d" % (file_name, ind))
 
@@ -266,8 +269,8 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
             stp_fix.set_initial_conditions()
             lif_fix.set_simulation_params(sim_params)
             # if model == "MSSM":
-                # lif_prop_n.set_simulation_params(sim_params)
-                # lif_fix_n.set_simulation_params(sim_params)
+            # lif_prop_n.set_simulation_params(sim_params)
+            # lif_fix_n.set_simulation_params(sim_params)
             # Running the models
             # if lif_parallel:
             model_stp_parallel(stp_prop, lif_prop, params, cons_input, lif_prop_n)
@@ -311,7 +314,7 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         print_time(m_time() - loop_experiments,
                    file_name + ", Realisation " + str(realization) + ", frequency " + str(initial_frequencies[i]))
 
-        """
+        # """
         t_tr = t_tr_[0]
         figc = plt.figure(figsize=(10, 3))
         plt.suptitle("For model %s, index %d, frequency %dHz, for %d synapses" % (
@@ -321,36 +324,65 @@ while realization < num_loop_realizations and (not file_loaded or run_experiment
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("Mem. potential (mV)")
         ax1.plot(time_vector, signal_prop[0, :], c="black", alpha=0.3)
+        ax1.plot([0, 2], [res_per_reali[51, i, 0], res_per_reali[51, i, 0]], c="orange", alpha=0.5)  # w mean ini window
+        ax1.plot([2, 4], [res_per_reali[59, i, 0], res_per_reali[59, i, 0]], c="orange", alpha=0.5)  # w mean mid window
+        ax1.plot([4, 6], [res_per_reali[67, i, 0], res_per_reali[67, i, 0]], c="orange", alpha=0.5)  # w mean end window
         ax1.plot([0 + t_tr, 2], [res_per_reali[0, i, 0], res_per_reali[0, i, 0]], c="tab:orange")  # mean ini window
         ax1.plot([2 + t_tr, 4], [res_per_reali[8, i, 0], res_per_reali[8, i, 0]], c="tab:orange")  # mean mid window
         ax1.plot([4 + t_tr, 6], [res_per_reali[16, i, 0], res_per_reali[16, i, 0]], c="tab:orange")  # mean end window
+        ax1.plot([0, t_tr], [res_per_reali[96, i, 0], res_per_reali[96, i, 0]], c="tab:orange")  # tr mean ini window
+        ax1.plot([2, 2 + t_tr], [res_per_reali[104, i, 0], res_per_reali[104, i, 0]], c="tab:orange")  # tr mean mid window
+        ax1.plot([4, 4 + t_tr], [res_per_reali[112, i, 0], res_per_reali[112, i, 0]], c="tab:orange")  # tr mean end window
+
         ax1.plot([0, 2], [res_per_reali[54, i, 0], res_per_reali[54, i, 0]], c="red", alpha=0.5)  # min w ini window
         ax1.plot([2, 4], [res_per_reali[62, i, 0], res_per_reali[62, i, 0]], c="red", alpha=0.5)  # min w mid window
         ax1.plot([4, 6], [res_per_reali[70, i, 0], res_per_reali[70, i, 0]], c="red", alpha=0.5)  # min w end window
         ax1.plot([0 + t_tr, 2], [res_per_reali[6, i, 0], res_per_reali[6, i, 0]], c="tab:red")  # min ini window
         ax1.plot([2 + t_tr, 4], [res_per_reali[14, i, 0], res_per_reali[14, i, 0]], c="tab:red")  # min mid window
         ax1.plot([4 + t_tr, 6], [res_per_reali[22, i, 0], res_per_reali[22, i, 0]], c="tab:red")  # min end window
+        ax1.plot([0, 0 + t_tr], [res_per_reali[102, i, 0], res_per_reali[102, i, 0]], c="tab:red")  # tr min ini window
+        ax1.plot([2, 2 + t_tr], [res_per_reali[110, i, 0], res_per_reali[110, i, 0]], c="tab:red")  # tr min mid window
+        ax1.plot([4, 4 + t_tr], [res_per_reali[118, i, 0], res_per_reali[118, i, 0]], c="tab:red")  # tr min end window
+
         ax1.plot([0, 2], [res_per_reali[55, i, 0], res_per_reali[55, i, 0]], c="red", alpha=0.5)  # max w ini window
         ax1.plot([2, 4], [res_per_reali[63, i, 0], res_per_reali[63, i, 0]], c="red", alpha=0.5)  # max w mid window
         ax1.plot([4, 6], [res_per_reali[71, i, 0], res_per_reali[71, i, 0]], c="red", alpha=0.5)  # max w end window
         ax1.plot([0 + t_tr, 2], [res_per_reali[7, i, 0], res_per_reali[7, i, 0]], c="tab:red")  # max ini window
         ax1.plot([2 + t_tr, 4], [res_per_reali[15, i, 0], res_per_reali[15, i, 0]], c="tab:red")  # max mid window
         ax1.plot([4 + t_tr, 6], [res_per_reali[23, i, 0], res_per_reali[23, i, 0]], c="tab:red")  # max end window
-        ax1.plot([0, 2], [res_per_reali[51, i, 0], res_per_reali[51, i, 0]], c="green", alpha=0.5)  # q1 w ini window
-        ax1.plot([2, 4], [res_per_reali[59, i, 0], res_per_reali[59, i, 0]], c="green", alpha=0.5)  # q1 w mid window
-        ax1.plot([4, 6], [res_per_reali[67, i, 0], res_per_reali[67, i, 0]], c="green", alpha=0.5)  # q1 w end window
-        ax1.plot([0 + t_tr, 2], [res_per_reali[3, i, 0], res_per_reali[3, i, 0]], c="tab:green")  # q1 ini window
-        ax1.plot([2 + t_tr, 4], [res_per_reali[11, i, 0], res_per_reali[11, i, 0]], c="tab:green")  # q1 mid window
-        ax1.plot([4 + t_tr, 6], [res_per_reali[19, i, 0], res_per_reali[19, i, 0]], c="tab:green")  # q1 end window
-        ax1.plot([0, 2], [res_per_reali[52, i, 0], res_per_reali[52, i, 0]], c="green", alpha=0.5)  # q90 w ini window
-        ax1.plot([2, 4], [res_per_reali[60, i, 0], res_per_reali[60, i, 0]], c="green", alpha=0.5)  # q90 w mid window
-        ax1.plot([4, 6], [res_per_reali[68, i, 0], res_per_reali[68, i, 0]], c="green", alpha=0.5)  # q90 w end window
+        ax1.plot([0, 0 + t_tr], [res_per_reali[103, i, 0], res_per_reali[103, i, 0]], c="tab:red")  # tr max ini window
+        ax1.plot([2, 2 + t_tr], [res_per_reali[111, i, 0], res_per_reali[111, i, 0]], c="tab:red")  # tr max mid window
+        ax1.plot([4, 4 + t_tr], [res_per_reali[119, i, 0], res_per_reali[119, i, 0]], c="tab:red")  # tr max end window
+
+        ax1.plot([0, 2], [res_per_reali[51, i, 0], res_per_reali[51, i, 0]], c="green", alpha=0.5)  # w q10 ini window
+        ax1.plot([2, 4], [res_per_reali[59, i, 0], res_per_reali[59, i, 0]], c="green", alpha=0.5)  # w q10 mid window
+        ax1.plot([4, 6], [res_per_reali[67, i, 0], res_per_reali[67, i, 0]], c="green", alpha=0.5)  # w q10 end window
+        ax1.plot([0 + t_tr, 2], [res_per_reali[3, i, 0], res_per_reali[3, i, 0]], c="tab:green")  # q10 ini window
+        ax1.plot([2 + t_tr, 4], [res_per_reali[11, i, 0], res_per_reali[11, i, 0]], c="tab:green")  # q10 mid window
+        ax1.plot([4 + t_tr, 6], [res_per_reali[19, i, 0], res_per_reali[19, i, 0]], c="tab:green")  # q10 end window
+        ax1.plot([0, 0 + t_tr], [res_per_reali[99, i, 0], res_per_reali[99, i, 0]], c="tab:green")  # tr q10 ini window
+        ax1.plot([2, 2 + t_tr], [res_per_reali[107, i, 0], res_per_reali[107, i, 0]], c="tab:green")  # tr q10 mid window
+        ax1.plot([4, 4 + t_tr], [res_per_reali[115, i, 0], res_per_reali[115, i, 0]], c="tab:green")  # tr q10 end window
+
+        ax1.plot([0, 2], [res_per_reali[52, i, 0], res_per_reali[52, i, 0]], c="green", alpha=0.5)  # w q90 ini window
+        ax1.plot([2, 4], [res_per_reali[60, i, 0], res_per_reali[60, i, 0]], c="green", alpha=0.5)  # w q90 mid window
+        ax1.plot([4, 6], [res_per_reali[68, i, 0], res_per_reali[68, i, 0]], c="green", alpha=0.5)  # w q90 end window
         ax1.plot([0 + t_tr, 2], [res_per_reali[4, i, 0], res_per_reali[4, i, 0]], c="tab:green")  # q90 ini window
         ax1.plot([2 + t_tr, 4], [res_per_reali[12, i, 0], res_per_reali[12, i, 0]], c="tab:green")  # q90 mid window
         ax1.plot([4 + t_tr, 6], [res_per_reali[20, i, 0], res_per_reali[20, i, 0]], c="tab:green")  # q90 end window
+        ax1.plot([0, 0 + t_tr], [res_per_reali[100, i, 0], res_per_reali[100, i, 0]], c="tab:green")  # q90 ini window
+        ax1.plot([2, 2 + t_tr], [res_per_reali[108, i, 0], res_per_reali[108, i, 0]], c="tab:green")  # q90 mid window
+        ax1.plot([4, 4 + t_tr], [res_per_reali[116, i, 0], res_per_reali[116, i, 0]], c="tab:green")  # q90 end window
+
+        ax1.plot([0, 2], [res_per_reali[52, i, 0], res_per_reali[52, i, 0]], c="blue", alpha=0.5)  # w median ini window
+        ax1.plot([2, 4], [res_per_reali[60, i, 0], res_per_reali[60, i, 0]], c="blue", alpha=0.5)  # w median mid window
+        ax1.plot([4, 6], [res_per_reali[68, i, 0], res_per_reali[68, i, 0]], c="blue", alpha=0.5)  # w median end window
         ax1.plot([0 + t_tr, 2], [res_per_reali[1, i, 0], res_per_reali[1, i, 0]], c="tab:blue")  # median ini window
         ax1.plot([2 + t_tr, 4], [res_per_reali[9, i, 0], res_per_reali[9, i, 0]], c="tab:blue")  # median mid window
         ax1.plot([4 + t_tr, 6], [res_per_reali[17, i, 0], res_per_reali[17, i, 0]], c="tab:blue")  # median end window
+        ax1.plot([0, 0 + t_tr], [res_per_reali[97, i, 0], res_per_reali[97, i, 0]], c="tab:blue")  # tr median ini window
+        ax1.plot([2, 2 + t_tr], [res_per_reali[105, i, 0], res_per_reali[105, i, 0]], c="tab:blue")  # tr median mid window
+        ax1.plot([4, 4 + t_tr], [res_per_reali[113, i, 0], res_per_reali[113, i, 0]], c="tab:blue")  # tr median end window
         # ax1.grid()
         ax1.set_title("Proportional changes", color="gray")
         ax1.set_ylim(ylims)
@@ -482,139 +514,65 @@ fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 # """
 
 # PLOT OF CHARACTERISTICS FOR INI, MID, AND END WINDOWS. SPLITTED BY PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
-"""
-fig_st = plt.figure(figsize=(10, 6))
-plt.suptitle(description + " " + str(tau_lif) + "ms")
+# """
+# Steady-state
 lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_fix', 'st_mid_fix', 'st_end_fix']
-st_lbl = ['_mean', '_med', '_max', '_min', '_q1', '_q90']
-# st_lbl = ['', '', '_max', '_min', '_q1', '_q90']
-cols_ = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green']
-ylims = [-70.15, -67.3]  # [-70.05, -52]
-for i in range(6):
-    ax_st = fig_st.add_subplot(2, 3, i + 1)
-    for j in range(6):
-        ax_st.plot(initial_frequencies, np.median(dr[lbl[i] + st_lbl[j]], axis=0), c=cols_[j], label=st_lbl[j][1:])
-        ax_st.fill_between(initial_frequencies, np.quantile(dr[lbl[i] + st_lbl[j]], 0.1, axis=0),
-                            np.quantile(dr[lbl[i] + st_lbl[j]], 0.9, axis=0), color=cols_[j], alpha=0.3)
-    ax_st.set_xlabel("Frequency (Hz)")
-    ax_st.set_ylabel("mem. pot. (mV)")
-    # ax_st.set_ylim(ylims)
-    ax_st.set_title(lbl[i].split("_")[1] + " win. (" + lbl[i].split("_")[2] + ")", color='gray')
-    # ax_st.set_title("Frequency response", color='gray')
-    ax_st.grid()
-    ax_st.set_xscale('log')
-    if (i + 1) % 3 == 0: ax_st.legend(loc='upper right')
-    # ax_st.set_ylim(ylims)
-fig_st.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-if save_figs: fig_st.savefig(folder_plots + file_name + '_windows_statistics.png', format='png')
+st_lbl = ['_mean', '_med', '_max', '_min', '_q10', '_q90', '_q5', '_q95']
+cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:olive', 'tab:olive']
+title = description + " " + str(tau_lif) + "ms for steady-state"
+path_save = folder_plots + file_name + '_windows_statistics.png'
+plot_features_windows_prop_fix(title, initial_frequencies, dr, lbl, st_lbl, cols, path_save, save_figs)
 
+# PLOT CHARACTERISTICS OF MID AND INI WINDOWS IN THE SAME PLOT, FOR PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
 fig_st2 = plt.figure(figsize=(5, 6))
 plt.suptitle(description + " " + str(tau_lif) + "ms")
 lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_fix', 'st_mid_fix', 'st_end_fix']
 ax_st2 = fig_st2.add_subplot(2, 1, 1)
-for j in range(6):
+for j in range(len(st_lbl)):
     ax_st2.plot(initial_frequencies, np.median(dr[lbl[0] + st_lbl[j]], axis=0), c='gray')
     ax_st2.fill_between(initial_frequencies, np.quantile(dr[lbl[0] + st_lbl[j]], 0.1, axis=0),
-                     np.quantile(dr[lbl[0] + st_lbl[j]], 0.9, axis=0), color='gray', alpha=0.3)
-for j in range(6):
-    ax_st2.plot(initial_frequencies, np.median(dr[lbl[1] + st_lbl[j]], axis=0), c=cols_[j])
+                        np.quantile(dr[lbl[0] + st_lbl[j]], 0.9, axis=0), color='gray', alpha=0.3)
+for j in range(len(st_lbl)):
+    ax_st2.plot(initial_frequencies, np.median(dr[lbl[1] + st_lbl[j]], axis=0), c=cols[j])
     ax_st2.fill_between(initial_frequencies, np.quantile(dr[lbl[1] + st_lbl[j]], 0.1, axis=0),
-                     np.quantile(dr[lbl[1] + st_lbl[j]], 0.9, axis=0), color=cols_[j], alpha=0.3)
+                        np.quantile(dr[lbl[1] + st_lbl[j]], 0.9, axis=0), color=cols[j], alpha=0.3)
 ax_st2.set_title("Windows ini and mid (" + lbl[0].split("_")[2] + ")", color='gray')
 ax_st2.set_xlabel("Frequency (Hz)")
 ax_st2.grid()
 ax_st2.set_xscale('log')
 # ax_st2.set_ylim(ylims)
 ax_st2 = fig_st2.add_subplot(2, 1, 2)
-for j in range(6):
+for j in range(len(st_lbl)):
     ax_st2.plot(initial_frequencies, np.median(dr[lbl[3] + st_lbl[j]], axis=0), c='gray')
     ax_st2.fill_between(initial_frequencies, np.quantile(dr[lbl[3] + st_lbl[j]], 0.1, axis=0),
-                     np.quantile(dr[lbl[3] + st_lbl[j]], 0.9, axis=0), color='gray', alpha=0.3)
-for j in range(6):
-    ax_st2.plot(initial_frequencies, np.median(dr[lbl[4] + st_lbl[j]], axis=0), c=cols_[j], label=st_lbl[j][1:])
+                        np.quantile(dr[lbl[3] + st_lbl[j]], 0.9, axis=0), color='gray', alpha=0.3)
+for j in range(len(st_lbl)):
+    ax_st2.plot(initial_frequencies, np.median(dr[lbl[4] + st_lbl[j]], axis=0), c=cols[j], label=st_lbl[j][1:])
     ax_st2.fill_between(initial_frequencies, np.quantile(dr[lbl[4] + st_lbl[j]], 0.1, axis=0),
-                     np.quantile(dr[lbl[4] + st_lbl[j]], 0.9, axis=0), color=cols_[j], alpha=0.3)
+                        np.quantile(dr[lbl[4] + st_lbl[j]], 0.9, axis=0), color=cols[j], alpha=0.3)
 ax_st2.set_xlabel("Frequency (Hz)")
 ax_st2.set_ylabel("mem. pot. (mV)")
 # ax_st2.set_ylim(ylims)
-ax_st2.set_title("Windows ini and mid (" + lbl[i].split("_")[2] + ")", color='gray')
+ax_st2.set_title("Windows ini and mid (" + lbl[0].split("_")[2] + ")", color='gray')
 ax_st2.grid()
 ax_st2.set_xscale('log')
 ax_st2.legend(loc='upper right')
 # ax_st2.set_ylim(ylims)
 fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
 if save_figs: fig_st2.savefig(folder_plots + file_name + '_windows_statistics3.png', format='png')
-"""
-
-# PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
-"""
-dims = total_realizations
-factor = 1  # initial_frequencies  # 1
-fig = plt.figure(figsize=(9, 7))
-plt.suptitle(description)
-
-aux_ = [[dr['st_mid_prop_mean'] - dr['st_ini_prop_mean'], dr['st_mid_prop_min'] - dr['st_ini_prop_min'], dr['st_mid_prop_max'] -
-         dr['st_ini_prop_max'], dr['st_mid_prop_q1'] - dr['st_ini_prop_q1'],
-         dr['st_mid_prop_q90'] - dr['st_ini_prop_q90']],
-        [dr['st_mid_fix_mean'] - dr['st_ini_fix_mean'], dr['st_mid_fix_min'] - dr['st_ini_fix_min'], dr['st_mid_fix_max'] -
-         dr['st_ini_fix_max'], dr['st_mid_fix_q1'] - dr['st_ini_fix_q1'], dr['st_mid_fix_q90'] - dr['st_ini_fix_q90']],
-        [dr['mtr_mid_prop'] - dr['st_ini_prop_mean'], dr['mtr_mid_prop'] - dr['st_ini_prop_max'], dr['mtr_mid_prop'] -
-         dr['w_mid_prop_max'], dr['mtr_mid_prop'] - dr['st_mid_prop_mean'], dr['mtr_mid_prop'] - dr['st_mid_prop_q90']],
-        [dr['mtr_mid_fix'] - dr['st_ini_fix_mean'], dr['mtr_mid_fix'] - dr['st_ini_fix_max'], dr['mtr_mid_fix'] -
-         dr['w_mid_fix_max'], dr['mtr_mid_fix'] - dr['st_mid_fix_mean'], dr['mtr_mid_fix'] - dr['st_mid_fix_q90']]
-        ]
-lbl_aux = [[r'$mean_{mid}$ - $mean_{ini}$', r'$min_{mid}$ - $min_{ini}$', r'$max_{mid}$ - $max_{ini}$',
-            r'$q1_{mid}$ - $q1_{ini}$', r'$q90_{mid}$ - $q90_{ini}$'],
-           [r'$mean_{mid}$ - $mean_{ini}$', r'$min_{mid}$ - $min_{ini}$', r'$max_{mid}$ - $max_{ini}$',
-            r'$q1_{mid}$ - $q1_{ini}$', r'$q90_{mid}$ - $q90_{ini}$'],
-           [r'$max_{tr-mid}$ - $mean_{ini}$', r'$max_{tr-mid}$ - $max_{ini}$', r'$max_{tr-mid}$ - $max_{mid}$',
-            r'$max_{tr-mid}$ - $mean_{mid}$', r'$max_{tr-max}$ - $q90_{mid}$'],
-           [r'$max_{tr-mid}$ - $mean_{ini}$', r'$max_{tr-mid}$ - $max_{ini}$', r'$max_{tr-mid}$ - $max_{mid}$',
-            r'$max_{tr-mid}$ - $mean_{mid}$', r'$max_{tr-max}$ - $q90_{mid}$']]
-
-aux_titles = [r"$mid_{st}-ini_{st}$ (Prop.)", r"$mid_{st}-ini_{st}$ (Cons.)", r"Transient (Prop.)", r"Transient (Cons)"]
-for graph in range(1, 5):
-    i_a = graph - 1
-    aux_mean, aux_min, aux_max, aux_1, aux_90 = aux_[i_a][0], aux_[i_a][1], aux_[i_a][2], aux_[i_a][3], aux_[i_a][4]
-    ax = fig.add_subplot(2, 2, graph)
-    ax.plot(initial_frequencies, np.mean(aux_mean, axis=0) * factor, alpha=0.8, c="black", label=lbl_aux[i_a][0])
-    ax.fill_between(initial_frequencies, np.quantile(aux_mean, 0.1, axis=0) * factor,
-                    np.quantile(aux_mean, 0.9, axis=0) * factor, color="gray", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_min, axis=0) * factor, alpha=0.8, c="tab:red", label=lbl_aux[i_a][1])
-    ax.fill_between(initial_frequencies, np.quantile(aux_min, 0.1, axis=0) * factor,
-                    np.quantile(aux_min, 0.9, axis=0) * factor, color="tab:red", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_max, axis=0) * factor, alpha=0.8, c="tab:orange", label=lbl_aux[i_a][2])
-    ax.fill_between(initial_frequencies, np.quantile(aux_max, 0.1, axis=0) * factor,
-                    np.quantile(aux_max, 0.9, axis=0) * factor, color="tab:orange", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_1, axis=0) * factor, alpha=0.8, c="tab:blue", label=lbl_aux[i_a][3])
-    ax.fill_between(initial_frequencies, np.quantile(aux_1, 0.1, axis=0) * factor,
-                    np.quantile(aux_1, 0.9, axis=0) * factor, color="tab:blue", alpha=0.3)
-    ax.plot(initial_frequencies, np.mean(aux_90, axis=0) * factor, alpha=0.8, c="tab:green", label=lbl_aux[i_a][4])
-    ax.fill_between(initial_frequencies, np.quantile(aux_90, 0.1, axis=0) * factor,
-                    np.quantile(aux_90, 0.9, axis=0) * factor, color="tab:green", alpha=0.3)
-    ax.set_xscale('log')
-    ax.set_xlabel("Frequency (Hz)")
-    ax.set_ylabel("Mem. pot. diff. (mV)")
-    ax.set_title(aux_titles[i_a], c="gray")
-    ax.grid()
-    ax.legend()
-
-fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
-plt.savefig(folder_plots + 'test.png', format='png')
 # """
 
 # SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
 # AND THE DIFFERENCES BETWEEN MAX OF MID WINDOW AND MEDIAN OF INI WINDOW
-"""
+# """
 dims = total_realizations
 factor = 1  # initial_frequencies  # 1
 fig2 = plt.figure(figsize=(6.5, 2.5))  # 6.5, 5
 plt.suptitle(description + " " + str(tau_lif) + "ms")
 
-
 lbl = ['st_mid_prop', 'st_mid_fix']
 lbl2 = ['st_ini_prop', 'st_ini_fix']
-st_lbl = ['_max', '_min', '_q1', '_q90', '_mean', '_med']
+st_lbl = ['_max', '_min', '_q10', '_q90', '_mean', '_med']
 cols_ = ['tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:orange', 'tab:blue']
 t_ = [r"$mid_{st} - ini_{st}$ (Prop)", r"$mid_{st} - ini_{st}$ (Cons)",
       "Max Transient (Proportional)", "Max Transient (Constant)"]
@@ -623,12 +581,14 @@ alpha = 0.1
 for i in range(len(lbl)):
     ax_3 = fig2.add_subplot(1, 2, i + 1)
     for j in range(len(st_lbl)):
-        if j > 3: alpha = 0.3
-        else: alpha = 0.1
+        if j > 3:
+            alpha = 0.3
+        else:
+            alpha = 0.1
         aux = dr[lbl[i] + st_lbl[j]] - dr[lbl2[i] + st_lbl[j]]
         ax_3.plot(initial_frequencies, np.median(aux, axis=0), c=cols_[j], label=st_lbl[j][1:])
         ax_3.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0),
-                            np.quantile(aux, 0.9, axis=0), color=cols_[j], alpha=alpha)
+                          np.quantile(aux, 0.9, axis=0), color=cols_[j], alpha=alpha)
     ax_3.set_xlabel("Frequency (Hz)")
     ax_3.set_ylabel("mem. pot. (mV)")
     # ax_3.set_ylim(ylims)
@@ -638,39 +598,6 @@ for i in range(len(lbl)):
     if (i + 1) % 3 == 0: ax_3.legend(loc='upper right')
     # ax_st.set_ylim(ylims)
 fig2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-if save_figs: fig2.savefig(folder_plots + file_name + '_' + 'diff_st_log.png', format='png')
-# """
-
-"""
-dims = total_realizations
-factor = 1  # initial_frequencies  # 1
-fig2 = plt.figure(figsize=(6.5, 2.5))  # 6.5, 5
-plt.suptitle(description + " " + str(tau_lif) + "ms")
-s_a = [dr['st_mid_prop_med'] - dr['st_ini_prop_med'], dr['st_mid_fix_med'] - dr['st_ini_fix_med'],
-       dr['mtr_mid_prop'] - dr['st_ini_prop_med'], dr['mtr_mid_fix'] - dr['st_ini_fix_med']]
-s_b = [dr['st_mid_prop_mean'] - dr['st_ini_prop_mean'], dr['st_mid_fix_mean'] - dr['st_ini_fix_mean'],
-       dr['mtr_mid_prop'] - dr['st_ini_prop_mean'], dr['mtr_mid_fix'] - dr['st_ini_fix_mean']]
-t_ = [r"$mid_{st} - ini_{st}$ (Prop)", r"$mid_{st} - ini_{st}$ (Cons)",
-      "Max Transient (Proportional)", "Max Transient (Constant)"]
-ylims = [-0.005, 0.08]  # 100 syn [-0.005, 1.9], 1 syn [-0.005,1.9] [-0.005,0.08]
-for i in range(2):
-    ax3 = fig2.add_subplot(1, 2, i + 1)
-    aux = s_a[i]
-    ax3.plot(initial_frequencies, np.mean(aux, axis=0) * factor, c="tab:blue", label='med')
-    ax3.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0) * factor, np.quantile(aux, 0.9, axis=0) * factor,
-                     color="tab:blue", alpha=0.2)
-    aux2 = s_b[i]
-    ax3.plot(initial_frequencies, np.mean(aux2, axis=0) * factor, c="tab:orange", label=r'$\mu$')
-    ax3.fill_between(initial_frequencies, np.quantile(aux2, 0.1, axis=0) * factor, np.quantile(aux2, 0.9, axis=0) * factor,
-                     color="tab:orange", alpha=0.2)
-    ax3.set_xlabel("Frequency (Hz)")
-    ax3.set_ylabel("Mem. pot. diff. (mV)")
-    ax3.set_title(t_[i], c="gray")
-    ax3.set_xscale('log')
-    ax3.legend()
-    # ax3.set_ylim(ylims)
-    ax3.grid()
-fig2.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 if save_figs: fig2.savefig(folder_plots + file_name + '_' + 'diff_st_log.png', format='png')
 # """
 
