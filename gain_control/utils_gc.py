@@ -120,6 +120,252 @@ def get_params_stp(name_model, ind):
     return syn_params, description, name_params
 
 
+def load_set_simulation_params(dr_ini, path_vars, file_name, run_experiment=False):
+    file_loaded = False
+    if os.path.isfile(path_vars + file_name) and not run_experiment:
+        file_loaded = True
+        dr = loadObject(file_name, path_vars)
+    else:
+        # ******************************************************************************************************************
+        # Running freq. response of Gain Control
+        # For gain control, 100 inputs to a single LIF neuron
+        dyn_synapse = True
+        dr = dr_ini.copy()
+
+        # Model parameters
+        syn_params, description, name_params = get_params_stp(dr['stp_model'], dr['ind'])
+
+        if not dyn_synapse:
+            description = "0_th Static synapse"
+
+        description += ", " + str(dr['num_synapses']) + " synapses"
+
+        # time conditions
+        max_t = 6
+        dt = 1 / dr['sfreq']
+        time_vector = np.arange(0, max_t, dt)
+        L = time_vector.shape[0]
+
+        # Parameters definition
+        params = dict(zip(name_params, syn_params))
+        sim_params = {'sfreq': dr['sfreq'], 'max_t': max_t, 'L': L, 'time_vector': time_vector}
+
+        # PARAMS FOR LIF MODEL
+        lif_params = {'V_threshold': np.array([1000 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
+                      'tau_m': np.array([dr['tau_lif'] * 1e-3 for _ in range(1)]),
+                      'g_L': np.array([2.7e-2 for _ in range(1)]),
+                      'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
+                      't_refractory': np.array([0.01 for _ in range(1)])}
+
+        # Time conditions
+        num_changes_rate = 3
+        Le_time_win = int(max_t / num_changes_rate)
+        prop_rate_change_a = dr['gain_v']  # [0.5, 1, 2]
+        fix_rate_change_a = [5]  # [5, 10, 20]
+
+        num_experiments = dr['initial_frequencies'].shape[0]
+
+        # array for time of transition-states
+        t_tra = [[] for _ in range(num_experiments)]
+
+        # For poisson or deterministic inputs
+        seeds = []
+        if not dr['stoch_input']:
+            total_realizations = 1
+            num_realizations = 1
+            dr['t_realizations'] = total_realizations
+            dr['realizations'] = num_realizations
+
+        dr['name_params'], dr['dyn_synapse'], dr['syn_params'] = name_params, dyn_synapse, syn_params
+        dr['sim_params'], dr['lif_params'], dr['time_transition'] = sim_params, lif_params, t_tra
+        dr['prop_rate_change_a'], dr['fix_rate_change_a'] = prop_rate_change_a, fix_rate_change_a
+        dr['num_changes_rate'], dr['description'], dr['seeds'] = num_changes_rate, description, seeds
+    return file_loaded, dr
+
+
+def models_creation(model, aux_num_r, sim_params, params, num_realizations, lif_params):
+    # Creating STP models for proportional rate change
+    stp_prop, stp_fix = None, None
+    if model == "MSSM": stp_prop = MSSM_model(n_syn=aux_num_r)
+    if model == "MSSM": stp_fix = MSSM_model(n_syn=aux_num_r)
+    if model == "TM": stp_prop = TM_model(n_syn=aux_num_r)
+    if model == "TM": stp_fix = TM_model(n_syn=aux_num_r)
+    assert stp_prop is not None, "Cannot set stp_model"
+
+    # Setting initial conditions
+    stp_prop.set_model_params(params)
+    stp_prop.set_simulation_params(sim_params)
+    stp_fix.set_model_params(params)
+    stp_fix.set_simulation_params(sim_params)
+
+    # Creating LIF models for proportional rate change
+    lif_prop = LIF_model(n_neu=num_realizations)
+    lif_prop.set_model_params(lif_params)
+    lif_fix = LIF_model(n_neu=num_realizations)
+    lif_fix.set_model_params(lif_params)
+
+    return stp_prop, stp_fix, lif_prop, lif_fix
+
+
+def gc_prop_fix_gain(arguments):
+    # [total_realizations, plus_cond, Stoch_input, seeds, num_realizations, num_experiments, sfreq,
+    #  initial_frequencies, num_changes_rate, aux_num_r, imputations, dyn_synapse, stp_prop, stp_fix, lif_prop,
+    #  lif_fix, sim_params, params, t_tra, Le_time_win, lif_output, file_name, prop_rate_change_a, fix_rate_change_a,
+    #  gain, fixed_rate_change, path_vars, title_graph] = arguments
+    [total_realizations, plus_cond, Stoch_input, seeds, num_realizations, num_experiments, sfreq,
+     initial_frequencies, num_changes_rate, aux_num_r, dyn_synapse, stp_prop, stp_fix, lif_prop,
+     lif_fix, sim_params, params, t_tra, Le_time_win, lif_output, file_name, prop_rate_change_a, fix_rate_change_a,
+     gain, fixed_rate_change, path_vars, title_graph] = arguments
+
+    # Sim params
+    L = sim_params['L']
+    time_vector = sim_params['time_vector']
+
+    # Getting num of realizations
+    num_loop_realizations = int(total_realizations / num_realizations)
+
+    # Auxiliar variables for statistics
+    res_per_reali = np.zeros((144, num_experiments, num_realizations))
+    res_real = np.zeros((144, total_realizations, num_experiments))
+
+    # Setting proportional and fixed rates of change
+    proportional_rate_change = gain
+    proportional_changes = proportional_rate_change * initial_frequencies + initial_frequencies
+    constant_changes = fixed_rate_change + initial_frequencies
+
+    ini_loop_time = m_time()
+    print("Ini big loop")
+    realization = 0
+    while realization < num_loop_realizations and plus_cond:
+        loop_time = m_time()
+        t_tra_mid_win = None
+
+        # Building reference signal for constant and fixed rate changes
+        i = num_experiments - 1
+        while i >= 0:  # while i < num_experiments:
+            loop_experiments = m_time()
+
+            # For poisson or deterministic inputs
+            if Stoch_input:
+                se = int(time.time())
+                seeds.append(se)
+                seeds1 = [j + se for j in range(num_realizations)]
+                seeds2 = [j + se + 2 for j in range(num_realizations)]
+                seeds3 = [j + se + 3 for j in range(num_realizations)]
+
+            ref_signals = simple_spike_train(sfreq, initial_frequencies[i], int(L / num_changes_rate),
+                                             num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds1)
+            # ISIs, histograms = inter_spike_intervals(ref_signals, dt, 1e-3)
+            # plot_isi_histogram(histograms, 0)
+            cons_aux = simple_spike_train(sfreq, proportional_changes[i], int(L / num_changes_rate),
+                                          num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds2)
+            fix_aux = simple_spike_train(sfreq, constant_changes[i], int(L / num_changes_rate),
+                                         num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds3)
+
+            cons_input = np.concatenate((ref_signals, cons_aux, ref_signals), axis=1)
+            fix_input = np.concatenate((ref_signals, fix_aux, ref_signals), axis=1)
+
+            # Avoiding spikes in t==0
+            cons_input[:, 0], fix_input[:, 0] = 0, 0
+            if not Stoch_input: cons_input[:, 1], fix_input[:, 1] = 1, 1
+
+            # Running STP model
+            if dyn_synapse:
+                # Reseting initial conditions
+                stp_prop.set_initial_conditions()
+                lif_prop.set_simulation_params(sim_params)
+                stp_fix.set_initial_conditions()
+                lif_fix.set_simulation_params(sim_params)
+                # Running the models
+                model_stp_parallel(stp_prop, lif_prop, params, cons_input)
+                # model_stp_parallel(stp_fix, lif_fix, params, fix_input)
+            else:
+                # Reseting initial conditions
+                lif_prop.set_simulation_params(sim_params)
+                # lif_fix.set_simulation_params(sim_params)
+                # Running the models
+                static_synapse(lif_prop, cons_input, 9e0)  # , 0.0125e-6)
+                # static_synapse(lif_fix, fix_input, 9e0)  # , 0.0125e-6)
+
+            # Defining output of the model in order to compute statistics
+            signal_prop, signal_fix = stp_prop.get_output(), stp_fix.get_output()
+            if lif_output:
+                signal_prop, signal_fix = lif_prop.membrane_potential, lif_fix.membrane_potential
+
+            # getting transition time for rate of proportional  change if possible
+            aux_cond = np.where(proportional_changes[i] <= initial_frequencies)
+            if len(aux_cond[0]) > 0:
+                aux_i = aux_cond[0][0]
+                t_tra_mid_win = np.max(t_tra[aux_i])
+
+            # Computing statistics of each window, either for the whole window or for the transition- and steady-states
+            res_per_reali[:, i, :], t_tr_ = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win,
+                                                                     None, sim_params, t_tra_mid_win)
+
+            # Updating array of time_transitions
+            t_tra[i].append(t_tr_)
+
+            # Final print of the loop
+            print_time(m_time() - loop_experiments, file_name + ", Realisation " + str(realization) +
+                       ", frequency " + str(initial_frequencies[i]))
+
+            """
+            # path_save = folder_plots + file_name + '_' + str(initial_frequencies[i]) + '_.png'
+            title_graph += ", freq. %dHz" % initial_frequencies[i]
+            t_tr = t_tr_[0]
+            plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali, title_graph,
+                                           path_save="", save_figs=False)
+            # """
+            i -= 1
+
+        # steady-state part
+        for res_i in range(res_real.shape[0]):
+            r = realization
+            res_real[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali[res_i, :].T
+
+        print_time(m_time() - loop_time, file_name + ", Realisation " + str(realization))
+
+        realization += 1
+
+    # transition-state
+    for i in range(num_experiments):
+        t_tra[i] = np.ravel(t_tra[i])
+    t_tra = np.array(t_tra).T
+
+    if not os.path.isfile(path_vars + file_name):
+        dr = {'initial_frequencies': initial_frequencies,
+              'stp_model': model, 'name_params': name_params, 'dyn_synapse': dyn_synapse,
+              'num_synapses': num_syn, 'syn_params': syn_params, 'sim_params': sim_params,
+              'lif_params': lif_params, 'lif_params2': lif_params2, 'prop_rate_change_a': prop_rate_change_a,
+              'fix_rate_change_a': prop_rate_change_a, 'num_changes_rate': num_changes_rate,
+              'description': description, 'seeds': seeds,
+              'realizations': num_realizations, 't_realizations': total_realizations, 'time_transition': t_tra}
+        for nam in range(res_real.shape[0]):
+            dr[stat_list[nam]] = res_real[nam, :]
+
+        if save_vars:
+            saveObject(dr, file_name, path_vars)
+
+    print_time(m_time() - ini_loop_time, "Total big loop")
+
+
+def get_name_file(sfreq, model, ind, num_syn, lif_output, tau_lif, stoch_inp, imputations, gain):
+    aux_name = "_ind_" + str(ind) + "_gain_" + str(int(gain * 100)) + "_sf_" + str(int(sfreq / 1000)) + "k_syn_" + str(
+        num_syn)
+    if lif_output: aux_name += "_tauLiF_" + str(tau_lif) + "ms"
+    file_name = (model + aux_name)
+    if not stoch_inp:
+        file_name = (model + '_det' + aux_name)
+        file_name += "_cwi"
+    else:
+        if imputations:
+            file_name += "_cwi"
+        else:
+            file_name += "_cni"
+
+    return file_name
+
+
 def static_synapse(lif, Input, g):
     # Number of samples
     L = Input.shape[1]
@@ -325,7 +571,7 @@ def correct_poisson_spike_trains(Input_aux, num_realizations, seed=None, imputat
     return Input_test
 
 
-def simple_spike_train(sfreq, rate, L, num_realizations=1, poisson=False, seeds=None, correction=False,
+def simple_spike_train(sfreq, rate, L, num_realizations=1, poisson=False, seeds=None, correction=True,
                        imputation=True):
     seed = None
     if seeds is not None:
@@ -340,43 +586,6 @@ def simple_spike_train(sfreq, rate, L, num_realizations=1, poisson=False, seeds=
 
         if correction:
             Input_test = correct_poisson_spike_trains(Input_aux, num_realizations, seed=seed, imputation=imputation)
-
-            """
-            # Deleting consecutive events
-            aux1 = np.zeros((num_realizations, L))
-            aux1[:, 1:] = np.diff(Input_aux, 1, axis=1)
-            Input_aux2 = np.where(aux1 == 1, aux1, 0)
-            Input_test = np.copy(Input_aux2)
-
-            if imputation:
-                #
-                kernel = np.array([0, 0, 0])
-
-                # Number of missing events
-                miss_events = np.sum(Input_aux, axis=1) - np.sum(Input_aux2, axis=1)
-                realization_with_missing_events = list(np.where(miss_events > 0)[0])
-                cond = []
-                if len(realization_with_missing_events) > 0:
-                    # Organising array adding a new dimension with the shape of the kernel
-                    arr = rolling_window(Input_aux2, kernel.shape[0])
-                    arr = np.reshape(Input_aux2[:, :int(L/3) * 3], (num_realizations, int(L/3), 3))
-                    # Finding indices in array where the kernel is found
-                    cond = (arr == kernel).all(axis=2)
-
-                for col in realization_with_missing_events:
-                    # Available spaces to fill with a spike
-                    b = np.where(cond[col, :] == True)[0] * 3
-                    c = b + 1  # to select the indices of the kernel corresponding to the middle (where a new spike is set)
-
-                    # Sampling integers uniformly, the number of samples corresponds to the double of the number of missing
-                    # events for each realization
-                    rng = np.random.default_rng(seed)
-                    aux = rng.choice(np.arange(0, c.shape[0]), size=int(miss_events[col]), replace=False)
-                    new_ind = c[aux.tolist()]
-
-                    # Updating the corresponding input spike train
-                    Input_test[col, list(new_ind)] = 1
-            # """
 
     else:
         aux_s = input_spike_train(sfreq, rate, L / sfreq)
