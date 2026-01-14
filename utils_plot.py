@@ -570,7 +570,7 @@ def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, 
     ax1.plot([4, 4 + t_tr], [statis[113, i, 0], statis[113, i, 0]], c="tab:blue")  # tr median end window
     # ax1.grid()
     ax1.set_title("Proportional changes", color="gray")
-    ax1.set_ylim(ylims)
+    # ax1.set_ylim(ylims)
 
     ax2 = figc.add_subplot(1, 2, 2)
     ax2.plot(time_vector, s2[0, :], c="black", alpha=0.3)
@@ -608,7 +608,7 @@ def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, 
     ax2.set_xlabel("Time (s)")
     ax2.set_ylabel("Mem. potential (mV)")
     # ax2.grid()
-    ax2.set_ylim(ylims)
+    # ax2.set_ylim(ylims)
     ax2.legend(loc="upper right")
     figc.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
     if save_figs: figc.savefig(path_save, format='png')
@@ -624,7 +624,7 @@ def plot_features_windows_prop_fix(f_vector, dr, lbl, st_lbl, cols, suptitle_=""
             ax_st.plot(f_vector, np.median(dr[lbl[i] + st_lbl[j]], axis=0), c=cols[j], label=st_lbl[j][1:])
             ax_st.fill_between(f_vector, np.quantile(dr[lbl[i] + st_lbl[j]], 0.1, axis=0),
                                np.quantile(dr[lbl[i] + st_lbl[j]], 0.9, axis=0), color=cols[j], alpha=0.3)
-        ax_st.set_xlabel("Frequency (Hz)")
+        ax_st.set_xlabel("Rate (Hz)")
         ax_st.set_ylabel("mem. pot. (mV)")
         # ax_st.set_ylim(ylims)
         ax_st.set_title(lbl[i].split("_")[1] + " win. (" + lbl[i].split("_")[2] + ")", color='gray')
@@ -652,7 +652,8 @@ def plot_features_2windows_prop_fix(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, t
             ax_st2.fill_between(f_vector, np.quantile(dr[lbl2[i] + st_lbl[j]], 0.1, axis=0),
                                 np.quantile(dr[lbl2[i] + st_lbl[j]], 0.9, axis=0), color=cols[j], alpha=0.3)
         ax_st2.set_title(t_[i], color='gray')
-        ax_st2.set_xlabel("Frequency (Hz)")
+        ax_st2.set_xlabel("Rate (Hz)")
+        ax_st2.set_ylabel("mem. pot. (mV)")
         ax_st2.grid()
         ax_st2.set_xscale('log')
 
@@ -662,7 +663,7 @@ def plot_features_2windows_prop_fix(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, t
 
 
 def plot_diff_windows(f_vector, dr, lbl, lbl2, st_lbl, cols_, t_, title_graph="", name_save="", save_figs=False):
-    fig2 = plt.figure(figsize=(6.5, 2.5))  # 6.5, 5
+    fig2 = plt.figure(figsize=(7, 2.5))  # 6.5, 5
     plt.suptitle(title_graph)
     alpha = 0.1
     for i in range(len(lbl)):
@@ -676,7 +677,7 @@ def plot_diff_windows(f_vector, dr, lbl, lbl2, st_lbl, cols_, t_, title_graph=""
             ax_3.plot(f_vector, np.median(aux, axis=0), c=cols_[j], label=st_lbl[j][1:])
             ax_3.fill_between(f_vector, np.quantile(aux, 0.1, axis=0), np.quantile(aux, 0.9, axis=0),
                               color=cols_[j], alpha=alpha)
-        ax_3.set_xlabel("Frequency (Hz)")
+        ax_3.set_xlabel("Rate (Hz)")
         ax_3.set_ylabel("mem. pot. (mV)")
         # ax_3.set_ylim(ylims)
         ax_3.set_title(t_[i], c="gray")
@@ -689,7 +690,7 @@ def plot_diff_windows(f_vector, dr, lbl, lbl2, st_lbl, cols_, t_, title_graph=""
 
 
 def plot_gain_filtering(dr_gain, dr_filt, lbl, lbl2, st_lbl, cols_, title, path_save, save_figs):
-    fig2 = plt.figure(figsize=(8, 5))  # 6.5, 5
+    fig2 = plt.figure(figsize=(9, 5))  # 6.5, 5
     plt.suptitle(title)
     alpha = 0.3
     ax_ = []
@@ -719,3 +720,116 @@ def plot_gain_filtering(dr_gain, dr_filt, lbl, lbl2, st_lbl, cols_, title, path_
             # ax_st.set_ylim(ylims)
     fig2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
     if save_figs: fig2.savefig(path_save, format='png')
+
+# **********************************************************************************************************************
+# FOR GAIN CONTROL PROP CONS
+# EXAMPLE OF HOW INPUT FIRING RATES CHANGE EITHER PROPORTIONALLY OR CONSTANTLY
+"""
+f_ref = 50
+sf = 1000
+dt = 1 / sfreq
+t_vec = np.arange(0, 6, dt)
+prop_freq = []
+cons_freq = []
+
+
+fig3 = plt.figure(figsize=(7.5, 3.5))
+plt.suptitle("Configuration of changing input firing rates")
+ax6 = fig3.add_subplot(1, 2, 1)
+ax6.set_ylim(0, 350)
+ax7 = fig3.add_subplot(1, 2, 2)
+ax7.set_ylim(0, 350)
+
+for f_ref in [50, 100, 200]:
+    aux_r = range(int(2 / dt))
+    prop_freq = [f_ref for _ in aux_r] + [f_ref * 1.5 for _ in aux_r] + [f_ref for _ in aux_r]
+    cons_freq = [f_ref for _ in aux_r] + [f_ref + 10 for _ in aux_r] + [f_ref for _ in aux_r]
+    ax6.plot(t_vec, prop_freq, label=str(f_ref) + "Hz")
+    ax7.plot(t_vec, cons_freq, label=str(f_ref) + "Hz")
+
+
+ax6.grid()
+ax7.grid()
+ax6.legend()
+ax7.legend()
+ax6.set_xlabel("time (s)")
+ax7.set_xlabel("time (s)")
+ax6.set_ylabel("firing rate (Hz)")
+ax6.set_title("Proportional", color="gray")
+ax7.set_title("Constant", color="gray")
+fig3.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+
+
+fig4 = plt.figure(figsize=(7.5, 3.5))
+plt.suptitle("Example of input patterns")
+ax6 = fig4.add_subplot(1, 2, 1)
+ax7 = fig4.add_subplot(1, 2, 2)
+ax6.plot(time_vector, cons_input[0, :])
+ax7.plot(time_vector, fix_input[0, :])
+ax6.grid()
+ax7.grid()
+ax6.set_xlabel("time (s)")
+ax7.set_xlabel("time (s)")
+ax6.set_ylabel("Action potentials")
+ax6.set_title("Proportional", color="gray")
+ax7.set_title("Constant", color="gray")
+fig4.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+# """
+
+# PLOT OF MEMBRANE POTENTIAL WHEN OUTPUT OF MSSM IS EITHER EPSP(T) OR N(T)
+"""
+i = 0
+fig5 = plt.figure(figsize=(10, 5))
+# plt.suptitle("Membrane potential response for ref rate " + str(initial_frequencies[i - 1]) + "Hz")
+ax8 = fig5.add_subplot(2, 2, 1)
+ax9 = fig5.add_subplot(2, 2, 2)
+ax8.plot(time_vector, lif_prop.membrane_potential[0, :])
+ax9.plot(time_vector, lif_fix.membrane_potential[0, :])
+ax8.grid()
+ax9.grid()
+ax8.set_xlabel("time (s)")
+ax9.set_xlabel("time (s)")
+ax8.set_ylabel("membrane potential (mV)")
+ax8.set_title("Epsp Proportional", color="gray")
+ax9.set_title("Epsp Constant", color="gray")
+th_tr = Le_time_win * 0.25
+ax8.plot(time_vector[int(Le_time_win / dt):int((Le_time_win + th_tr) / dt)],
+         [res_per_reali[31, 0, 0] for _ in range(int(th_tr / dt))], c='red', label='w_mid_prop_max')
+ax8.plot(time_vector[int(Le_time_win / dt):int(2 * Le_time_win / dt)],
+         [res_per_reali[45, 0, 0] for _ in range(int(Le_time_win / dt))], c='orange', label='w_mid_prop_max')
+ax10 = fig5.add_subplot(2, 2, 3)
+ax11 = fig5.add_subplot(2, 2, 4)
+ax10.grid()
+ax11.grid()
+ax10.set_xlabel("time (s)")
+ax11.set_xlabel("time (s)")
+ax10.set_ylabel("membrane potential (mV)")
+ax10.set_title("N(t) Proportional", color="gray")
+ax11.set_title("N(t) Constant", color="gray")
+fig5.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+th_tr = Le_time_win * 0.25
+ax10.plot(time_vector[int(Le_time_win / dt):int((Le_time_win + th_tr) / dt)], 
+          [res_per_reali_n[31, 0, 0] for _ in range(int(th_tr / dt))], c='red', label='w_mid_prop_max')
+ax10.plot(time_vector[int(Le_time_win / dt):int(2 * Le_time_win / dt)], 
+          [res_per_reali_n[45, 0, 0] for _ in range(int(Le_time_win / dt))], c='orange', label='w_mid_prop_max')
+
+# """
+
+# CHECKING IF mtr_mid_prop INDEED CORRESPONDS TO THE MAXIMUM OF MID WINDOW
+"""
+# Plot of steady-state of experiments
+# plt.suptitle(description)
+fig6 = plt.figure(figsize=(4.5, 4.5))
+ax1 = fig6.add_subplot(1, 1, 1)
+a = dr['mtr_mid_prop']
+b = dr['w_mid_prop_max']
+aux = a - b
+ax1.plot(initial_frequencies, np.mean(aux, axis=0), alpha=0.8, c="tab:blue", label='mtr_mid_prop')
+# ax1.plot(initial_frequencies, np.mean(b, axis=0), alpha=0.8, c="tab:red", label='w_mid_prop_max')
+ax1.fill_between(initial_frequencies, np.quantile(aux, 0.1, axis=0), np.quantile(aux, 0.9, axis=0), 
+                 color="tab:blue", alpha=0.2)
+ax1.set_xlabel("Frequency (Hz)")
+ax1.set_title("Max mid (Proportional) vs. max. mid transition", c="gray")
+ax1.grid()
+ax1.legend()
+# """

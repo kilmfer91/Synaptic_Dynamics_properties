@@ -2,6 +2,7 @@ import os.path
 import matplotlib.pyplot as plt
 import scipy.signal
 import numpy as np
+
 from synaptic_dynamic_models.TM import TM_model
 from synaptic_dynamic_models.MSSM import MSSM_model
 from spiking_neuron_models.LIF import LIF_model
@@ -36,12 +37,13 @@ stat_list = ['st_ini_prop_mean', 'st_ini_prop_med', 'st_ini_prop_q5', 'st_ini_pr
 stat_list_sin = ['vec_max_mp_pos', 'vec_min_mp_neg', 'vec_q1_mp_pos', 'vec_q90_mp_pos',
                  'vec_q1_mp_neg', 'vec_q90_mp_neg', 'vec_max_mp', 'vec_min_mp', 'vec_q1_mp', 'vec_q90_mp']
 
+
 # Parameters for LiF neuron
-lif_params = {'V_threshold': np.array([50 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
-              'tau_m': np.array([30e-3 for _ in range(1)]),
-              'g_L': np.array([7.5e-2 for _ in range(1)]),
-              'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
-              't_refractory': np.array([0.01 for _ in range(1)])}
+def get_neuron_params(tau_m):
+    return {'V_threshold': np.array([1000 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
+            'tau_m': np.array([tau_m * 1e-3 for _ in range(1)]), 'g_L': np.array([2.7e-2 for _ in range(1)]),
+            'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
+            't_refractory': np.array([0.01 for _ in range(1)])}
 
 
 def get_params_stp(name_model, ind):
@@ -170,7 +172,7 @@ def load_set_simulation_params(dr_ini, path_vars, file_name, run_experiment=Fals
 
         # For poisson or deterministic inputs
         seeds = []
-        if not dr['stoch_input']:
+        if not dr['Stoch_input']:
             total_realizations = 1
             num_realizations = 1
             dr['t_realizations'] = total_realizations
@@ -278,7 +280,7 @@ def gc_prop_fix_gain(arguments):
                 lif_fix.set_simulation_params(sim_params)
                 # Running the models
                 model_stp_parallel(stp_prop, lif_prop, params, cons_input)
-                # model_stp_parallel(stp_fix, lif_fix, params, fix_input)
+                model_stp_parallel(stp_fix, lif_fix, params, fix_input)
             else:
                 # Reseting initial conditions
                 lif_prop.set_simulation_params(sim_params)
@@ -309,11 +311,11 @@ def gc_prop_fix_gain(arguments):
             print_time(m_time() - loop_experiments, file_name + ", Realisation " + str(realization) +
                        ", frequency " + str(initial_frequencies[i]))
 
-            """
+            # """
             # path_save = folder_plots + file_name + '_' + str(initial_frequencies[i]) + '_.png'
-            title_graph += ", freq. %dHz" % initial_frequencies[i]
+            title_graph_ = title_graph + ", freq. %dHz" % initial_frequencies[i]
             t_tr = t_tr_[0]
-            plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali, title_graph,
+            plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali, title_graph_,
                                            path_save="", save_figs=False)
             # """
             i -= 1
