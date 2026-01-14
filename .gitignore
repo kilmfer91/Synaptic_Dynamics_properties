@@ -10,7 +10,6 @@
 /gain_control/variables/
 /gain_control/plots/test.png
 performance_in_pc.txt
-/gain_control/filtering_and_gain.py
 
 # OS generated files #
 ######################
