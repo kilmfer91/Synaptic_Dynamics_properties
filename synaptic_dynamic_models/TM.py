@@ -59,6 +59,8 @@ class TM_model(SynDynModel):
         self.ind_spike_events = []
         self.ind_spike_events_tonic = []
         self.time_spike_events = []
+
+        # Steady-state tracking
         self.R_steady_state = None
         self.U_steady_state = None
         self.output_steady_state = None

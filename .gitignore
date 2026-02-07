@@ -26,3 +26,6 @@ synaptic_dynamic_models/__pycache__/
 
 /gain_control/schedule_experiments_prop_fix.xlsx
 /gain_control/~$schedule_experiments_prop_fix.xlsx
+/example_HH_Doorn.py
+/spiking_neuron_models/Doorn_realistic_model_example.py
+/spiking_neuron_models/Doorn_realistic_model_copy.py

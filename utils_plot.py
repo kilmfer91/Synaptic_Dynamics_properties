@@ -500,133 +500,161 @@ def plot_gc_sin_statistics(res_per_reali, mean_rates):
     fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 
 
-def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, path_save="", save_figs=False):
+def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, path_save="", save_figs=False,
+                                   y_lims_ind_plot=None, plot_stats=False, plt_grid=False):
     # t_tr = t_tr_[0]
-    figc = plt.figure(figsize=(10, 3))
+    figc = plt.figure(figsize=(8, 3))  # (10, 3))
     plt.suptitle(title)
-    ylims = [-70, -67]  # tm=30/syn=100 [-65.7,-52.5], tm=1/syn=100[-70,-35], tm=1/syn=1 [-70.05,-67.4]
-    ax1 = figc.add_subplot(1, 2, 1)
+    # tm=30/syn=100 [-65.7,-52.5], tm=1/syn=100[-70,-35], tm=1/syn=1 [-70.05,-67.4]
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else [-71, -43]
+    ax1 = figc.add_subplot(1, 1, 1)  # (1, 2, 1)
     ax1.set_xlabel("Time (s)")
     ax1.set_ylabel("Mem. potential (mV)")
-    ax1.plot(time_vector, s1[0, :], c="black", alpha=0.3)
-    ax1.plot([0, 2], [statis[51, i, 0], statis[51, i, 0]], c="orange", alpha=0.5)  # w mean ini window
-    ax1.plot([2, 4], [statis[59, i, 0], statis[59, i, 0]], c="orange", alpha=0.5)  # w mean mid window
-    ax1.plot([4, 6], [statis[67, i, 0], statis[67, i, 0]], c="orange", alpha=0.5)  # w mean end window
-    ax1.plot([0 + t_tr, 2], [statis[0, i, 0], statis[0, i, 0]], c="tab:orange")  # mean ini window
-    ax1.plot([2 + t_tr, 4], [statis[8, i, 0], statis[8, i, 0]], c="tab:orange")  # mean mid window
-    ax1.plot([4 + t_tr, 6], [statis[16, i, 0], statis[16, i, 0]], c="tab:orange")  # mean end window
-    ax1.plot([0, t_tr], [statis[96, i, 0], statis[96, i, 0]], c="tab:orange")  # tr mean ini window
-    ax1.plot([2, 2 + t_tr], [statis[104, i, 0], statis[104, i, 0]], c="tab:orange")  # tr mean mid window
-    ax1.plot([4, 4 + t_tr], [statis[112, i, 0], statis[112, i, 0]], c="tab:orange")  # tr mean end window
+    ax1.plot(time_vector, s1[0, :], c="black", alpha=0.4)
+    if plot_stats:
+        # ax1.plot([0, 2], [statis[51, i, 0], statis[51, i, 0]], c="orange", alpha=0.5)  # w mean ini window
+        # ax1.plot([2, 4], [statis[59, i, 0], statis[59, i, 0]], c="orange", alpha=0.5)  # w mean mid window
+        # ax1.plot([4, 6], [statis[67, i, 0], statis[67, i, 0]], c="orange", alpha=0.5)  # w mean end window
+        ax1.plot([0 + t_tr, 2], [statis[0, i, 0], statis[0, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
+        ax1.plot([2 + t_tr, 4], [statis[8, i, 0], statis[8, i, 0]], c="tab:orange")  # mean mid window
+        ax1.plot([4 + t_tr, 6], [statis[16, i, 0], statis[16, i, 0]], c="tab:orange")  # mean end window
+        ax1.plot([0, t_tr], [statis[96, i, 0], statis[96, i, 0]], c="tab:orange")  # tr mean ini window
+        ax1.plot([2, 2 + t_tr], [statis[104, i, 0], statis[104, i, 0]], c="tab:orange")  # tr mean mid window
+        ax1.plot([4, 4 + t_tr], [statis[112, i, 0], statis[112, i, 0]], c="tab:orange")  # tr mean end window
 
-    ax1.plot([0, 2], [statis[54, i, 0], statis[54, i, 0]], c="red", alpha=0.5)  # min w ini window
-    ax1.plot([2, 4], [statis[62, i, 0], statis[62, i, 0]], c="red", alpha=0.5)  # min w mid window
-    ax1.plot([4, 6], [statis[70, i, 0], statis[70, i, 0]], c="red", alpha=0.5)  # min w end window
-    ax1.plot([0 + t_tr, 2], [statis[6, i, 0], statis[6, i, 0]], c="tab:red")  # min ini window
-    ax1.plot([2 + t_tr, 4], [statis[14, i, 0], statis[14, i, 0]], c="tab:red")  # min mid window
-    ax1.plot([4 + t_tr, 6], [statis[22, i, 0], statis[22, i, 0]], c="tab:red")  # min end window
-    ax1.plot([0, 0 + t_tr], [statis[102, i, 0], statis[102, i, 0]], c="tab:red")  # tr min ini window
-    ax1.plot([2, 2 + t_tr], [statis[110, i, 0], statis[110, i, 0]], c="tab:red")  # tr min mid window
-    ax1.plot([4, 4 + t_tr], [statis[118, i, 0], statis[118, i, 0]], c="tab:red")  # tr min end window
+        # ax1.plot([0, 2], [statis[54, i, 0], statis[54, i, 0]], c="red", alpha=0.5)  # min w ini window
+        # ax1.plot([2, 4], [statis[62, i, 0], statis[62, i, 0]], c="red", alpha=0.5)  # min w mid window
+        # ax1.plot([4, 6], [statis[70, i, 0], statis[70, i, 0]], c="red", alpha=0.5)  # min w end window
+        ax1.plot([0 + t_tr, 2], [statis[6, i, 0], statis[6, i, 0]], c="tab:red", alpha=0.8, label='min')  # min ini window
+        ax1.plot([2 + t_tr, 4], [statis[14, i, 0], statis[14, i, 0]], c="tab:red", alpha=0.8)  # min mid window
+        ax1.plot([4 + t_tr, 6], [statis[22, i, 0], statis[22, i, 0]], c="tab:red", alpha=0.8)  # min end window
+        ax1.plot([0, 0 + t_tr], [statis[102, i, 0], statis[102, i, 0]], c="tab:red", alpha=0.8)  # tr min ini window
+        ax1.plot([2, 2 + t_tr], [statis[110, i, 0], statis[110, i, 0]], c="tab:red", alpha=0.8)  # tr min mid window
+        ax1.plot([4, 4 + t_tr], [statis[118, i, 0], statis[118, i, 0]], c="tab:red", alpha=0.8)  # tr min end window
 
-    ax1.plot([0, 2], [statis[55, i, 0], statis[55, i, 0]], c="red", alpha=0.5)  # max w ini window
-    ax1.plot([2, 4], [statis[63, i, 0], statis[63, i, 0]], c="red", alpha=0.5)  # max w mid window
-    ax1.plot([4, 6], [statis[71, i, 0], statis[71, i, 0]], c="red", alpha=0.5)  # max w end window
-    ax1.plot([0 + t_tr, 2], [statis[7, i, 0], statis[7, i, 0]], c="tab:red")  # max ini window
-    ax1.plot([2 + t_tr, 4], [statis[15, i, 0], statis[15, i, 0]], c="tab:red")  # max mid window
-    ax1.plot([4 + t_tr, 6], [statis[23, i, 0], statis[23, i, 0]], c="tab:red")  # max end window
-    ax1.plot([0, 0 + t_tr], [statis[103, i, 0], statis[103, i, 0]], c="tab:red")  # tr max ini window
-    ax1.plot([2, 2 + t_tr], [statis[111, i, 0], statis[111, i, 0]], c="tab:red")  # tr max mid window
-    ax1.plot([4, 4 + t_tr], [statis[119, i, 0], statis[119, i, 0]], c="tab:red")  # tr max end window
+        # ax1.plot([0, 2], [statis[55, i, 0], statis[55, i, 0]], c="red", alpha=0.5)  # max w ini window
+        # ax1.plot([2, 4], [statis[63, i, 0], statis[63, i, 0]], c="red", alpha=0.5)  # max w mid window
+        # ax1.plot([4, 6], [statis[71, i, 0], statis[71, i, 0]], c="red", alpha=0.5)  # max w end window
+        ax1.plot([0 + t_tr, 2], [statis[7, i, 0], statis[7, i, 0]], c="tab:red", alpha=0.8, label='max')  # max ini window
+        ax1.plot([2 + t_tr, 4], [statis[15, i, 0], statis[15, i, 0]], c="tab:red", alpha=0.8)  # max mid window
+        ax1.plot([4 + t_tr, 6], [statis[23, i, 0], statis[23, i, 0]], c="tab:red", alpha=0.8)  # max end window
+        ax1.plot([0, 0 + t_tr], [statis[103, i, 0], statis[103, i, 0]], c="tab:red", alpha=0.8)  # tr max ini window
+        ax1.plot([2, 2 + t_tr], [statis[111, i, 0], statis[111, i, 0]], c="tab:red", alpha=0.8)  # tr max mid window
+        ax1.plot([4, 4 + t_tr], [statis[119, i, 0], statis[119, i, 0]], c="tab:red", alpha=0.8)  # tr max end window
 
-    ax1.plot([0, 2], [statis[51, i, 0], statis[51, i, 0]], c="green", alpha=0.5)  # w q10 ini window
-    ax1.plot([2, 4], [statis[59, i, 0], statis[59, i, 0]], c="green", alpha=0.5)  # w q10 mid window
-    ax1.plot([4, 6], [statis[67, i, 0], statis[67, i, 0]], c="green", alpha=0.5)  # w q10 end window
-    ax1.plot([0 + t_tr, 2], [statis[3, i, 0], statis[3, i, 0]], c="tab:green")  # q10 ini window
-    ax1.plot([2 + t_tr, 4], [statis[11, i, 0], statis[11, i, 0]], c="tab:green")  # q10 mid window
-    ax1.plot([4 + t_tr, 6], [statis[19, i, 0], statis[19, i, 0]], c="tab:green")  # q10 end window
-    ax1.plot([0, 0 + t_tr], [statis[99, i, 0], statis[99, i, 0]], c="tab:green")  # tr q10 ini window
-    ax1.plot([2, 2 + t_tr], [statis[107, i, 0], statis[107, i, 0]], c="tab:green")  # tr q10 mid window
-    ax1.plot([4, 4 + t_tr], [statis[115, i, 0], statis[115, i, 0]], c="tab:green")  # tr q10 end window
+        # ax1.plot([0, 2], [statis[51, i, 0], statis[51, i, 0]], c="green", alpha=0.5)  # w q10 ini window
+        # ax1.plot([2, 4], [statis[59, i, 0], statis[59, i, 0]], c="green", alpha=0.5)  # w q10 mid window
+        # ax1.plot([4, 6], [statis[67, i, 0], statis[67, i, 0]], c="green", alpha=0.5)  # w q10 end window
+        ax1.plot([0 + t_tr, 2], [statis[3, i, 0], statis[3, i, 0]], c="tab:green", label='q10%')  # q10 ini window
+        ax1.plot([2 + t_tr, 4], [statis[11, i, 0], statis[11, i, 0]], c="tab:green")  # q10 mid window
+        ax1.plot([4 + t_tr, 6], [statis[19, i, 0], statis[19, i, 0]], c="tab:green")  # q10 end window
+        ax1.plot([0, 0 + t_tr], [statis[99, i, 0], statis[99, i, 0]], c="tab:green")  # tr q10 ini window
+        ax1.plot([2, 2 + t_tr], [statis[107, i, 0], statis[107, i, 0]], c="tab:green")  # tr q10 mid window
+        ax1.plot([4, 4 + t_tr], [statis[115, i, 0], statis[115, i, 0]], c="tab:green")  # tr q10 end window
 
-    ax1.plot([0, 2], [statis[52, i, 0], statis[52, i, 0]], c="green", alpha=0.5)  # w q90 ini window
-    ax1.plot([2, 4], [statis[60, i, 0], statis[60, i, 0]], c="green", alpha=0.5)  # w q90 mid window
-    ax1.plot([4, 6], [statis[68, i, 0], statis[68, i, 0]], c="green", alpha=0.5)  # w q90 end window
-    ax1.plot([0 + t_tr, 2], [statis[4, i, 0], statis[4, i, 0]], c="tab:green")  # q90 ini window
-    ax1.plot([2 + t_tr, 4], [statis[12, i, 0], statis[12, i, 0]], c="tab:green")  # q90 mid window
-    ax1.plot([4 + t_tr, 6], [statis[20, i, 0], statis[20, i, 0]], c="tab:green")  # q90 end window
-    ax1.plot([0, 0 + t_tr], [statis[100, i, 0], statis[100, i, 0]], c="tab:green")  # q90 ini window
-    ax1.plot([2, 2 + t_tr], [statis[108, i, 0], statis[108, i, 0]], c="tab:green")  # q90 mid window
-    ax1.plot([4, 4 + t_tr], [statis[116, i, 0], statis[116, i, 0]], c="tab:green")  # q90 end window
+        # ax1.plot([0, 2], [statis[52, i, 0], statis[52, i, 0]], c="green", alpha=0.5)  # w q90 ini window
+        # ax1.plot([2, 4], [statis[60, i, 0], statis[60, i, 0]], c="green", alpha=0.5)  # w q90 mid window
+        # ax1.plot([4, 6], [statis[68, i, 0], statis[68, i, 0]], c="green", alpha=0.5)  # w q90 end window
+        ax1.plot([0 + t_tr, 2], [statis[4, i, 0], statis[4, i, 0]], c="tab:green", label='q90%')  # q90 ini window
+        ax1.plot([2 + t_tr, 4], [statis[12, i, 0], statis[12, i, 0]], c="tab:green")  # q90 mid window
+        ax1.plot([4 + t_tr, 6], [statis[20, i, 0], statis[20, i, 0]], c="tab:green")  # q90 end window
+        ax1.plot([0, 0 + t_tr], [statis[100, i, 0], statis[100, i, 0]], c="tab:green")  # q90 ini window
+        ax1.plot([2, 2 + t_tr], [statis[108, i, 0], statis[108, i, 0]], c="tab:green")  # q90 mid window
+        ax1.plot([4, 4 + t_tr], [statis[116, i, 0], statis[116, i, 0]], c="tab:green")  # q90 end window
 
-    ax1.plot([0, 2], [statis[52, i, 0], statis[52, i, 0]], c="blue", alpha=0.5)  # w median ini window
-    ax1.plot([2, 4], [statis[60, i, 0], statis[60, i, 0]], c="blue", alpha=0.5)  # w median mid window
-    ax1.plot([4, 6], [statis[68, i, 0], statis[68, i, 0]], c="blue", alpha=0.5)  # w median end window
-    ax1.plot([0 + t_tr, 2], [statis[1, i, 0], statis[1, i, 0]], c="tab:blue")  # median ini window
-    ax1.plot([2 + t_tr, 4], [statis[9, i, 0], statis[9, i, 0]], c="tab:blue")  # median mid window
-    ax1.plot([4 + t_tr, 6], [statis[17, i, 0], statis[17, i, 0]], c="tab:blue")  # median end window
-    ax1.plot([0, 0 + t_tr], [statis[97, i, 0], statis[97, i, 0]], c="tab:blue")  # tr median ini window
-    ax1.plot([2, 2 + t_tr], [statis[105, i, 0], statis[105, i, 0]], c="tab:blue")  # tr median mid window
-    ax1.plot([4, 4 + t_tr], [statis[113, i, 0], statis[113, i, 0]], c="tab:blue")  # tr median end window
-    # ax1.grid()
+        # ax1.plot([0, 2], [statis[52, i, 0], statis[52, i, 0]], c="blue", alpha=0.5)  # w median ini window
+        # ax1.plot([2, 4], [statis[60, i, 0], statis[60, i, 0]], c="blue", alpha=0.5)  # w median mid window
+        # ax1.plot([4, 6], [statis[68, i, 0], statis[68, i, 0]], c="blue", alpha=0.5)  # w median end window
+        ax1.plot([0 + t_tr, 2], [statis[1, i, 0], statis[1, i, 0]], c="tab:blue", label='median')  # median ini window
+        ax1.plot([2 + t_tr, 4], [statis[9, i, 0], statis[9, i, 0]], c="tab:blue")  # median mid window
+        ax1.plot([4 + t_tr, 6], [statis[17, i, 0], statis[17, i, 0]], c="tab:blue")  # median end window
+        ax1.plot([0, 0 + t_tr], [statis[97, i, 0], statis[97, i, 0]], c="tab:blue")  # tr median ini window
+        ax1.plot([2, 2 + t_tr], [statis[105, i, 0], statis[105, i, 0]], c="tab:blue")  # tr median mid window
+        ax1.plot([4, 4 + t_tr], [statis[113, i, 0], statis[113, i, 0]], c="tab:blue")  # tr median end window
+        # ax1.grid()
+
+        """
+        ax2 = figc.add_subplot(1, 2, 2)
+        ax2.plot(time_vector, s2[0, :], c="black", alpha=0.3)
+        ax2.plot([0 + t_tr, 2], [statis[18, i, 0], statis[18, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
+        ax2.plot([2 + t_tr, 4], [statis[19, i, 0], statis[19, i, 0]], c="tab:orange")  # mean mid window
+        ax2.plot([4 + t_tr, 6], [statis[20, i, 0], statis[20, i, 0]], c="tab:orange")  # mean end window
+        ax2.plot([0, 2], [statis[58, i, 0], statis[58, i, 0]], c="red", alpha=0.5)  # min w ini window
+        ax2.plot([2, 4], [statis[64, i, 0], statis[64, i, 0]], c="red", alpha=0.5)  # min w mid window
+        ax2.plot([4, 6], [statis[70, i, 0], statis[70, i, 0]], c="red", alpha=0.5)  # min w end window
+        ax2.plot([0 + t_tr, 2], [statis[30, i, 0], statis[30, i, 0]], c="tab:red")  # min ini window
+        ax2.plot([2 + t_tr, 4], [statis[31, i, 0], statis[31, i, 0]], c="tab:red")  # min mid window
+        ax2.plot([4 + t_tr, 6], [statis[32, i, 0], statis[32, i, 0]], c="tab:red")  # min end window
+        ax2.plot([0, 2], [statis[59, i, 0], statis[59, i, 0]], c="red", alpha=0.5)  # max w ini window
+        ax2.plot([2, 4], [statis[65, i, 0], statis[65, i, 0]], c="red", alpha=0.5)  # max w mid window
+        ax2.plot([4, 6], [statis[71, i, 0], statis[71, i, 0]], c="red", alpha=0.5)  # max w end window
+        ax2.plot([0 + t_tr, 2], [statis[33, i, 0], statis[33, i, 0]], c="tab:red", label='max')  # max ini window
+        ax2.plot([2 + t_tr, 4], [statis[34, i, 0], statis[34, i, 0]], c="tab:red")  # max mid window
+        ax2.plot([4 + t_tr, 6], [statis[35, i, 0], statis[35, i, 0]], c="tab:red")  # max end window
+        ax2.plot([0, 2], [statis[56, i, 0], statis[56, i, 0]], c="green", alpha=0.5)  # q1 w ini window
+        ax2.plot([2, 4], [statis[62, i, 0], statis[62, i, 0]], c="green", alpha=0.5)  # q1 w mid window
+        ax2.plot([4, 6], [statis[68, i, 0], statis[68, i, 0]], c="green", alpha=0.5)  # q1 w end window
+        ax2.plot([0 + t_tr, 2], [statis[24, i, 0], statis[24, i, 0]], c="tab:green", label=r'$q_1$')  # q1 ini window
+        ax2.plot([2 + t_tr, 4], [statis[25, i, 0], statis[25, i, 0]], c="tab:green")  # q1 mid window
+        ax2.plot([4 + t_tr, 6], [statis[26, i, 0], statis[26, i, 0]], c="tab:green")  # q1 end window
+        ax2.plot([0, 2], [statis[57, i, 0], statis[57, i, 0]], c="green", alpha=0.5)  # q90 w ini window
+        ax2.plot([2, 4], [statis[63, i, 0], statis[63, i, 0]], c="green", alpha=0.5)  # q90 w mid window
+        ax2.plot([4, 6], [statis[69, i, 0], statis[69, i, 0]], c="green", alpha=0.5)  # q90 w end window
+        ax2.plot([0 + t_tr, 2], [statis[27, i, 0], statis[27, i, 0]], c="tab:green", label=r'$q_{90}$')  # q90 ini window
+        ax2.plot([2 + t_tr, 4], [statis[28, i, 0], statis[28, i, 0]], c="tab:green")  # q90 mid window
+        ax2.plot([4 + t_tr, 6], [statis[29, i, 0], statis[29, i, 0]], c="tab:green")  # q90 end window
+        ax2.plot([0 + t_tr, 2], [statis[21, i, 0], statis[21, i, 0]], c="tab:blue", label='med')  # median ini window
+        ax2.plot([2 + t_tr, 4], [statis[22, i, 0], statis[22, i, 0]], c="tab:blue")  # median mid window
+        ax2.plot([4 + t_tr, 6], [statis[23, i, 0], statis[23, i, 0]], c="tab:blue")  # median end window
+        ax2.set_title("Constant changes", color="gray")
+        ax2.set_xlabel("Time (s)")
+        ax2.set_ylabel("Mem. potential (mV)")
+        # ax2.grid()
+        ax2.set_ylim(ylims)
+        # """
+        # ax1.legend(loc="upper right")
+        ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
     ax1.set_title("Proportional changes", color="gray")
-    # ax1.set_ylim(ylims)
-
-    ax2 = figc.add_subplot(1, 2, 2)
-    ax2.plot(time_vector, s2[0, :], c="black", alpha=0.3)
-    ax2.plot([0 + t_tr, 2], [statis[18, i, 0], statis[18, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
-    ax2.plot([2 + t_tr, 4], [statis[19, i, 0], statis[19, i, 0]], c="tab:orange")  # mean mid window
-    ax2.plot([4 + t_tr, 6], [statis[20, i, 0], statis[20, i, 0]], c="tab:orange")  # mean end window
-    ax2.plot([0, 2], [statis[58, i, 0], statis[58, i, 0]], c="red", alpha=0.5)  # min w ini window
-    ax2.plot([2, 4], [statis[64, i, 0], statis[64, i, 0]], c="red", alpha=0.5)  # min w mid window
-    ax2.plot([4, 6], [statis[70, i, 0], statis[70, i, 0]], c="red", alpha=0.5)  # min w end window
-    ax2.plot([0 + t_tr, 2], [statis[30, i, 0], statis[30, i, 0]], c="tab:red")  # min ini window
-    ax2.plot([2 + t_tr, 4], [statis[31, i, 0], statis[31, i, 0]], c="tab:red")  # min mid window
-    ax2.plot([4 + t_tr, 6], [statis[32, i, 0], statis[32, i, 0]], c="tab:red")  # min end window
-    ax2.plot([0, 2], [statis[59, i, 0], statis[59, i, 0]], c="red", alpha=0.5)  # max w ini window
-    ax2.plot([2, 4], [statis[65, i, 0], statis[65, i, 0]], c="red", alpha=0.5)  # max w mid window
-    ax2.plot([4, 6], [statis[71, i, 0], statis[71, i, 0]], c="red", alpha=0.5)  # max w end window
-    ax2.plot([0 + t_tr, 2], [statis[33, i, 0], statis[33, i, 0]], c="tab:red", label='max')  # max ini window
-    ax2.plot([2 + t_tr, 4], [statis[34, i, 0], statis[34, i, 0]], c="tab:red")  # max mid window
-    ax2.plot([4 + t_tr, 6], [statis[35, i, 0], statis[35, i, 0]], c="tab:red")  # max end window
-    ax2.plot([0, 2], [statis[56, i, 0], statis[56, i, 0]], c="green", alpha=0.5)  # q1 w ini window
-    ax2.plot([2, 4], [statis[62, i, 0], statis[62, i, 0]], c="green", alpha=0.5)  # q1 w mid window
-    ax2.plot([4, 6], [statis[68, i, 0], statis[68, i, 0]], c="green", alpha=0.5)  # q1 w end window
-    ax2.plot([0 + t_tr, 2], [statis[24, i, 0], statis[24, i, 0]], c="tab:green", label=r'$q_1$')  # q1 ini window
-    ax2.plot([2 + t_tr, 4], [statis[25, i, 0], statis[25, i, 0]], c="tab:green")  # q1 mid window
-    ax2.plot([4 + t_tr, 6], [statis[26, i, 0], statis[26, i, 0]], c="tab:green")  # q1 end window
-    ax2.plot([0, 2], [statis[57, i, 0], statis[57, i, 0]], c="green", alpha=0.5)  # q90 w ini window
-    ax2.plot([2, 4], [statis[63, i, 0], statis[63, i, 0]], c="green", alpha=0.5)  # q90 w mid window
-    ax2.plot([4, 6], [statis[69, i, 0], statis[69, i, 0]], c="green", alpha=0.5)  # q90 w end window
-    ax2.plot([0 + t_tr, 2], [statis[27, i, 0], statis[27, i, 0]], c="tab:green", label=r'$q_{90}$')  # q90 ini window
-    ax2.plot([2 + t_tr, 4], [statis[28, i, 0], statis[28, i, 0]], c="tab:green")  # q90 mid window
-    ax2.plot([4 + t_tr, 6], [statis[29, i, 0], statis[29, i, 0]], c="tab:green")  # q90 end window
-    ax2.plot([0 + t_tr, 2], [statis[21, i, 0], statis[21, i, 0]], c="tab:blue", label='med')  # median ini window
-    ax2.plot([2 + t_tr, 4], [statis[22, i, 0], statis[22, i, 0]], c="tab:blue")  # median mid window
-    ax2.plot([4 + t_tr, 6], [statis[23, i, 0], statis[23, i, 0]], c="tab:blue")  # median end window
-    ax2.set_title("Constant changes", color="gray")
-    ax2.set_xlabel("Time (s)")
-    ax2.set_ylabel("Mem. potential (mV)")
-    # ax2.grid()
-    # ax2.set_ylim(ylims)
-    ax2.legend(loc="upper right")
+    ax1.set_ylim(ylims)
+    if plt_grid: ax1.grid()
     figc.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
     if save_figs: figc.savefig(path_save, format='png')
 
 
-def plot_features_windows_prop_fix(f_vector, dr, lbl, st_lbl, cols, suptitle_="", path_save="", save_figs=False):
+def aux_plot_features_win_prop_fix(dr, lbl, st_lbl):
+    plot_sign = False
+    sign = None
+    if lbl + st_lbl in dr:
+        sign = dr[lbl + st_lbl]
+        plot_sign = True
+    else:
+        if st_lbl == '_q1':
+            if lbl + '_q10' in dr:
+                sign = dr[lbl + '_q10']
+                plot_sign = True
+        if st_lbl == '_q10':
+            if lbl + '_q1' in dr:
+                sign = dr[lbl + '_q1']
+                plot_sign = True
+
+    return plot_sign, sign
+
+
+def plot_features_windows_prop_fix(f_vector, dr, lbl, st_lbl, cols, suptitle_="", path_save="", save_figs=False,
+                                   y_lims_ind_plot=None):
     fig_st = plt.figure(figsize=(10, 6))
     plt.suptitle(suptitle_)
-    ylims = [-70.15, -67.3]  # [-70.05, -52]
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
     for i in range(len(lbl)):
         ax_st = fig_st.add_subplot(2, 3, i + 1)
         for j in range(len(st_lbl)):
-            ax_st.plot(f_vector, np.median(dr[lbl[i] + st_lbl[j]], axis=0), c=cols[j], label=st_lbl[j][1:])
-            ax_st.fill_between(f_vector, np.quantile(dr[lbl[i] + st_lbl[j]], 0.1, axis=0),
-                               np.quantile(dr[lbl[i] + st_lbl[j]], 0.9, axis=0), color=cols[j], alpha=0.3)
+            plot_sign, sign = aux_plot_features_win_prop_fix(dr, lbl[i], st_lbl[j])
+            if plot_sign:
+                ax_st.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=st_lbl[j][1:])
+                ax_st.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                                   color=cols[j], alpha=0.3)
         ax_st.set_xlabel("Rate (Hz)")
         ax_st.set_ylabel("mem. pot. (mV)")
-        # ax_st.set_ylim(ylims)
         ax_st.set_title(lbl[i].split("_")[1] + " win. (" + lbl[i].split("_")[2] + ")", color='gray')
         # ax_st.set_title("Frequency response", color='gray')
         ax_st.grid()
@@ -637,20 +665,26 @@ def plot_features_windows_prop_fix(f_vector, dr, lbl, st_lbl, cols, suptitle_=""
     if save_figs: fig_st.savefig(path_save, format='png')
 
 
-def plot_features_2windows_prop_fix(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, title_graph, path_save, save_figs):
+def plot_features_2windows_prop_fix(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, title_graph, path_save, save_figs,
+                                    y_lims_ind_plot=None):
     fig_st2 = plt.figure(figsize=(8, 6))
     plt.suptitle(title_graph)
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
     ax_st2 = None
     for i in range(len(lbl)):
         ax_st2 = fig_st2.add_subplot(2, 2, i + 1)
         for j in range(len(st_lbl)):
-            ax_st2.plot(f_vector, np.median(dr[lbl[i] + st_lbl[j]], axis=0), c='gray')
-            ax_st2.fill_between(f_vector, np.quantile(dr[lbl[i] + st_lbl[j]], 0.1, axis=0),
-                                np.quantile(dr[lbl[i] + st_lbl[j]], 0.9, axis=0), color='gray', alpha=0.3)
+            plot_sign, sign = aux_plot_features_win_prop_fix(dr, lbl[i], st_lbl[j])
+            if plot_sign:
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c='gray')
+                ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                                    color='gray', alpha=0.3)
         for j in range(len(st_lbl)):
-            ax_st2.plot(f_vector, np.median(dr[lbl2[i] + st_lbl[j]], axis=0), c=cols[j])
-            ax_st2.fill_between(f_vector, np.quantile(dr[lbl2[i] + st_lbl[j]], 0.1, axis=0),
-                                np.quantile(dr[lbl2[i] + st_lbl[j]], 0.9, axis=0), color=cols[j], alpha=0.3)
+            plot_sign, sign = aux_plot_features_win_prop_fix(dr, lbl2[i], st_lbl[j])
+            if plot_sign:
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j])
+                ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                                    color=cols[j], alpha=0.3)
         ax_st2.set_title(t_[i], color='gray')
         ax_st2.set_xlabel("Rate (Hz)")
         ax_st2.set_ylabel("mem. pot. (mV)")
@@ -662,29 +696,33 @@ def plot_features_2windows_prop_fix(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, t
     if save_figs: fig_st2.savefig(path_save, format='png')
 
 
-def plot_diff_windows(f_vector, dr, lbl, lbl2, st_lbl, cols_, t_, title_graph="", name_save="", save_figs=False):
-    fig2 = plt.figure(figsize=(7, 2.5))  # 6.5, 5
+def plot_diff_windows(f_vector, dr, lbl, lbl2, st_lbl, cols_, t_, title_graph="", name_save="", save_figs=False,
+                      y_lims_ind_plot=None):
+    fig2 = plt.figure(figsize=(4, 2.5))  # (7, 2.5)
     plt.suptitle(title_graph)
     alpha = 0.1
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
     for i in range(len(lbl)):
-        ax_3 = fig2.add_subplot(1, 2, i + 1)
+        ax_3 = fig2.add_subplot(1, len(lbl), i + 1)
         for j in range(len(st_lbl)):
+            plot_sign1, sign1 = aux_plot_features_win_prop_fix(dr, lbl[i], st_lbl[j])
+            plot_sign2, sign2 = aux_plot_features_win_prop_fix(dr, lbl2[i], st_lbl[j])
             if j > 3:
                 alpha = 0.3
             else:
                 alpha = 0.1
-            aux = dr[lbl[i] + st_lbl[j]] - dr[lbl2[i] + st_lbl[j]]
-            ax_3.plot(f_vector, np.median(aux, axis=0), c=cols_[j], label=st_lbl[j][1:])
-            ax_3.fill_between(f_vector, np.quantile(aux, 0.1, axis=0), np.quantile(aux, 0.9, axis=0),
-                              color=cols_[j], alpha=alpha)
+            if plot_sign1 and plot_sign2:
+                aux = sign1 - sign2
+                ax_3.plot(f_vector, np.median(aux, axis=0), c=cols_[j], label=st_lbl[j][1:])
+                ax_3.fill_between(f_vector, np.quantile(aux, 0.1, axis=0), np.quantile(aux, 0.9, axis=0),
+                                  color=cols_[j], alpha=alpha)
         ax_3.set_xlabel("Rate (Hz)")
         ax_3.set_ylabel("mem. pot. (mV)")
-        # ax_3.set_ylim(ylims)
         ax_3.set_title(t_[i], c="gray")
         ax_3.grid()
         ax_3.set_xscale('log')
         if (i + 1) % 3 == 0: ax_3.legend(loc='upper right')
-        # ax_st.set_ylim(ylims)
+        ax_3.set_ylim(ylims)
     fig2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
     if save_figs: fig2.savefig(name_save, format='png')
 

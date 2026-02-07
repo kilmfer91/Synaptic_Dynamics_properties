@@ -14,12 +14,12 @@ run_experiment = False
 save_figs = False
 imputations = True
 lif_output = True
-num_syn = 1
+num_syn = 100
 gain = 0.5
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 6e3
-tau_lif = 1  # ms
+sfreq = 5e3
+tau_lif = 30  # ms
 total_realizations = 1  # 100
 num_realizations = 1  # 8 for server, 4 for macbook air
 t_tra = None  # 0.25
@@ -50,13 +50,14 @@ if os.path.isfile(path_vars + dr_syn_filtering_file) and not run_experiment:
 
     # Auxiliar variables
     initial_frequencies, model = dr_filt['initial_frequencies'], dr_filt['stp_model']
-    dyn_synapse, num_synapses, syn_params = dr_filt['dyn_synapse'], dr_filt['num_synapses'], dr_filt['syn_params']
-    num_realizations, sim_params, lif_params = dr_filt['realizations'], dr_filt['sim_params'], dr_filt['lif_params']
-    lif_params2, prop_rate_change_a = dr_filt['lif_params2'], dr_filt['prop_rate_change_a']
+    dyn_synapse, num_synapses = dr_filt['dyn_synapse'], dr_filt['num_synapses']
+    num_realizations, sim_params = dr_filt['realizations'], dr_filt['sim_params']
+    # prop_rate_change_a = dr_filt['prop_rate_change_a']
     fix_rate_change_a, num_changes_rate, = dr_filt['fix_rate_change_a'], dr_filt['num_changes_rate'],
-    description, name_params = dr_filt['description'], dr_filt['name_params']
+    description = dr_filt['description']
     seeds = dr_filt['seeds']
     total_realizations = dr_filt['t_realizations']
+    # lif_params2, syn_params, lif_params, name_params = dr_filt['lif_params2'], dr_filt['syn_params'], dr_filt['lif_params'], dr_filt['name_params']
 
     """
     # Time conditions
@@ -78,8 +79,10 @@ if os.path.isfile(path_vars + dr_gain_control_file) and not run_experiment:
 # Plots
 lbl = ['st_mid_prop']
 lbl2 = ['st_ini_prop']
-st_lbl = ['_max',  '_q95', '_q90', '_med', '_min', '_q5', '_q10', '_mean']
-cols_ = ['tab:red', 'tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:olive', 'tab:green', 'tab:orange']
+# st_lbl = ['_max',  '_q95', '_q90', '_med', '_min', '_q5', '_q10', '_mean']
+# cols_ = ['tab:red', 'tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:olive', 'tab:green', 'tab:orange']
+st_lbl = ['_max',  '_q90', '_med', '_min', '_q10', '_mean']
+cols_ = ['tab:red', 'tab:green', 'tab:blue', 'tab:red', 'tab:green', 'tab:orange']
 # ylims = [-62.5, -54.0]  # [-70.05, -52]
 title = ("Steady-state: " + description.split(",")[0] + r', $\tau_{lif}$ ' +
          str(tau_lif) + "ms, gain " + str(int(gain * 100)) + "%")
@@ -94,8 +97,10 @@ plot_gain_filtering(dr_gain, dr_filt, lbl, lbl2, st_lbl, cols_, title, path_save
 # """
 # Steady-state
 lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_fix', 'st_mid_fix', 'st_end_fix']
-st_lbl = ['_mean', '_med', '_max', '_min', '_q10', '_q90', '_q5', '_q95']
-cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:olive', 'tab:olive']
+# st_lbl = ['_mean', '_med', '_max', '_min', '_q10', '_q90', '_q5', '_q95']
+# cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:olive', 'tab:olive']
+st_lbl = ['_max',  '_q90', '_med', '_min', '_q1', '_mean']
+cols_ = ['tab:red', 'tab:green', 'tab:blue', 'tab:red', 'tab:green', 'tab:orange']
 title = ("Steady-state: " + description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif) + "ms, gain " +
          str(int(gain * 100)) + "%")
 path_save = folder_plots + dr_gain_control_file + '_windows_statistics.png'
@@ -111,7 +116,7 @@ plot_features_windows_prop_fix(initial_frequencies, dr_gain, lbl, st_lbl, cols, 
 # PLOT CHARACTERISTICS OF MID AND INI WINDOWS IN THE SAME PLOT, FOR PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
 lbl = ['st_ini_prop', 'mtr_ini_prop', 'st_ini_fix', 'mtr_ini_fix']
 lbl2 = ['st_mid_prop', 'mtr_mid_prop', 'st_mid_fix', 'mtr_mid_fix']
-st_lbl = ['_mean', '_med', '_max', '_min', '_q10', '_q90']  # , '_q5', '_q95']
+st_lbl = ['_mean', '_med', '_max', '_min', '_q1', '_q90']  # , '_q5', '_q95']
 t_ = ['Steady-state, ini/mid windows (prop)', 'Transition-state, ini/mid windows (prop)',
       'Steady-state, ini/mid windows (cons)', 'Transition-state, ini/mid windows (cons)']
 cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green']  # , 'tab:olive', 'tab:olive']

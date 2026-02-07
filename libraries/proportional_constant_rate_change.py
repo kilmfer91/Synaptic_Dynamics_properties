@@ -44,6 +44,7 @@ class GC_prop_cons:
         self.total_realizations = dict_params['total_realizations'] if not dict_params['force_experiment'] else 1
         self.num_realizations = dict_params['num_realizations'] if not dict_params['force_experiment'] else 1
         self.f_vector = None
+        self.tr_time_series = None
         self.dict_results = None
 
     """
@@ -148,6 +149,9 @@ class GC_prop_cons:
             if 'num_experiments' not in dr: dr['num_experiments'] = dr['initial_frequencies'].shape[0]
             if 'sfreq' not in dr: dr['sfreq'] = self.sim_params['sfreq']
             if 'num_instance_model' not in dr: dr['num_instance_model'] = self.num_instance_model
+            if 'time_transition' not in dr: dr['time_transition'] = [[] for _ in range(dr['num_experiments'])]
+            if 'stat_tSeries_transition' not in dr: dr['stat_tSeries_transition'] = [[np.zeros((1, 1))]]
+            if 'stat_time_transition' not in dr: dr['stat_time_transition'] = [np.zeros(1)]
         else:
             # number of instance of stp model
             self.num_instance_model = int(num_realizations * self.num_syn)
@@ -217,7 +221,8 @@ class GC_prop_cons:
     def validate_dict_params(self, dr):
         pass
 
-    def run(self, gain, fixed_rate_change=None, dr=None, soft_stop_cond=True, plot_ind_figs=False):
+    def run(self, gain, fixed_rate_change=None, dr=None, soft_stop_cond=True, plot_ind_figs=False, th_percentage=1e-2,
+            y_lims_ind_plot=None):
         if dr is None: dr = self.dict_results
         self.validate_dict_params(dr)
 
@@ -249,6 +254,9 @@ class GC_prop_cons:
         proportional_changes = gain * f_vector + f_vector
         constant_changes = fixed_rate_change + f_vector
 
+        # time-series for transition times: piw, pmw, pew, ciw, cmw, cew
+        tr_time_series = [[[] for _ in range(num_experiments)] for _ in range(6)]
+
         ini_loop_time = m_time()
         print("Ini big loop")
         realization = 0
@@ -261,6 +269,7 @@ class GC_prop_cons:
             while i >= 0:  # while i < num_experiments:
                 loop_experiments = m_time()
 
+                seeds1, seeds2, seeds3 = [0], [0], [0]
                 # For poisson or deterministic inputs
                 if self.stoch_input:
                     se = int(time.time())
@@ -315,19 +324,30 @@ class GC_prop_cons:
                     t_tra_mid_win = np.max(t_tra[aux_i])
 
                 # Computing statistics of each window, for the whole window and for the transition- and steady-states
-                res_per_reali[:, i, :], t_tr_ = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win,
-                                                                         None, sim_params, t_tra_mid_win)
+                a, b, c = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
+                                                   sim_params, t_tra_mid_win)
+                res_per_reali[:, i, :], t_tr_, tr_time_series_i = a, b, c
 
                 # Updating array of time_transitions
                 t_tra[i].append(t_tr_)
+                for tr_i in range(6):
+                    if len(tr_time_series[tr_i][i]) == 0:
+                        tr_time_series[tr_i][i] = tr_time_series_i[tr_i]
+                    else:
+                        tr_time_series[tr_i][i] = tr_time_series[tr_i][i] + tr_time_series_i[tr_i]
 
                 # Plotting individual figures if indicated
                 if plot_ind_figs:
-                    path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_.png'
+                    path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '.png'
                     title_graph_ = title_graph + ", freq. %dHz" % f_vector[i]
                     t_tr = t_tr_[0]
                     plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali,
-                                                   title_graph_, path_save=path_save, save_figs=self.save_figs)
+                                                   title_graph_, path_save=path_save, save_figs=self.save_figs,
+                                                   y_lims_ind_plot=y_lims_ind_plot, plot_stats=False, plt_grid=True)
+                    path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
+                    plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali,
+                                                   title_graph_, path_save=path_save, save_figs=self.save_figs,
+                                                   y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
 
                 # Final print of the loop
                 print_time(m_time() - loop_experiments, file_name + ", Realisation " + str(realization) +
@@ -343,10 +363,22 @@ class GC_prop_cons:
 
             realization += 1
 
-        # transition-state
-        for i in range(num_experiments):
-            t_tra[i] = np.ravel(t_tra[i])
-        t_tra = np.array(t_tra).T
+        #
+        if soft_stop_cond:
+            # Obtaining time series of statistical descriptors for transition component of signals (ini, mid, end win)
+            self.tr_time_series = tr_time_series
+            st_tr_a, res = get_time_series_statistics_of_transitions(tr_time_series, f_vector, proportional_changes,
+                                                                     th_percentage)
+            dr['stat_tSeries_transition'] = res
+            dr['stat_time_transition'] = st_tr_a
+
+            # transition-state
+            for i in range(num_experiments):
+                t_tra[i] = np.ravel(t_tra[i])
+            t_tra = np.array(t_tra).T
+
+            # Saving transition times of each window
+            dr['time_transition'] = t_tra
 
         # Saving final dictionary if file does not exist
         if not os.path.isfile(folder_vars + file_name):

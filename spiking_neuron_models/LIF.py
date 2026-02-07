@@ -32,7 +32,7 @@ class LIF_model:
         self.set_simulation_params()
 
     def set_model_params(self, model_params):
-        assert type(model_params) != 'dict', 'params should be a dict'
+        assert isinstance(sim_params, dict), 'params should be a dict'
         for key, value in model_params.items():
             if key in self.params.keys():
                 self.params[key] = value
@@ -48,7 +48,7 @@ class LIF_model:
 
     def set_simulation_params(self, sim_params=None):
         if sim_params is not None:
-            assert type(sim_params) != 'dict', 'params should be a dict'
+            assert isinstance(sim_params, dict), 'params should be a dict'
             for key, value in sim_params.items():
                 if key in self.sim_params.keys():
                     self.sim_params[key] = value

@@ -5,16 +5,16 @@ from gain_control.utils_gc import *
 model = 'MSSM'
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) slow-decay frequency response
-ind = 4
+ind = 7
 
 # For gain control, 100 inputs to a single LIF neuron
-plots_net = True
+plots_net = False
 dyn_synapse = True
-gaincontrol_sinusoidal = True
+gaincontrol_sinusoidal = False
 
 # Hyperparameters for frequency analysis and poisson input spike
-freq_analysis = False
-Poisson = True
+freq_analysis = True
+Poisson = False
 num_syn = 200
 
 # Model parameters
@@ -25,7 +25,7 @@ if ind == 4: out_ylim_min, out_ylim_max, description_2 = -67, -57, r'Fast-decay 
 if ind == 5: out_ylim_min, out_ylim_max, description_2 = -70, -50, r'Slow-decay synapse with $freq_{st}$ of efficacy=560Hz'
 
 # time conditions
-max_t, min_imp, max_imp, sfreq = 15, 0.0, 10, 5e3
+max_t, min_imp, max_imp, sfreq = 0.8, 0.0, 0.8, 5e3  # 15, 0.0, 10, 5e3
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)
 L = time_vector.shape[0]
@@ -46,12 +46,14 @@ s_dep = Simple_Depression(n_syn=num_syn)
 s_dep.set_simulation_params(sim_params)
 
 # Frequency ranges for Frequency response of efficacy
-range_f = [i for i in range(10, 801, 10)]
+range_f = [10, 20, 30, 40, 50, 60, 70, 80]  # [i for i in range(10, 801, 10)]
 loop_frequencies = np.array(range_f)
 
 # ******************************************************************************************************************
 # LIF MODEL
 lif = LIF_model(n_neu=1)  # (n_neu=100)
+lif_params = get_neuron_params(tau_m=10, y_lim_ind_plot=True, num_syn=1)
+
 lif.set_model_params(lif_params)
 lif.set_simulation_params(sim_params)
 
@@ -171,3 +173,21 @@ if freq_analysis:
     plot_gc_sin_freq_response_efficacy(loop_frequencies, fa, title)
     print_time(m_time() - ini_loop_time, "Time for frequency analysis")
     # plot_net_depolarization(fa, loop_frequencies)
+
+    # """
+    for i in range(len(loop_frequencies)):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        # ax.plot([0.1, 0.8], [phasic_st[0], phasic_st[0]], c='tab:red', alpha=0.5)
+        ax.plot(loop_frequencies[0: i + 1], fa.eff_st[0, :i + 1], c='tab:blue')  # , label="phasic effect")
+        ax.scatter(loop_frequencies[0: i + 1], fa.eff_st[0, :i + 1], c='black')  # , label="phasic effect")
+        ax.scatter(loop_frequencies[i], fa.eff_st[0, i], c='tab:red')
+        ax.set_xlabel("Rate (Hz)")
+        ax.set_ylabel(r"$E_{f}$(r)")
+        ax.grid()
+        ax.set_title("Frequency response of efficacy")
+        ax.set_xlim(0, loop_frequencies[-1] + 20)
+        ax.set_ylim([-0.001, 0.075])
+        # x.legend()
+        # fig.savefig("../gain_control/plots/MSSM_fac_freq_res_" + str(loop_frequencies[i]) + "_2.png", format='png')
+    # """

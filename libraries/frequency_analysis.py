@@ -272,12 +272,15 @@ class Freq_analysis:
             """
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            ax.plot(self.time_vector, model_output[0, :], label="phasic effect")
+            ax.plot([0.1, 0.8], [phasic_st[0], phasic_st[0]], c='tab:red', alpha=0.5)
+            ax.plot(self.time_vector, model_output[0, :], c='black')  # , label="phasic effect")
             ax.set_xlabel("time (s)")
             ax.set_ylabel(r"$E_{psp}$(t)")
             ax.grid(True)
             ax.set_title("Rate at " + str(r) + "Hz")
-            ax.legend()
+            # ax.set_ylim([-0.005, 0.075])
+            # x.legend()
+            fig.savefig("../gain_control/plots/MSSM_fac_freq_res_" + str(r) + ".png", format='png')
             # """
 
             # Update times of maximum and stedy-state
