@@ -61,30 +61,27 @@ class HH_AHP_model:
 
         # Default parameters (converted to consistent units: mV, ms, pA, nS, pF)
         self.params = {
-            'Cm': 300.0,  # pF (from area=300 um², Cm=2 uF/cm²)
-            'g_na': 80.0,  # nS (1.6*50 mS/cm² * 300 um²)
-            'g_kd': 19.5,  # nS (1.3*5 mS/cm² * 300 um²)
-            'g_l': 9.0,  # nS (0.3 mS/cm² * 300 um²)
-            'El': -39,  # -39.2,  # mV
-            'EK': -80.0,  # mV
-            'ENa': 70.0,  # mV
-            'VT': -30.4,  # mV
-            'sigma': 6.0,  # mV (noise std dev)
-            'g_AHP': 5.0,  # nS
-            'E_AHP': -80.0,  # mV (= EK)
-            'g_ampa': 1 + 0.6,  # nS
-            'g_nmda': 1 - 0.6,  # nS
-            'E_ampa': 0,  # mV
-            'E_nmda': 0,  # mV
-            'tau_Ca': 8000.0,  # ms
+            'Cm': 6e-12,  # pF (from area=300 um², Cm=2 uF/cm²)
+            'g_na': 240e-9,  # 80.0e-9,  # nS (1.6*50 mS/cm² * 300 um²)
+            'g_kd': 19.5e-9,  # nS (1.3*5 mS/cm² * 300 um²)
+            'g_l': 0.9e-9,  # nS (0.3 mS/cm² * 300 um²)
+            'El': -39.2e-3,  # mV
+            'EK': -80.0e-3,  # mV
+            'ENa': 70.0e-3,  # mV
+            'VT': -30.4e-3,  # mV
+            'sigma': 6.0e-3,  # mV (noise std dev)
+            'g_AHP': 5.0e-9,  # nS
+            'E_AHP': -80.0e-3,  # mV (= EK)
+            'g_ampa': 1.6e-9,  # nS
+            'g_nmda': 0.4e-9,  # nS
+            'E_ampa': 0e-3,  # mV
+            'E_nmda': 0e-3,  # mV
+            'tau_Ca': 8000.0e-3,  # ms
             'alpha_Ca': 0.00035,  # per spike
-            'V_init': -39.0,  # mV
-            'V_reset': -39.0,  # mV (no voltage reset, just refractory)
-            'V_threshold': 0.0,  # mV (from Brian2: V>0*mV)
-            't_refractory': 2.0,  # ms
-            'm_0': 0.00229911,
-            'n_0': 0.00846201,
-            'h_0': 0.9995475,
+            'V_init': -39.0e-3,  # mV
+            'V_reset': -39.0e-3,  # mV (no voltage reset, just refractory)
+            'V_threshold': 0.0e-3,  # mV (from Brian2: V>0*mV)
+            't_refractory': 2.0e-3,  # ms
         }
         self.sim_params = {'sfreq': 1000, 'max_t': 0.8}
         self.set_simulation_params()
@@ -157,14 +154,14 @@ class HH_AHP_model:
 
     def initialize_state_variables(self):
         # Initialize state variables
-        # m_0, h_0, n_0 = self.compute_steady_state(self.params['V_init'])
-        self.membrane_potential[:, 0] = self.V_init
-        alpha_m, beta_m = self.alpha_m(self.V_init), self.beta_m(self.V_init)
-        self.m_gate[:, 0] = alpha_m / (alpha_m + beta_m)  # self.params['m_0']  # approximate steady-state values
-        alpha_h, beta_h = self.alpha_h(self.V_init), self.beta_h(self.V_init)
-        self.h_gate[:, 0] = alpha_h / (alpha_h + beta_h)  # self.params['h_0']
-        alpha_n, beta_n = self.alpha_n(self.V_init), self.beta_n(self.V_init)
-        self.n_gate[:, 0] = alpha_n / (alpha_n + beta_n)  # self.params['n_0']
+        V = self.V_init
+        self.membrane_potential[:, 0] = V
+        alpha_m, beta_m = self.alpha_m(V), self.beta_m(V)
+        self.m_gate[:, 0] = alpha_m / (alpha_m + beta_m)  # approximate steady-state values
+        alpha_h, beta_h = self.alpha_h(V), self.beta_h(V)
+        self.h_gate[:, 0] = alpha_h / (alpha_h + beta_h)
+        alpha_n, beta_n = self.alpha_n(V), self.beta_n(V)
+        self.n_gate[:, 0] = alpha_n / (alpha_n + beta_n)
         # self.hp_gate[:, 0] = 0.6  # I doubt this is used!
         self.Ca[:, 0] = 0.0  # This Ca is gAHP in the paper "Breaking the burst"
 
@@ -196,41 +193,37 @@ class HH_AHP_model:
     def alpha_m(self, V):
         """Na activation rate [1/ms]. V in mV."""
         # alpha_m = 0.32*(mV**-1)*4*mV/exprel((13*mV-V+VT)/(4*mV))/ms : Hz
-        # return 0.32 * (4.0 / (np.exp((13.0 - V + self.VT) / 4.0) + 1e-6))  # Hz -> 1/ms
-        # return (-0.32 * (V - self.VT - 13.))/(np.exp(-(V - self.VT - 13.)/4.) - 1.)
-        return 0.32 * 4.0 / self.exprel((13.0 - V + self.VT) / 4.0)  # [1/ms]
+        return 0.32e3 * 4e-3 / self.exprel((13e-3 - V + self.VT) / 4e-3)  # [1/ms]
 
     def beta_m(self, V):
         """Na activation rate [1/ms]. V in mV."""
         # 0.28*(mV**-1)*5*mV/exprel((V-VT-40*mV)/(5*mV))/ms : Hz
-        # return 0.28 * (5.0 / (np.exp((V - self.VT - 40.0) / 5.0) + 1e-6))  # Hz -> 1/ms
-        # return (0.28 * (V - self.VT - 40.)) / (np.exp((V - self.VT - 40.) / 5.) - 1.)
-        return 0.28 * 5.0 / self.exprel((V - self.VT - 40.) / 5.0)  # [1/ms]
+        return 0.28e3 * 5e-3 / self.exprel((V - self.VT - 40e-3) / 5e-3)  # [1/ms]
 
     def alpha_h(self, V):
         """Na inactivation rate [1/ms]. V in mV."""
         # 0.128 * exp((17 * mV - V + VT) / (18 * mV)) / ms: Hz
         # return 0.128 * np.exp((17.0 - V + self.VT) / 18.0)  # 1/ms
-        return 0.128 * np.exp(-(V - self.VT - 17.) / 18.)  # 1/ms
+        return 0.128 * np.exp(-(V - self.VT - 17e-3) / 18e-3)  # 1/ms
 
     def beta_h(self, V):
         """Na inactivation rate [1/ms]. V in mV."""
         # 4./(1+exp((40*mV-V+VT)/(5*mV)))/ms : Hz
         # return 4.0 / (1.0 + np.exp((40.0 - V + self.VT) / 5.0))  # 1/ms
-        return 4. / (1. + np.exp(-(V - self.VT - 40.) / 5.))  # 1/ms
+        return 4 / (1 + np.exp(-(V - self.VT - 40e-3) / 5e-3))  # 1/ms
 
     def alpha_n(self, V):
         """K activation rate [1/ms]. V in mV."""
         # 0.032*(mV**-1)*5*mV/exprel((15*mV-V+VT)/(5*mV))/ms : Hz
         # return 0.032 * (5.0 / (np.exp((15.0 - V + self.VT) / 5.0) + 1e-6))  # Hz -> 1/ms
         # return (-0.032 * (V - self.VT - 15.))/(np.exp(-(V - self.VT - 15.)/5.) - 1.)  # Hz -> 1/ms
-        return 0.032 * 5.0 / self.exprel((15.0 - V + self.VT) / 5.0)  # [1/ms]
+        return 0.032e3 * 5e-3 / self.exprel((15e-3 - V + self.VT) / 5e-3)  # [1/ms]
 
     def beta_n(self, V):
         """K activation rate [1/ms]. V in mV."""
         # .5*exp((10*mV-V+VT)/(40*mV))/ms : Hz
         # return 0.5 * np.exp((10.0 - V + self.VT) / 40.0)  # 1/ms
-        return 0.5 * np.exp(-(V - self.VT - 10.) / 40)  # 1/ms
+        return 0.5 * np.exp(-(V - self.VT - 10e-3) / 40e-3)  # 1/ms
 
     def update_state(self, I_ext, s_ampa_tot, s_nmda_tot, it):
         """
@@ -275,20 +268,21 @@ class HH_AHP_model:
             self.t_r_counter[cond_threshold] = self.t_refractory[cond_threshold] / self.dt
 
         # Gating variable rates
-        alpha_m = self.alpha_m(V) * 1000  # For the units 1/ms
-        beta_m = self.beta_m(V) * 1000    # For the units 1/ms
-        alpha_h = self.alpha_h(V) * 1000  # For the units 1/ms
-        beta_h = self.beta_h(V) * 1000    # For the units 1/ms
-        alpha_n = self.alpha_n(V) * 1000  # For the units 1/ms
-        beta_n = self.beta_n(V) * 1000    # For the units 1/ms
+        const = 1e3
+        alpha_m = self.alpha_m(V) * const  # For the units 1/ms
+        beta_m = self.beta_m(V) * const    # For the units 1/ms
+        alpha_h = self.alpha_h(V) * const  # For the units 1/ms
+        beta_h = self.beta_h(V) * const    # For the units 1/ms
+        alpha_n = self.alpha_n(V) * const  # For the units 1/ms
+        beta_n = self.beta_n(V) * const    # For the units 1/ms
         self.alp_m[:, it] = alpha_m
         self.bet_m[:, it] = beta_m
         self.alp_h[:, it] = alpha_h
         self.bet_h[:, it] = beta_h
         self.alp_n[:, it] = alpha_n
         self.bet_n[:, it] = beta_n
-        # alpha_hp = 0.128 * np.exp((17.0 - V + self.VT) / 18.0)  # I doubt this is used!
-        # beta_hp = 4.0 / (1.0 + np.exp((30.0 - V + self.VT) / 5.0))  # I doubt this is used!
+        # alpha_hp = 0.128 * np.exp((17.0 - V + (self.VT * 1e3)) / 18.0)  # I doubt this is used!
+        # beta_hp = 4.0 / (1.0 + np.exp((30.0 - V + (self.VT * 1e3)) / 5.0))  # I doubt this is used!
 
         # Euler integration (all in consistent units)
         dm = (alpha_m * (1.0 - m) - beta_m * m) * self.dt
@@ -299,15 +293,15 @@ class HH_AHP_model:
 
         # Membrane equation: C_m dV/dt = I_ext - I_ampa - I_nmda - I_Na - I_K - I_L + I_AHP + noise
         # Convert conductances nS -> S, currents pA -> A, Cm pF -> F for consistency
-        I_Na = self.g_na * 1e-9 * (m ** 3) * h * (V - self.ENa) * 1e13  # * 1e-3  # fA (e-15) # * 1e12  # pA
-        I_K = self.g_kd * 1e-9 * (n ** 4) * (V - self.EK) * 1e13  # * 1e-3  # aA (e-18) # 1e12
-        I_L = self.g_l * 1e-9 * (V - self.El) * 1e13  # * 1e-3  # fA (e-15) # 1e12 # pA
-        I_AHP = -self.g_AHP * 1e-9 * Ca * (V - self.E_AHP) * 1e13  # pA  # *********** sign of g_AHP
+        I_Na = self.g_na * (m ** 3) * h * (V - self.ENa)  # * 1e-3  # fA (e-15) # * 1e12  # pA
+        I_K = self.g_kd * (n ** 4) * (V - self.EK)  # * 1e-3  # aA (e-18) # 1e12
+        I_L = self.g_l * (V - self.El)  # * 1e-3  # fA (e-15) # 1e12 # pA
+        I_AHP = -self.g_AHP * Ca * (V - self.E_AHP)  # pA  # *********** sign of g_AHP
 
         # Synaptic currents
-        I_ampa = self.g_ampa * 1e-9 * s_ampa_tot * (V - self.E_ampa) * 1e13  # pA
-        mg_block = 1.0 / (1.0 + np.exp(-0.062 * V) / 3.57)  # V in mV
-        I_nmda = self.g_nmda * 1e-9 * s_nmda_tot * (V - self.E_nmda) * mg_block * 1e13  # pA
+        I_ampa = self.g_ampa * s_ampa_tot * (V - self.E_ampa)  # pA
+        mg_block = 1.0 / (1.0 + np.exp(-0.062 * V * 1e3) / 3.57)  # V in mV
+        I_nmda = self.g_nmda * s_nmda_tot * (V - self.E_nmda) * mg_block  # pA
 
         # Monitoring the currents
         self.I_Na[:, it] = I_Na
@@ -319,7 +313,7 @@ class HH_AHP_model:
 
         # Noise term (discretized): sigma * sqrt(2*g_L/C_m) * randn() / sqrt(dt)
         noise_scale = self.sigma * np.sqrt(2.0 * self.g_l / self.Cm)
-        noise = 0  # noise_scale * np.random.randn(self.n_neurons) / np.sqrt(self.dt)
+        noise = noise_scale * np.random.randn(self.n_neurons) / np.sqrt(self.dt)
 
         # dV = (I_ext + I_ampa + I_nmda - I_Na - I_K - I_L + I_AHP + noise) / self.Cm * self.dt  # *********
         dV = (noise + (I_ext - I_ampa - I_nmda - I_Na - I_K - I_L + I_AHP) / self.Cm) * self.dt
