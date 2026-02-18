@@ -10,9 +10,9 @@ from libraries.proportional_constant_rate_change import GC_prop_cons
 # (Experiment 6) freq. response decay around 10Hz (depression)
 # (Experiment 7) freq. response facilitation
 
-s_model = 'MSSM'
-n_model = "LIF"
-ind = 2
+s_model = 'DoornSTD'
+n_model = "HH"
+ind = 1
 save_vars = True
 force_experiment = False
 stoch_input = True
@@ -28,7 +28,7 @@ n_noise = False  # Neuron noise
 tau_m_lif = 1  # ms
 total_realizations = 104  # 100
 num_realizations = 8
-gain_v = [.5]  # [0.1, 0.2, 0.5]
+gain_v = [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 folder_vars = "../gain_control/variables/"
 folder_plots = '../gain_control/plots/'
 # ******************************************************************************************************************
@@ -58,7 +58,7 @@ dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_
 # Instance of Gain-Control class
 initial_frequencies = np.array([10]) if force_experiment else None  # [10, 50, 600]
 gc_prop_cons = GC_prop_cons(dict_params)
-_ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=600)
+_ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=601)
 
 # Running Gain-Control process for different gains
 file_name = ""
