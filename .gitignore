@@ -29,3 +29,4 @@ synaptic_dynamic_models/__pycache__/
 /example_HH_Doorn.py
 /spiking_neuron_models/Doorn_realistic_model_example.py
 /spiking_neuron_models/Doorn_realistic_model_copy.py
+/spiking_neuron_models/Doorn_simple_model_example.py

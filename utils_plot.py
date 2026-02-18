@@ -698,7 +698,7 @@ def plot_features_2windows_prop_fix(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, t
 
 def plot_diff_windows(f_vector, dr, lbl, lbl2, st_lbl, cols_, t_, title_graph="", name_save="", save_figs=False,
                       y_lims_ind_plot=None):
-    fig2 = plt.figure(figsize=(4, 2.5))  # (7, 2.5)
+    fig2 = plt.figure(figsize=(5, 2.5))  # (7, 2.5)
     plt.suptitle(title_graph)
     alpha = 0.1
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]

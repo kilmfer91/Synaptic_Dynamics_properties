@@ -36,6 +36,16 @@ class HH_AHP_model:
         self.time_vector = None
         self.L = None
         self.n_neurons = n_neu
+        self.seed = None
+
+        # Spike event tracking
+        self.edge_detection = None
+        self.membrane_potential_events = None
+        self.time_spike_events = None
+        self.output_spike_events = None
+        self.output_spike_events_tonic = None
+        self.ind_spike_events = None
+        self.ind_spike_events_tonic = None
 
         # State variables (all shape: [n_neurons, L])
         self.membrane_potential = None  # V [mV]
@@ -118,13 +128,20 @@ class HH_AHP_model:
         self.t_r_counter = np.zeros(self.n_neurons)
         self.initialize_state_variables()
 
-    def set_simulation_params(self, sim_params=None):
+    def set_seed(self, seed):
+        # Assign seed
+        if seed is not None: self.seed = seed
+
+    def set_simulation_params(self, sim_params=None, seed=None):
         """Set simulation parameters and allocate state arrays."""
         if sim_params is not None:
             assert isinstance(sim_params, dict), 'params should be a dict'
             for key, value in sim_params.items():
                 if key in self.sim_params.keys():
                     self.sim_params[key] = value
+
+        # Set seed
+        self.set_seed(seed)
 
         # Time variables (ms)
         self.dt = 1.0 / self.sim_params['sfreq']  # ms
@@ -151,6 +168,14 @@ class HH_AHP_model:
         # self.hp_gate = np.zeros((self.n_neurons, self.L))  # I doubt this is used!
         self.Ca = np.zeros((self.n_neurons, self.L))  # This Ca is gAHP in the paper "Breaking the burst"
         self.set_model_params(self.params)
+
+        # Spike event tracking
+        self.membrane_potential_events = [[] for _ in range(self.n_neurons)]
+        self.output_spike_events = [[] for _ in range(self.n_neurons)]
+        self.output_spike_events_tonic = [[] for _ in range(self.n_neurons)]
+        self.ind_spike_events = [[] for _ in range(self.n_neurons)]
+        self.ind_spike_events_tonic = [[] for _ in range(self.n_neurons)]
+        self.time_spike_events = [[] for _ in range(self.n_neurons)]
 
     def initialize_state_variables(self):
         # Initialize state variables
@@ -225,14 +250,25 @@ class HH_AHP_model:
         # return 0.5 * np.exp((10.0 - V + self.VT) / 40.0)  # 1/ms
         return 0.5 * np.exp(-(V - self.VT - 10e-3) / 40e-3)  # 1/ms
 
-    def update_state(self, I_ext, s_ampa_tot, s_nmda_tot, it):
+    def update_state(self, it, seed=None, use_noise=False, *args):
         """
         Update neuron state using explicit Euler.
-        I_ext: [n_neurons] external current [pA]
-        s_ampa_tot: [n_neurons] total AMPA conductance [unitless, summed across synapses]
-        s_nmda_tot: [n_neurons] total NMDA conductance [unitless, summed across synapses]
         it: current time step
+        seed: random seed
+        use_noise: whether to add noise to neuron state
+        args:
+            I_ext: [n_neurons] external current [pA]
+            s_ampa_tot: [n_neurons] total AMPA conductance [unitless, summed across synapses]
+            s_nmda_tot: [n_neurons] total NMDA conductance [unitless, summed across synapses]
         """
+        # Extracting inputs
+        s_ampa_tot = args[0][0]
+        s_nmda_tot = args[0][1]
+        I_ext = args[0][2]
+
+        # Seed
+        if seed is not None: np.random.seed(seed)
+
         if it == 0:
             V = self.V_init
             m = self.m_gate[:, 0]
@@ -312,8 +348,10 @@ class HH_AHP_model:
         self.I_nmda[:, it] = I_nmda
 
         # Noise term (discretized): sigma * sqrt(2*g_L/C_m) * randn() / sqrt(dt)
-        noise_scale = self.sigma * np.sqrt(2.0 * self.g_l / self.Cm)
-        noise = noise_scale * np.random.randn(self.n_neurons) / np.sqrt(self.dt)
+        noise = 0
+        if use_noise:
+            noise_scale = self.sigma * np.sqrt(2.0 * self.g_l / self.Cm)
+            noise = noise_scale * np.random.randn(self.n_neurons) / np.sqrt(self.dt)
 
         # dV = (I_ext + I_ampa + I_nmda - I_Na - I_K - I_L + I_AHP + noise) / self.Cm * self.dt  # *********
         dV = (noise + (I_ext - I_ampa - I_nmda - I_Na - I_K - I_L + I_AHP) / self.Cm) * self.dt
@@ -325,3 +363,74 @@ class HH_AHP_model:
         self.n_gate[:, it] = n + dn
         # self.hp_gate[:, it] = hp + dhp  # I doubt this is used!
         self.Ca[:, it] = Ca + dCa
+
+    def detect_spike_event(self, t, Input, output):
+        """
+        Parameters
+        ----------
+        t
+        Input
+        output
+        """
+        # Detecting raising edges
+        # When t is 0
+        if t == 0:
+            # Detecting raising edges
+            self.edge_detection = np.where(Input[:, t] > 0.0)[0]
+        else:
+            # Edge detector
+            self.edge_detection = Input[:, t] > Input[:, t - 1]
+
+        if np.sum(self.edge_detection) > 0:
+            self.append_spike_event(t, self.edge_detection, output)
+
+    def append_spike_event(self, t, activated_neurons, output, append_time=True):
+        """Store spike events for analysis (override parent)."""
+        neurons_with_input_event = np.array(range(self.n_neurons))[activated_neurons]
+        for n in neurons_with_input_event:
+            if append_time: self.membrane_potential_events[n].append(self.membrane_potential[n, t])
+            if append_time: self.time_spike_events[n].append(t)
+
+            if len(self.time_spike_events[n]) > 1:
+                spike_range = (self.time_spike_events[n][-2], self.time_spike_events[n][-1])
+                self.compute_output_spike_event(spike_range, n, output)
+
+    def compute_output_spike_event(self, spike_range, n, output):
+        """
+        assert isinstance(spike_range, tuple), "Param 'spike_range' must be a tuple"
+        assert len(spike_range) == 2, "Param 'spike_range' must be a tuple of 2 values"
+        assert isinstance(spike_range[0], int), "first element of param 'spike_range' must be integer"
+        assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
+        assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
+        assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
+        assert len(output.shape) == 2, "Param 'output' must be a 2D-array"
+        assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+                                                   "the length of param 'output'")
+
+        if spike_range[1] == spike_range[0]:
+            # phasic component of spiking responses
+            self.output_spike_events.append(output[:, spike_range[0]])
+            # tonic component of spiking responses
+            self.output_spike_events_tonic.appen(output[:, 0])
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic.append(spike_range[0] - 1)
+            self.ind_spike_events.append(a + spike_range[0])
+
+        else: # """
+
+        # Tonic component of the spiking response
+        self.output_spike_events_tonic[n].append(output[n, spike_range[0] - 1])
+
+        # Excitatory response
+        # if np.sum(output) > 0:
+        self.output_spike_events[n].append(np.max(output[n, spike_range[0]: spike_range[1]]))
+        a = np.argmax(output[n, spike_range[0]: spike_range[1]])
+        # Inhibitory response
+        # else:
+        #     self.output_spike_events.append(np.min(output[:, spike_range[0]: spike_range[1]], axis=1))
+        #     a = np.argmin(output[:, spike_range[0]: spike_range[1]], axis=1)
+
+        # Updating index of phasic and tonic spike event occurences
+        self.ind_spike_events_tonic[n].append(spike_range[0] - 1)
+        self.ind_spike_events[n].append(a + spike_range[0])

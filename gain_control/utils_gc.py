@@ -5,11 +5,15 @@ import scipy.signal
 
 from synaptic_dynamic_models.TM import TM_model
 from synaptic_dynamic_models.MSSM import MSSM_model
+from synaptic_dynamic_models.DoornSynSTD import DoornSTD_model
+from synaptic_dynamic_models.DoornSynSTF import DoornSTF_model
+from synaptic_dynamic_models.DoornSynAsyn import DoornAsyn_model
 from spiking_neuron_models.LIF import LIF_model
+from spiking_neuron_models.HH_doorn import HH_AHP_model
+from spiking_neuron_models.HH_simplified_Doorn import HH_Simple_model
 from synaptic_dynamic_models.simple_depression import Simple_Depression
 from libraries.frequency_analysis import Freq_analysis
 from utils import *
-
 
 # ******************************************************************************************************************
 # Local variables
@@ -56,21 +60,52 @@ stat_list_sin = ['vec_max_mp_pos', 'vec_min_mp_neg', 'vec_q1_mp_pos', 'vec_q90_m
                  'vec_q1_mp_neg', 'vec_q90_mp_neg', 'vec_max_mp', 'vec_min_mp', 'vec_q1_mp', 'vec_q90_mp']
 
 
-# Parameters for LiF neuron
-def get_neuron_params(tau_m, y_lim_ind_plot=False, num_syn=1):
+# Parameters for neuron
+def get_neuron_params(n_model, tau_m, y_lim_ind_plot=False, num_syn=1, num_neurons=1):
     y_lim_memPot = None
-    if y_lim_ind_plot:
-        y_lim_memPot = [-70, -50]
-        if tau_m == 1 and num_syn == 100: y_lim_memPot = [-70, -43]
-        if tau_m == 30 and num_syn == 100: y_lim_memPot = [-65.7, -52.5]
-        if tau_m == 1 and num_syn == 1: y_lim_memPot = [-70.05, -67.4]
-        if tau_m == 10 and num_syn == 1: y_lim_memPot = [-70.05, -69]
-        if tau_m == 30 and num_syn == 1: y_lim_memPot = [-70.05, -69.5]
+    n_params = None
+    n = num_neurons
+    if n_model == "LIF":
+        if y_lim_ind_plot:
+            y_lim_memPot = [-70, -50]
+            if tau_m == 1 and num_syn == 100: y_lim_memPot = [-70, -43]
+            if tau_m == 30 and num_syn == 100: y_lim_memPot = [-65.7, -52.5]
+            if tau_m == 1 and num_syn == 1: y_lim_memPot = [-70.05, -67.4]
+            if tau_m == 10 and num_syn == 1: y_lim_memPot = [-70.05, -69]
+            if tau_m == 30 and num_syn == 1: y_lim_memPot = [-70.05, -69.5]
 
-    return {'V_threshold': np.array([1000 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
-            'tau_m': np.array([tau_m * 1e-3 for _ in range(1)]), 'g_L': np.array([2.7e-2 for _ in range(1)]),
-            'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
-            't_refractory': np.array([0.01 for _ in range(1)]), 'y_lim_plot': y_lim_memPot}
+        n_params = {'V_threshold': np.array([1000 for _ in range(n)]), 'V_reset': np.array([-70 for _ in range(n)]),
+                    'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]), 'g_L': np.array([2.7e-2 for _ in range(n)]),
+                    'V_init': np.array([-70 for _ in range(n)]), 'V_equilibrium': np.array([-70 for _ in range(n)]),
+                    't_refractory': np.array([0.01 for _ in range(n)]), 'y_lim_plot': y_lim_memPot}
+    if n_model == "HH":
+        y_lim_memPot = [-40e-3, 0]
+        n_params = {'Cm': np.array([6e-12 for _ in range(n)]),  # pF (from area=300 um², Cm=2 uF/cm²)
+                    'g_na': np.array([240e-9 for _ in range(n)]),  # 80.0e-9,  # nS (1.6*50 mS/cm² * 300 um²)
+                    'g_kd': np.array([19.5e-9 for _ in range(n)]),  # nS (1.3*5 mS/cm² * 300 um²)
+                    'g_l': np.array([0.9e-9 for _ in range(n)]),  # nS (0.3 mS/cm² * 300 um²)
+                    'El': np.array([-39e-3 for _ in range(n)]),  # -39.2,  # mV
+                    'EK': np.array([-80.0e-3 for _ in range(n)]),  # mV
+                    'ENa': np.array([70.0e-3 for _ in range(n)]),  # mV
+                    'VT': np.array([-30.4e-3 for _ in range(n)]),  # mV
+                    'sigma': np.array([1e-4 for _ in range(n)]),  # 6.0e-3,  # mV (noise std dev)
+                    'g_AHP': np.array([5.0e-9 for _ in range(n)]),  # nS
+                    'E_AHP': np.array([-80.0e-3 for _ in range(n)]),  # mV (= EK)
+                    'g_ampa': np.array([1.6e-9 for _ in range(n)]),  # nS
+                    'g_nmda': np.array([0.4e-9 for _ in range(n)]),  # nS
+                    'E_ampa': np.array([0e-3 for _ in range(n)]),  # mV
+                    'E_nmda': np.array([0e-3 for _ in range(n)]),  # mV
+                    'tau_Ca': np.array([8000.0e-3 for _ in range(n)]),  # ms
+                    'alpha_Ca': np.array([0.00035 for _ in range(n)]),  # per spike
+                    'V_init': np.array([-39.0e-3 for _ in range(n)]),  # mV
+                    'V_reset': np.array([-39.0e-3 for _ in range(n)]),  # mV (no voltage reset, just refractory)
+                    'V_threshold': np.array([0.0e-3 for _ in range(n)]),  # mV (from Brian2: V>0*mV)
+                    't_refractory': np.array([2.0e-3 for _ in range(n)]),  # ms
+                    'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]),  # NOT USED IN THIS MODEL
+                    'y_lim_plot': y_lim_memPot,  # NOT USED IN THIS MODEL
+                    }
+
+    return n_params
 
 
 def get_params_stp(name_model, ind):
@@ -82,13 +117,16 @@ def get_params_stp(name_model, ind):
         name_params = params_name_mssm
     elif name_model == "TM":
         name_params = params_name_tm
+    elif name_model == "DoornSTD":
+        name_params = params_name_doorn
 
     # (Experiment 2) freq. response decay around 100Hz {5: 0.99, 10: 0.9, 20: 0.8, 50: 0.7, 100: 0.5, 200: 0.2}
     if name_model == "MSSM" and ind == 2:
         description = "MSSM " + str(ind) + " Experiment, decay around 100Hz"
         syn_params = [5.42451963e-02, 2.92925980e+00, 6.67821125e+01, 1.80143000e-02, 7.54167519e-01,
                       5.99119322e+01, 9.94215228e-01, 1.03825167e-03,
-                      (4.52507712e-01 * 0.075) / 779.1984, 1.00243185e-03]  # 4.52507712e-01, g_L = 5e-6 homogeneous / 4.6e-3 poisson
+                      (4.52507712e-01 * 0.075) / 779.1984,
+                      1.00243185e-03]  # 4.52507712e-01, g_L = 5e-6 homogeneous / 4.6e-3 poisson
     if name_model == "TM" and ind == 2:
         description = "TM " + str(ind) + " Experiment, decay around 100Hz"
         syn_params = [1.32748878e-01, 2.19116160e-02, 1.32465006e-01, 2.16882855e-00 * 2.60498474e-1, 1.00766466e-03]  #
@@ -96,7 +134,8 @@ def get_params_stp(name_model, ind):
     if name_model == "MSSM" and ind == 3:
         description = "MSSM " + str(ind) + " Experiment, decay around 10Hz"
         syn_params = [6.53659368e-03, 1.75660742e-01, 3.17123087e+01, 1.78659320e-01, 2.50362727e-01,
-                      9.12004545e+01, 9.13420672e-01, 2.14204288e-03, 5.20907890e-03 / 4.29, 4.32890680e-03]  # 5.20907890e-01, g_L = 2.6e-2 homogeneous / 4.6e-2 poisson
+                      9.12004545e+01, 9.13420672e-01, 2.14204288e-03, 5.20907890e-03 / 4.29,
+                      4.32890680e-03]  # 5.20907890e-01, g_L = 2.6e-2 homogeneous / 4.6e-2 poisson
     if name_model == "TM" and ind == 3:
         description = "TM " + str(ind) + " Experiment, decay around 10Hz"
         syn_params = [2.37698417e-01, 3.30564024e-01, 8.51177265e-01, 3.67454564e-01 * 8.58679963e-1, 3.04982285e-03]  #
@@ -105,7 +144,8 @@ def get_params_stp(name_model, ind):
         description = "MSSM " + str(ind) + " Experiment, Gain-Control paper"
         syn_params = [7.85735182e-02, 4.56599128e-01, 1.46835212e+00, 1.63998958e-01, 2.41885797e-04,
                       5.84619146e+01, 8.00871281e-01, 1.50280526e-03,
-                      (5.94890729e-02 * 0.075) / 1.0217, 1.75609424e-03]  # 5.94890729e-01, g_L = 5.4e-4 homogeneous / 3.21e-3 poisson [1.36e-3 for subthreshold]  # g_L = 5.4e-5 for static synapse
+                      (5.94890729e-02 * 0.075) / 1.0217,
+                      1.75609424e-03]  # 5.94890729e-01, g_L = 5.4e-4 homogeneous / 3.21e-3 poisson [1.36e-3 for subthreshold]  # g_L = 5.4e-5 for static synapse
     if name_model == "TM" and ind == 4:
         description = "TM " + str(ind) + " Experiment, Gain-Control paper"
         syn_params = [3.79643805e-01, 3.71724581e-02, 2.31713484e-01, 4.71504487e-01 * 4.18985618e-1, 3.55003518e-03]  #
@@ -144,239 +184,24 @@ def get_params_stp(name_model, ind):
         description = "TM " + str(ind) + " Experiment, facilitation diff. signaling"
         syn_params = [0.03, 530e-3, 130e-3, 1540 * 2.32722819e-05, 2.5e-3]
     # params_s_dep = {'tau_g': 2e-3, 'tau_alpha': 300e-3, 'g0': 0.075, 'f': 0.75}
+
+    if name_model == "DoornSTD" and ind == 1:
+        description = "DoornSTD " + str(ind) + " Experiment, (Breaking the burst)"
+        syn_params = [0.4,  # nS (base, scaled by S*(1+delta))
+                      0.4,  # nS (base, scaled by S*(1-delta))
+                      0.0e-3,  # mV
+                      0.0e-3,  # mV
+                      2.05042e-3,  # 0.002,  # s (2 ms)
+                      2e-3,  # s (2 ms)
+                      100e-3,  # s (100 ms)
+                      0.05,  # Hz (0.5 kHz)
+                      200e-3,  # s (200 ms) - STD recovery
+                      0.2,  # unitless - STD release probability
+                      0.4  # unitless - overall strength
+                      ]
     assert syn_params is not None, "Not parameters for model %s and index %d" % (name_model, ind)
 
     return syn_params, description, name_params
-
-
-def load_set_simulation_params(dr_ini, path_vars, file_name, run_experiment=False):
-    file_loaded = False
-    if os.path.isfile(path_vars + file_name) and not run_experiment:
-        file_loaded = True
-        dr = loadObject(file_name, path_vars)
-    else:
-        # ******************************************************************************************************************
-        # Running freq. response of Gain Control
-        # For gain control, 100 inputs to a single LIF neuron
-        dyn_synapse = True
-        dr = dr_ini.copy()
-
-        # Model parameters
-        syn_params, description, name_params = get_params_stp(dr['stp_model'], dr['ind'])
-
-        if not dyn_synapse:
-            description = "0_th Static synapse"
-
-        description += ", " + str(dr['num_synapses']) + " synapses"
-
-        # time conditions
-        max_t = 6
-        dt = 1 / dr['sfreq']
-        time_vector = np.arange(0, max_t, dt)
-        L = time_vector.shape[0]
-
-        # Parameters definition
-        params = dict(zip(name_params, syn_params))
-        sim_params = {'sfreq': dr['sfreq'], 'max_t': max_t, 'L': L, 'time_vector': time_vector}
-
-        # PARAMS FOR LIF MODEL
-        lif_params = {'V_threshold': np.array([1000 for _ in range(1)]), 'V_reset': np.array([-70 for _ in range(1)]),
-                      'tau_m': np.array([dr['tau_lif'] * 1e-3 for _ in range(1)]),
-                      'g_L': np.array([2.7e-2 for _ in range(1)]),
-                      'V_init': np.array([-70 for _ in range(1)]), 'V_equilibrium': np.array([-70 for _ in range(1)]),
-                      't_refractory': np.array([0.01 for _ in range(1)])}
-
-        # Time conditions
-        num_changes_rate = 3
-        Le_time_win = int(max_t / num_changes_rate)
-        prop_rate_change_a = dr['gain_v']  # [0.5, 1, 2]
-        fix_rate_change_a = [5]  # [5, 10, 20]
-
-        num_experiments = dr['initial_frequencies'].shape[0]
-
-        # array for time of transition-states
-        t_tra = [[] for _ in range(num_experiments)]
-
-        # For poisson or deterministic inputs
-        seeds = []
-        if not dr['Stoch_input']:
-            total_realizations = 1
-            num_realizations = 1
-            dr['t_realizations'] = total_realizations
-            dr['realizations'] = num_realizations
-
-        dr['name_params'], dr['dyn_synapse'], dr['syn_params'] = name_params, dyn_synapse, syn_params
-        dr['sim_params'], dr['lif_params'], dr['time_transition'] = sim_params, lif_params, t_tra
-        dr['prop_rate_change_a'], dr['fix_rate_change_a'] = prop_rate_change_a, fix_rate_change_a
-        dr['num_changes_rate'], dr['description'], dr['seeds'] = num_changes_rate, description, seeds
-    return file_loaded, dr
-
-
-def models_creation(model, aux_num_r, sim_params, params, num_realizations, lif_params):
-    # Creating STP models for proportional rate change
-    stp_prop, stp_fix = None, None
-    if model == "MSSM": stp_prop = MSSM_model(n_syn=aux_num_r)
-    if model == "MSSM": stp_fix = MSSM_model(n_syn=aux_num_r)
-    if model == "TM": stp_prop = TM_model(n_syn=aux_num_r)
-    if model == "TM": stp_fix = TM_model(n_syn=aux_num_r)
-    assert stp_prop is not None, "Cannot set stp_model"
-
-    # Setting initial conditions
-    stp_prop.set_model_params(params)
-    stp_prop.set_simulation_params(sim_params)
-    stp_fix.set_model_params(params)
-    stp_fix.set_simulation_params(sim_params)
-
-    # Creating LIF models for proportional rate change
-    lif_prop = LIF_model(n_neu=num_realizations)
-    lif_prop.set_model_params(lif_params)
-    lif_fix = LIF_model(n_neu=num_realizations)
-    lif_fix.set_model_params(lif_params)
-
-    return stp_prop, stp_fix, lif_prop, lif_fix
-
-
-def gc_prop_fix_gain(arguments):
-    # [total_realizations, plus_cond, Stoch_input, seeds, num_realizations, num_experiments, sfreq,
-    #  initial_frequencies, num_changes_rate, aux_num_r, imputations, dyn_synapse, stp_prop, stp_fix, lif_prop,
-    #  lif_fix, sim_params, params, t_tra, Le_time_win, lif_output, file_name, prop_rate_change_a, fix_rate_change_a,
-    #  gain, fixed_rate_change, path_vars, title_graph] = arguments
-    [total_realizations, plus_cond, Stoch_input, seeds, num_realizations, num_experiments, sfreq,
-     initial_frequencies, num_changes_rate, aux_num_r, dyn_synapse, stp_prop, stp_fix, lif_prop,
-     lif_fix, sim_params, params, t_tra, Le_time_win, lif_output, file_name, prop_rate_change_a, fix_rate_change_a,
-     gain, fixed_rate_change, path_vars, title_graph] = arguments
-
-    # Sim params
-    L = sim_params['L']
-    time_vector = sim_params['time_vector']
-
-    # Getting num of realizations
-    num_loop_realizations = int(total_realizations / num_realizations)
-
-    # Auxiliar variables for statistics
-    res_per_reali = np.zeros((144, num_experiments, num_realizations))
-    res_real = np.zeros((144, total_realizations, num_experiments))
-
-    # Setting proportional and fixed rates of change
-    proportional_rate_change = gain
-    proportional_changes = proportional_rate_change * initial_frequencies + initial_frequencies
-    constant_changes = fixed_rate_change + initial_frequencies
-
-    ini_loop_time = m_time()
-    print("Ini big loop")
-    realization = 0
-    while realization < num_loop_realizations and plus_cond:
-        loop_time = m_time()
-        t_tra_mid_win = None
-
-        # Building reference signal for constant and fixed rate changes
-        i = num_experiments - 1
-        while i >= 0:  # while i < num_experiments:
-            loop_experiments = m_time()
-
-            # For poisson or deterministic inputs
-            seeds1, seeds2, seeds3 = [0], [0], [0]
-            if Stoch_input:
-                se = int(time.time())
-                seeds.append(se)
-                seeds1 = [j + se for j in range(num_realizations)]
-                seeds2 = [j + se + 2 for j in range(num_realizations)]
-                seeds3 = [j + se + 3 for j in range(num_realizations)]
-
-            ref_signals = simple_spike_train(sfreq, initial_frequencies[i], int(L / num_changes_rate),
-                                             num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds1)
-            # ISIs, histograms = inter_spike_intervals(ref_signals, dt, 1e-3)
-            # plot_isi_histogram(histograms, 0)
-            cons_aux = simple_spike_train(sfreq, proportional_changes[i], int(L / num_changes_rate),
-                                          num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds2)
-            fix_aux = simple_spike_train(sfreq, constant_changes[i], int(L / num_changes_rate),
-                                         num_realizations=aux_num_r, poisson=Stoch_input, seeds=seeds3)
-
-            cons_input = np.concatenate((ref_signals, cons_aux, ref_signals), axis=1)
-            fix_input = np.concatenate((ref_signals, fix_aux, ref_signals), axis=1)
-
-            # Avoiding spikes in t==0
-            cons_input[:, 0], fix_input[:, 0] = 0, 0
-            if not Stoch_input: cons_input[:, 1], fix_input[:, 1] = 1, 1
-
-            # Running STP model
-            if dyn_synapse:
-                # Reseting initial conditions
-                stp_prop.set_initial_conditions()
-                lif_prop.set_simulation_params(sim_params)
-                stp_fix.set_initial_conditions()
-                lif_fix.set_simulation_params(sim_params)
-                # Running the models
-                model_stp_parallel(stp_prop, lif_prop, params, cons_input)
-                model_stp_parallel(stp_fix, lif_fix, params, fix_input)
-            else:
-                # Reseting initial conditions
-                lif_prop.set_simulation_params(sim_params)
-                # lif_fix.set_simulation_params(sim_params)
-                # Running the models
-                static_synapse(lif_prop, cons_input, 9e0)  # , 0.0125e-6)
-                # static_synapse(lif_fix, fix_input, 9e0)  # , 0.0125e-6)
-
-            # Defining output of the model in order to compute statistics
-            signal_prop, signal_fix = stp_prop.get_output(), stp_fix.get_output()
-            if lif_output:
-                signal_prop, signal_fix = lif_prop.membrane_potential, lif_fix.membrane_potential
-
-            # getting transition time for rate of proportional  change if possible
-            aux_cond = np.where(proportional_changes[i] <= initial_frequencies)
-            if len(aux_cond[0]) > 0:
-                aux_i = aux_cond[0][0]
-                t_tra_mid_win = np.max(t_tra[aux_i])
-
-            # Computing statistics of each window, either for the whole window or for the transition- and steady-states
-            res_per_reali[:, i, :], t_tr_ = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win,
-                                                                     None, sim_params, t_tra_mid_win)
-
-            # Updating array of time_transitions
-            t_tra[i].append(t_tr_)
-
-            # Final print of the loop
-            print_time(m_time() - loop_experiments, file_name + ", Realisation " + str(realization) +
-                       ", frequency " + str(initial_frequencies[i]))
-
-            # """
-            # path_save = folder_plots + file_name + '_' + str(initial_frequencies[i]) + '_.png'
-            title_graph_ = title_graph + ", freq. %dHz" % initial_frequencies[i]
-            t_tr = t_tr_[0]
-            plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali, title_graph_,
-                                           path_save="", save_figs=False)
-            # """
-            i -= 1
-
-        # steady-state part
-        for res_i in range(res_real.shape[0]):
-            r = realization
-            res_real[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali[res_i, :].T
-
-        print_time(m_time() - loop_time, file_name + ", Realisation " + str(realization))
-
-        realization += 1
-
-    # transition-state
-    for i in range(num_experiments):
-        t_tra[i] = np.ravel(t_tra[i])
-    t_tra = np.array(t_tra).T
-
-    if not os.path.isfile(path_vars + file_name):
-        dr = {'initial_frequencies': initial_frequencies,
-              'stp_model': model, 'name_params': name_params, 'dyn_synapse': dyn_synapse,
-              'num_synapses': num_syn, 'syn_params': syn_params, 'sim_params': sim_params,
-              'lif_params': lif_params, 'lif_params2': lif_params2, 'prop_rate_change_a': prop_rate_change_a,
-              'fix_rate_change_a': prop_rate_change_a, 'num_changes_rate': num_changes_rate,
-              'description': description, 'seeds': seeds,
-              'realizations': num_realizations, 't_realizations': total_realizations, 'time_transition': t_tra}
-        for nam in range(res_real.shape[0]):
-            dr[stat_list[nam]] = res_real[nam, :]
-
-        if save_vars:
-            saveObject(dr, file_name, path_vars)
-
-    print_time(m_time() - ini_loop_time, "Total big loop")
 
 
 def get_name_file(sfreq, model, ind, num_syn, lif_output, tau_lif, stoch_inp, imputations, gain):
@@ -403,7 +228,8 @@ def static_synapse(lif, Input, g):
     # Running model
     for it in range(L):
         # Evaluating change in LIF neuron - membrane potential
-        lif.update_state(Input[:, it] * g, it)
+        I_args = [Input[:, it] * g]
+        lif.update_state(it, I_args)
         # Detecting spike events and storing model output
         # mssm.detect_spike_event(it, mssm.get_output())
 
@@ -430,10 +256,12 @@ def model_stp(mssm, lif, params, Input, lif_n=None):
         # Evaluating TM model
         mssm.evaluate_model_euler(Input[:, it], it)
         # Evaluating change in LIF neuron - membrane potential
-        lif.update_state(mssm.get_output()[:, it], it)
+        I_args = [mssm.get_output()[:, it]]
+        lif.update_state(it, I_args)
 
         if lif_n is not None:
-            lif_n.update_state(mssm.N[:, it], it)
+            I_args = [mssm.N[:, it]]
+            lif_n.update_state(it, I_args)
 
     # Computing output spike event in the last ISI
     it = L
@@ -444,13 +272,13 @@ def model_stp(mssm, lif, params, Input, lif_n=None):
     # mssm.compute_output_spike_event(spike_range, mssm.get_output())
 
 
-def model_stp_parallel(stp_model, lif, params, Input, lif_n=None):
+def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=False, lif_n=None, I_ext=0):
     # Update parameters and initial conditions
     stp_model.set_model_params(params)
 
     # Number of samples
     L = Input.shape[1]
-    num_neu = lif.n_neurons
+    num_neu = n_model.n_neurons
     num_syn = int(stp_model.n_syn / num_neu)
 
     # Creating connectiviy matrix
@@ -474,32 +302,58 @@ def model_stp_parallel(stp_model, lif, params, Input, lif_n=None):
         stp_model.evaluate_model_euler(Input[:, it], it)
 
         # Converting model output into matrix alike
-        aux_input = np.resize(np.repeat(stp_model.get_output()[:, it], num_neu), (num_syn * num_neu, num_neu))
-        c = aux_input * connectivity
-        input_lif = np.matmul(c.T, id_rep).T
+        stp_output = stp_model.get_output()
+        I_args = []
+
+        if stp_output.ndim == 3:
+            # stp_output shape: (K, n_syn, L)
+            for k in range(stp_output.shape[0]):
+                aux_input = np.resize(np.repeat(stp_output[k, :, it], num_neu), (num_syn * num_neu, num_neu))
+                c = aux_input * connectivity
+                aux_2 = np.matmul(c.T, id_rep).T
+                aux_3 = np.sum(aux_2.reshape(num_neu, -1), axis=1)  # [n_neu]
+                I_args.append(aux_3)  # shape: (n_syn, L)
+            I_args.append(I_ext)
+
+        elif stp_output.ndim == 2:
+            # stp_output shape: (n_syn, L)
+            aux_input = np.resize(np.repeat(stp_output[:, it], num_neu), (num_syn * num_neu, num_neu))
+            c = aux_input * connectivity
+            aux_2 = np.matmul(c.T, id_rep).T
+            I_args.append(aux_2)
 
         # Evaluating change in LIF neuron - membrane potential
-        # lif.update_state(mssm.get_output()[:, it], it)
-        lif.update_state(input_lif, it)
+        seed = None
+        if seeds is not None: seed = seeds[it]
+        n_model.update_state(it, seed, use_noise, I_args)
+
+        # Detecting spike events and storing model output
+        n_model.detect_spike_event(it, Input, n_model.membrane_potential)
+
+        # Forcing spike event when changing from ini-to-mid and mid-to-end windows
+        if it == int(L / 3) or it == int(2 * L / 3):
+            n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.membrane_potential)
 
         if lif_n is not None:
             # Converting model output into matrix alike
             aux_input_n = np.resize(np.repeat(stp_model.N[:, it], num_neu), (num_syn * num_neu, num_neu))
             c = aux_input_n * connectivity
-            input_lif_n = np.matmul(c.T, id_rep).T * stp_model.params[
-                'k_EPSP'] / 2  # k_EPSP/2, factor to transform N(t) into the small range as Epsp(t)
+            input_lif_n = np.matmul(c.T, id_rep).T * stp_model.params['k_EPSP'] / 2  # k_EPSP/2, factor to transform N(t) into the small range as Epsp(t)
 
             # Evaluating change in LIF neuron - membrane potential
             # lif.update_state(mssm.get_output()[:, it], it)
-            lif_n.update_state(input_lif_n, it)
+            I_args = [input_lif_n]
+            lif_n.update_state(it, I_args)
 
     # Computing output spike event in the last ISI
     it = L
-    lif.membrane_potential[0, -1] = lif.membrane_potential[0, -2]
+    n_model.membrane_potential[0, -1] = n_model.membrane_potential[0, -2]
     if lif_n is not None:
         lif_n.membrane_potential[0, -1] = lif_n.membrane_potential[0, -2]
-    # spike_range = (mssm.time_spike_events[-1], it)
-    # mssm.compute_output_spike_event(spike_range, mssm.get_output())
+
+    # Detecting spike events and storing model output
+    spike_range = (n_model.time_spike_events[-1], it)
+    n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.membrane_potential, append_time=False)
 
 
 def model_simple_dep(s_dep, lif, params, Input):
@@ -514,7 +368,8 @@ def model_simple_dep(s_dep, lif, params, Input):
         # Evaluating TM model
         s_dep.evaluate_model_euler(Input[:, it], it)
         # Evaluating change in LIF neuron - membrane potential
-        lif.update_state(s_dep.get_output()[:, it], it)
+        I_args = [s_dep.get_output()[:, it]]
+        lif.update_state(it, I_args)
         # Detecting spike events and storing model output
         # mssm.detect_spike_event(it, mssm.get_output())
 
@@ -653,14 +508,14 @@ def inter_spike_intervals(spike_trains, dt, bin_size, max_time_hist=None):
     # for isi_list in all_isis:
     # if len(isi_list) == 0:
     if len(isis) == 0:
-        histograms.append(([], []))  # empty histogram and bins
+        histograms.append([[], []])  # empty histogram and bins
     else:
         # isi_array = np.array(isi_list)
         isi_array = np.array(isis)
         max_val = max_time_hist if max_time_hist is not None else isi_array.max()
         bins = np.arange(0, max_val + bin_size, bin_size)
         hist, bin_edges = np.histogram(isi_array, bins=bins)
-        histograms.append((hist.tolist(), bin_edges.tolist()))
+        histograms.append([hist.tolist(), bin_edges.tolist()])
 
     return all_isis, histograms
 
@@ -673,7 +528,6 @@ def highpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5
 
 def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisson=False, seeds=None, correction=False,
                             imputation=True):
-
     seed = None
     if seeds is not None:
         assert isinstance(seeds, list), "seeds must be a list"
@@ -716,7 +570,6 @@ def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisso
 
 
 def get_time_series_statistics_of_transitions(time_series, f_vector, prop_rates, th_percentage=1e-2):
-
     res_iniw = [[] for _ in range(len(time_series[0]))]  # [num frequencies, num time-steps, num statistics]
     res_midw = [[] for _ in range(len(time_series[0]))]  # [num frequencies, num time-steps, num statistics]
     res_endw = [[] for _ in range(len(time_series[0]))]  # [num frequencies, num time-steps, num statistics]
@@ -856,7 +709,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     mean_tr_ci, median_tr_ci, q5_tr_ci, q10_tr_ci, q90_tr_ci, q95_tr_ci, min_tr_ci, max_tr_ci = [[] for _ in range(8)]
     mean_tr_cm, median_tr_cm, q5_tr_cm, q10_tr_cm, q90_tr_cm, q95_tr_cm, min_tr_cm, max_tr_cm = [[] for _ in range(8)]
     mean_tr_ce, median_tr_ce, q5_tr_ce, q10_tr_ce, q90_tr_ce, q95_tr_ce, min_tr_ce, max_tr_ce = [[] for _ in range(8)]
-    
+
     # Getting statistics for transition and steady-state components of mid window if time_transition is provided
     if t_transition_mid_win is not None:
         # Extracting steady-state statistical descriptors of middle window
@@ -952,53 +805,59 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
                      tr_c_iw_timeSeries, tr_c_mw_timeSeries, tr_c_ew_timeSeries]
     tr_timeSeries = [list(piw), list(pmw), list(pew), list(ciw), list(cmw), list(cew)]
 
-    return np.array([# For steady-state
-                     np.array(mean_st_pi), np.array(median_st_pi), np.array(q5_st_pi), np.array(q10_st_pi),
-                     np.array(q90_st_pi), np.array(q95_st_pi), np.array(min_st_pi), np.array(max_st_pi),  # 7
-                     np.array(mean_st_pm), np.array(median_st_pm), np.array(q5_st_pm), np.array(q10_st_pm),
-                     np.array(q90_st_pm), np.array(q95_st_pm), np.array(min_st_pm), np.array(max_st_pm),  # 15
-                     np.array(mean_st_pe), np.array(median_st_pe), np.array(q5_st_pe), np.array(q10_st_pe),
-                     np.array(q90_st_pe), np.array(q95_st_pe), np.array(min_st_pe), np.array(max_st_pe),  # 23
-                     np.array(mean_st_ci), np.array(median_st_ci), np.array(q5_st_ci), np.array(q10_st_ci),
-                     np.array(q90_st_ci), np.array(q95_st_ci), np.array(min_st_ci), np.array(max_st_ci),  # 31
-                     np.array(mean_st_cm), np.array(median_st_cm), np.array(q5_st_cm), np.array(q10_st_cm),
-                     np.array(q90_st_cm), np.array(q95_st_cm), np.array(min_st_cm), np.array(max_st_cm),  # 39
-                     np.array(mean_st_ce), np.array(median_st_ce), np.array(q5_st_ce), np.array(q10_st_ce),
-                     np.array(q90_st_ce), np.array(q95_st_ce), np.array(min_st_ce), np.array(max_st_ce),  # 47
-                     # For all window
-                     np.mean(piw, axis=1), np.median(piw, axis=1), np.quantile(piw, 0.05, axis=1), np.quantile(piw, 0.1, axis=1),  # 51
-                     np.quantile(piw, 0.9, axis=1), np.quantile(piw, 0.95, axis=1), np.min(piw, axis=1), np.max(piw, axis=1),  # 55
-                     np.mean(pmw, axis=1), np.median(pmw, axis=1), np.quantile(pmw, 0.05, axis=1), np.quantile(pmw, 0.1, axis=1),  # 59
-                     np.quantile(pmw, 0.9, axis=1), np.quantile(pmw, 0.95, axis=1), np.min(pmw, axis=1), np.max(pmw, axis=1),  # 63
-                     np.mean(pew, axis=1), np.median(pew, axis=1), np.quantile(pew, 0.05, axis=1), np.quantile(pew, 0.1, axis=1),  # 67
-                     np.quantile(pew, 0.9, axis=1), np.quantile(pew, 0.95, axis=1), np.min(pew, axis=1), np.max(pew, axis=1),  # 71
-                     np.mean(ciw, axis=1), np.median(ciw, axis=1), np.quantile(ciw, 0.05, axis=1), np.quantile(ciw, 0.1, axis=1),  # 75
-                     np.quantile(ciw, 0.9, axis=1), np.quantile(ciw, 0.95, axis=1), np.min(ciw, axis=1), np.max(ciw, axis=1),  # 79
-                     np.mean(cmw, axis=1), np.median(cmw, axis=1), np.quantile(cmw, 0.05, axis=1), np.quantile(cmw, 0.1, axis=1),  # 83
-                     np.quantile(cmw, 0.9, axis=1), np.quantile(cmw, 0.95, axis=1), np.min(cmw, axis=1), np.max(cmw, axis=1),  # 87
-                     np.mean(cew, axis=1), np.median(cew, axis=1), np.quantile(cew, 0.05, axis=1), np.quantile(cew, 0.1, axis=1),  # 91
-                     np.quantile(cew, 0.9, axis=1), np.quantile(cew, 0.95, axis=1), np.min(cew, axis=1), np.max(cew, axis=1),  # 95
-                     # For transition-state
-                     np.array(mean_tr_pi), np.array(median_tr_pi), np.array(q5_tr_pi), np.array(q10_tr_pi),
-                     np.array(q90_tr_pi), np.array(q95_tr_pi), np.array(min_tr_pi), np.array(max_tr_pi),  # 103
-                     np.array(mean_tr_pm), np.array(median_tr_pm), np.array(q5_tr_pm), np.array(q10_tr_pm),
-                     np.array(q90_tr_pm), np.array(q95_tr_pm), np.array(min_tr_pm), np.array(max_tr_pm),  # 111
-                     np.array(mean_tr_pe), np.array(median_tr_pe), np.array(q5_tr_pe), np.array(q10_tr_pe),
-                     np.array(q90_tr_pe), np.array(q95_tr_pe), np.array(min_tr_pe), np.array(max_tr_pe),  # 119
-                     np.array(mean_tr_ci), np.array(median_tr_ci), np.array(q5_tr_ci), np.array(q10_tr_ci),
-                     np.array(q90_tr_ci), np.array(q95_tr_ci), np.array(min_tr_ci), np.array(max_tr_ci),  # 127
-                     np.array(mean_tr_cm), np.array(median_tr_cm), np.array(q5_tr_cm), np.array(q10_tr_cm),
-                     np.array(q90_tr_cm), np.array(q95_tr_cm), np.array(min_tr_cm), np.array(max_tr_cm),  # 135
-                     np.array(mean_tr_ce), np.array(median_tr_ce), np.array(q5_tr_ce), np.array(q10_tr_ce),
-                     np.array(q90_tr_ce), np.array(q95_tr_ce), np.array(min_tr_ce), np.array(max_tr_ce)]  # 143
-                    ), th_tr_a, tr_timeSeries
+    return np.array([  # For steady-state
+        np.array(mean_st_pi), np.array(median_st_pi), np.array(q5_st_pi), np.array(q10_st_pi),
+        np.array(q90_st_pi), np.array(q95_st_pi), np.array(min_st_pi), np.array(max_st_pi),  # 7
+        np.array(mean_st_pm), np.array(median_st_pm), np.array(q5_st_pm), np.array(q10_st_pm),
+        np.array(q90_st_pm), np.array(q95_st_pm), np.array(min_st_pm), np.array(max_st_pm),  # 15
+        np.array(mean_st_pe), np.array(median_st_pe), np.array(q5_st_pe), np.array(q10_st_pe),
+        np.array(q90_st_pe), np.array(q95_st_pe), np.array(min_st_pe), np.array(max_st_pe),  # 23
+        np.array(mean_st_ci), np.array(median_st_ci), np.array(q5_st_ci), np.array(q10_st_ci),
+        np.array(q90_st_ci), np.array(q95_st_ci), np.array(min_st_ci), np.array(max_st_ci),  # 31
+        np.array(mean_st_cm), np.array(median_st_cm), np.array(q5_st_cm), np.array(q10_st_cm),
+        np.array(q90_st_cm), np.array(q95_st_cm), np.array(min_st_cm), np.array(max_st_cm),  # 39
+        np.array(mean_st_ce), np.array(median_st_ce), np.array(q5_st_ce), np.array(q10_st_ce),
+        np.array(q90_st_ce), np.array(q95_st_ce), np.array(min_st_ce), np.array(max_st_ce),  # 47
+        # For all window
+        np.mean(piw, axis=1), np.median(piw, axis=1), np.quantile(piw, 0.05, axis=1), np.quantile(piw, 0.1, axis=1),
+        # 51
+        np.quantile(piw, 0.9, axis=1), np.quantile(piw, 0.95, axis=1), np.min(piw, axis=1), np.max(piw, axis=1),  # 55
+        np.mean(pmw, axis=1), np.median(pmw, axis=1), np.quantile(pmw, 0.05, axis=1), np.quantile(pmw, 0.1, axis=1),
+        # 59
+        np.quantile(pmw, 0.9, axis=1), np.quantile(pmw, 0.95, axis=1), np.min(pmw, axis=1), np.max(pmw, axis=1),  # 63
+        np.mean(pew, axis=1), np.median(pew, axis=1), np.quantile(pew, 0.05, axis=1), np.quantile(pew, 0.1, axis=1),
+        # 67
+        np.quantile(pew, 0.9, axis=1), np.quantile(pew, 0.95, axis=1), np.min(pew, axis=1), np.max(pew, axis=1),  # 71
+        np.mean(ciw, axis=1), np.median(ciw, axis=1), np.quantile(ciw, 0.05, axis=1), np.quantile(ciw, 0.1, axis=1),
+        # 75
+        np.quantile(ciw, 0.9, axis=1), np.quantile(ciw, 0.95, axis=1), np.min(ciw, axis=1), np.max(ciw, axis=1),  # 79
+        np.mean(cmw, axis=1), np.median(cmw, axis=1), np.quantile(cmw, 0.05, axis=1), np.quantile(cmw, 0.1, axis=1),
+        # 83
+        np.quantile(cmw, 0.9, axis=1), np.quantile(cmw, 0.95, axis=1), np.min(cmw, axis=1), np.max(cmw, axis=1),  # 87
+        np.mean(cew, axis=1), np.median(cew, axis=1), np.quantile(cew, 0.05, axis=1), np.quantile(cew, 0.1, axis=1),
+        # 91
+        np.quantile(cew, 0.9, axis=1), np.quantile(cew, 0.95, axis=1), np.min(cew, axis=1), np.max(cew, axis=1),  # 95
+        # For transition-state
+        np.array(mean_tr_pi), np.array(median_tr_pi), np.array(q5_tr_pi), np.array(q10_tr_pi),
+        np.array(q90_tr_pi), np.array(q95_tr_pi), np.array(min_tr_pi), np.array(max_tr_pi),  # 103
+        np.array(mean_tr_pm), np.array(median_tr_pm), np.array(q5_tr_pm), np.array(q10_tr_pm),
+        np.array(q90_tr_pm), np.array(q95_tr_pm), np.array(min_tr_pm), np.array(max_tr_pm),  # 111
+        np.array(mean_tr_pe), np.array(median_tr_pe), np.array(q5_tr_pe), np.array(q10_tr_pe),
+        np.array(q90_tr_pe), np.array(q95_tr_pe), np.array(min_tr_pe), np.array(max_tr_pe),  # 119
+        np.array(mean_tr_ci), np.array(median_tr_ci), np.array(q5_tr_ci), np.array(q10_tr_ci),
+        np.array(q90_tr_ci), np.array(q95_tr_ci), np.array(min_tr_ci), np.array(max_tr_ci),  # 127
+        np.array(mean_tr_cm), np.array(median_tr_cm), np.array(q5_tr_cm), np.array(q10_tr_cm),
+        np.array(q90_tr_cm), np.array(q95_tr_cm), np.array(min_tr_cm), np.array(max_tr_cm),  # 135
+        np.array(mean_tr_ce), np.array(median_tr_ce), np.array(q5_tr_ce), np.array(q10_tr_ce),
+        np.array(q90_tr_ce), np.array(q95_tr_ce), np.array(min_tr_ce), np.array(max_tr_ce)]  # 143
+    ), th_tr_a, tr_timeSeries
 
 
 def statistics_signal(signal, axis=0):
-    return (np.mean(signal, axis=axis), np.median(signal, axis=axis), np.quantile(signal, 0.05, axis=axis), 
-            np.quantile(signal, 0.1, axis=axis), np.quantile(signal, 0.9, axis=axis), 
+    return (np.mean(signal, axis=axis), np.median(signal, axis=axis), np.quantile(signal, 0.05, axis=axis),
+            np.quantile(signal, 0.1, axis=axis), np.quantile(signal, 0.9, axis=axis),
             np.quantile(signal, 0.95, axis=axis), np.min(signal, axis=axis), np.max(signal, axis=axis))
-    
+
 
 def aux_statistics_sin(mp_signal, coff, sfreq):
     low_pass_mempot = lowpass(mp_signal, coff, sfreq)
@@ -1031,7 +890,6 @@ def aux_statistics_sin(mp_signal, coff, sfreq):
 def sec2hour(secs, exp, realizations):
     rep = int(np.ceil(100 / realizations))
     return secs * exp * rep / 3600
-
 
 # ini_high_rate = 50  # 50
 # step_high_rate = 50  # 10 # 50

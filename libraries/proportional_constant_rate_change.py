@@ -26,6 +26,7 @@ class GC_prop_cons:
         self.stoch_input = dict_params['stoch_input']
         self.lif_output = dict_params['lif_output']
         self.dynamic_synapse = dict_params['dynamic_synapse']
+        self.neuron_noise = dict_params['neuron_noise']
 
         self.file_loaded = None
         self.file_name = None
@@ -35,60 +36,27 @@ class GC_prop_cons:
         self.stp_prop = None
         self.stp_fix = None
         self.num_instance_model = None
-        self.lif_prop = None
-        self.lif_fix = None
+        self.neuron_prop = None
+        self.neuron_fix = None
 
         # Experiment variables
         self.sfreq = None
-        self.tau_lif = dict_params['neuron_params']['tau_m'][0]
+        self.tau_neu = dict_params['neuron_params']['tau_m'][0]
         self.total_realizations = dict_params['total_realizations'] if not dict_params['force_experiment'] else 1
         self.num_realizations = dict_params['num_realizations'] if not dict_params['force_experiment'] else 1
         self.f_vector = None
         self.tr_time_series = None
         self.dict_results = None
 
-    """
-    def __init__(self, num_syn, ind, sfreq, stoch_input=True, force_experiment=False, lif_output=True, save_vars=False,
-                 save_figs=False):
-        self.num_syn = num_syn
-        self.ind = ind
-        self.save_vars = save_vars
-        self.force_experiment = force_experiment
-        self.save_figs = save_figs
-        self.stoch_input = stoch_input
-        self.lif_output = lif_output
-
-        self.sim_params = sim_params
-        self.file_loaded = None
-        self.file_name = None
-
-        # models variables
-        self.stp_model = stp_model
-        self.model = None
-        self.stp_prop = None
-        self.stp_fix = None
-
-        # Experiment variables
-        # Sampling frequency and conditions for running parallel or single LIF neurons
-        self.sfreq = sfreq
-        self.tau_lif = 10  # ms
-        self.total_realizations = None
-        self.num_realizations = None
-        self.f_vector = None
-        gain_v = [0.1, 0.2]
-
-        self.set_experiment_vars(sfreq)
-
-    # """
     def validate_args(self, dict_params):
         pass
 
-    def get_folder_file_name(self, model, gain, ind, sfreq=None, num_syn=None, tau_lif=None, folder_vars=None,
+    def get_folder_file_name(self, model, n_model, gain, ind, sfreq=None, num_syn=None, tau_n=None, folder_vars=None,
                              folder_plots=None):
         if ind is None: ind = 0
         if sfreq is None: sfreq = self.sim_params['sfreq']
         if num_syn is None: num_syn = self.num_syn
-        if tau_lif is None: tau_lif = self.tau_lif
+        if tau_n is None: tau_n = self.tau_neu
         if folder_vars is None: folder_vars = self.folder_vars
         if folder_plots is None: folder_plots = self.folder_plots
 
@@ -97,7 +65,7 @@ class GC_prop_cons:
 
         aux_name = "_ind_" + str(ind) + "_gain_" + str(int(gain * 100)) + "_sf_" + str(
             int(sfreq / 1000)) + "k_syn_" + str(num_syn)
-        if self.lif_output: aux_name += "_tauLiF_" + str(int(tau_lif * 1e3)) + "ms"
+        if self.lif_output: aux_name += "_tau" + n_model + "_" + str(int(tau_n * 1e3)) + "ms"
         self.file_name = model + aux_name
         if not self.stoch_input: self.file_name = model + '_det' + aux_name
         if self.imputations: self.file_name += "_cwi"
@@ -105,7 +73,8 @@ class GC_prop_cons:
         print("For file %s and index %d" % (self.file_name, ind))
         return self.file_name
 
-    def set_experiment_vars(self, gain_vector, sfreq=None, total_realizations=None, num_realizations=None, f_vec=None):
+    def set_experiment_vars(self, gain_vector, sfreq=None, total_realizations=None, num_realizations=None, f_vec=None,
+                            max_freq=None):
         # Setting variables for the experiment
         assert isinstance(gain_vector, list), "gain_vector must be a list"
 
@@ -118,11 +87,16 @@ class GC_prop_cons:
 
         # Input modulations
         # Max prop freq. must be less than sfreq/4, therefore the max_freq is sfreq/6 minus a small value
-        max_freq = int(sfreq / 6) - 10
+        aux_max_freq = int(sfreq / 6) - 10
+        if max_freq is None:
+            max_freq = aux_max_freq
+        else:
+            if max_freq > aux_max_freq:
+                max_freq = aux_max_freq
         # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 951
-        range_f = [i for i in range(10, 100, 5)]
-        range_f2 = [i for i in range(100, 500, 10)] if 500 < max_freq else [i for i in range(100, max_freq, 10)]
-        range_f3 = [i for i in range(500, max_freq, 50)] if 500 < max_freq else []
+        range_f = [10]  # [i for i in range(10, 100, 5)]
+        range_f2 = [100]  # [i for i in range(100, 500, 10)] if 500 < max_freq else [i for i in range(100, max_freq, 10)]
+        range_f3 = [500]  # [i for i in range(500, max_freq, 50)] if 500 < max_freq else []
 
         self.f_vector = np.array(range_f + range_f2 + range_f3) if f_vec is None else f_vec
 
@@ -146,19 +120,25 @@ class GC_prop_cons:
             # number of instance of stp model
             self.num_instance_model = int(dr['realizations'] * dr['num_synapses'])
             self.description = dr['description']
-            if 'num_experiments' not in dr: dr['num_experiments'] = dr['initial_frequencies'].shape[0]
+            if 'num_freq_exp' not in dr: dr['num_freq_exp'] = dr['initial_frequencies'].shape[0]
             if 'sfreq' not in dr: dr['sfreq'] = self.sim_params['sfreq']
             if 'num_instance_model' not in dr: dr['num_instance_model'] = self.num_instance_model
-            if 'time_transition' not in dr: dr['time_transition'] = [[] for _ in range(dr['num_experiments'])]
+            if 'time_transition' not in dr: dr['time_transition'] = [[] for _ in range(dr['num_freq_exp'])]
             if 'stat_tSeries_transition' not in dr: dr['stat_tSeries_transition'] = [[np.zeros((1, 1))]]
             if 'stat_time_transition' not in dr: dr['stat_time_transition'] = [np.zeros(1)]
+            if 'neuron_noise' not in dr: dr['neuron_noise'] = False
+            if 'PSR_events' not in dr: dr['PSR_events'] = [[] for _ in range(dr['num_freq_exp'])]
+            if 'spike_events' not in dr: dr['spike_events'] = [[] for _ in range(dr['num_freq_exp'])]
+            if 'PSR_events_wind' not in dr: dr['PSR_events_wind'] = [[], [], []]
+            if 'spike_events_wind' not in dr: dr['spike_events'] = [[], [], []]
+
         else:
             # number of instance of stp model
             self.num_instance_model = int(num_realizations * self.num_syn)
             # Creating dictionary to be saved
             dr = {'initial_frequencies': self.f_vector, 'stp_model': self.model, 'num_synapses': self.num_syn,
                   't_realizations': total_realizations, 'realizations': num_realizations, 'sfreq': self.sfreq,
-                  'tau_lif': self.tau_lif, 'gain_v': self.gain_vector, 'Stoch_input': self.stoch_input,
+                  'tau_lif': self.tau_neu, 'gain_v': self.gain_vector, 'Stoch_input': self.stoch_input,
                   'stp_name_params': self.stp_name_params, 'stp_value_params': self.stp_value_params,
                   'sim_params': self.sim_params, 'n_params': self.neuron_params, 'dyn_synapse': self.dynamic_synapse,
                   'num_instance_model': self.num_instance_model}
@@ -174,10 +154,10 @@ class GC_prop_cons:
             Le_time_win = int(self.sim_params['max_t'] / dr['num_changes_rate'])
             dr['fix_rate_change_a'] = [5 + (5 * i) for i in range(len(self.gain_vector))]  # [5, 10, 15]
 
-            dr['num_experiments'] = self.f_vector.shape[0]
+            dr['num_freq_exp'] = self.f_vector.shape[0]
 
             # array for time of transition-states
-            dr['time_transition'] = [[] for _ in range(dr['num_experiments'])]
+            dr['time_transition'] = [[] for _ in range(dr['num_freq_exp'])]
 
             # For poisson or deterministic inputs
             dr['seeds'] = []
@@ -190,13 +170,13 @@ class GC_prop_cons:
         self.dict_results = dr
         return self.file_loaded, self.dict_results
 
-    def models_creation(self, model=None, sim_params=None, params=None, num_realizations=None, lif_params=None,
+    def models_creation(self, model=None, sim_params=None, params=None, num_realizations=None, neuron_params=None,
                         num_instance_model=None):
         if model is None: model = self.model
         if sim_params is None: sim_params = self.sim_params
         if params is None: params = self.stp_params
         if num_realizations is None: num_realizations = self.num_realizations
-        if lif_params is None: lif_params = self.neuron_params
+        if neuron_params is None: neuron_params = self.neuron_params
         if num_instance_model is None: num_instance_model = self.num_instance_model
 
         # Creating STP models for proportional rate change
@@ -204,6 +184,8 @@ class GC_prop_cons:
         if self.model == "MSSM": self.stp_fix = MSSM_model(n_syn=num_instance_model)
         if self.model == "TM": self.stp_prop = TM_model(n_syn=num_instance_model)
         if self.model == "TM": self.stp_fix = TM_model(n_syn=num_instance_model)
+        if self.model == "DoornSTD": self.stp_prop = DoornSTD_model(n_syn=num_instance_model)
+        if self.model == "DoornSTD": self.stp_fix = DoornSTD_model(n_syn=num_instance_model)
         assert self.stp_prop is not None, "Cannot set stp_model"
 
         # Setting initial conditions
@@ -212,11 +194,17 @@ class GC_prop_cons:
         self.stp_fix.set_model_params(params)
         self.stp_fix.set_simulation_params(sim_params)
 
-        # Creating LIF models for proportional rate change
-        self.lif_prop = LIF_model(n_neu=num_realizations)
-        self.lif_prop.set_model_params(lif_params)
-        self.lif_fix = LIF_model(n_neu=num_realizations)
-        self.lif_fix.set_model_params(lif_params)
+        # Creating Neuron models for proportional rate change
+        if self.neuron_model == "LIF":
+            self.neuron_prop = LIF_model(n_neu=num_realizations)
+            self.neuron_fix = LIF_model(n_neu=num_realizations)
+        elif self.neuron_model == "HH":
+            self.neuron_prop = HH_AHP_model(n_neu=num_realizations)
+            self.neuron_fix = HH_AHP_model(n_neu=num_realizations)
+        assert self.neuron_prop is not None, "Cannot set neuron model"
+
+        self.neuron_prop.set_model_params(neuron_params)
+        self.neuron_fix.set_model_params(neuron_params)
 
     def validate_dict_params(self, dr):
         pass
@@ -226,12 +214,13 @@ class GC_prop_cons:
         if dr is None: dr = self.dict_results
         self.validate_dict_params(dr)
 
-        [total_realizations, stoch_input, seeds, num_realizations, num_experiments, sfreq, f_vector, num_changes_rate,
+        [total_realizations, stoch_input, seeds, num_realizations, num_freq_exp, sfreq, f_vector, num_changes_rate,
          aux_num_r, dyn_synapse, sim_params, t_tra, lif_output, file_name, gain_v, fix_rate_change_a, folder_vars,
-         stp_params] = [dr['t_realizations'], self.stoch_input, dr['seeds'], dr['realizations'], dr['num_experiments'],
-                        dr['sfreq'], dr['initial_frequencies'], dr['num_changes_rate'], dr['num_instance_model'],
-                        dr['dyn_synapse'], dr['sim_params'], dr['time_transition'], self.lif_output, self.file_name,
-                        self.gain_vector, dr['fix_rate_change_a'], self.folder_vars, self.stp_params]
+         stp_params, n_noise] = [dr['t_realizations'], self.stoch_input, dr['seeds'], dr['realizations'],
+                                 dr['num_freq_exp'], dr['sfreq'], dr['initial_frequencies'], dr['num_changes_rate'],
+                                 dr['num_instance_model'], dr['dyn_synapse'], dr['sim_params'], dr['time_transition'],
+                                 self.lif_output, self.file_name, self.gain_vector, dr['fix_rate_change_a'],
+                                 self.folder_vars, self.stp_params, self.neuron_noise]
 
         title_graph = self.description.split(",")[0] + ", gain " + str(gain)
         stp_params = dict(zip(self.stp_name_params, self.stp_value_params))
@@ -247,15 +236,19 @@ class GC_prop_cons:
         num_loop_realizations = int(total_realizations / num_realizations)
 
         # Auxiliar variables for statistics
-        res_per_reali = np.zeros((144, num_experiments, num_realizations))
-        res_real = np.zeros((144, total_realizations, num_experiments))
+        res_per_reali = np.zeros((144, num_freq_exp, num_realizations))
+        res_real = np.zeros((144, total_realizations, num_freq_exp))
+
+        # Auxiliar variables for Information theory
+        PSR_per_freq = [[] for _ in range(num_freq_exp)]
+        spike_event_per_freq = [[] for _ in range(num_freq_exp)]
 
         # Setting proportional and fixed rates of change
         proportional_changes = gain * f_vector + f_vector
         constant_changes = fixed_rate_change + f_vector
 
         # time-series for transition times: piw, pmw, pew, ciw, cmw, cew
-        tr_time_series = [[[] for _ in range(num_experiments)] for _ in range(6)]
+        tr_time_series = [[[] for _ in range(num_freq_exp)] for _ in range(6)]
 
         ini_loop_time = m_time()
         print("Ini big loop")
@@ -265,22 +258,28 @@ class GC_prop_cons:
             t_tra_mid_win = None
 
             # Building reference signal for constant and fixed rate changes
-            i = num_experiments - 1
-            while i >= 0:  # while i < num_experiments:
+            i = num_freq_exp - 1
+            while i >= 0:  # while i < num_freq_exp:
                 loop_experiments = m_time()
 
-                seeds1, seeds2, seeds3 = [0], [0], [0]
+                se = int(time.time())
+                seeds1, seeds2, seeds3, n_seeds = [1984], [1884], [1848], None
                 # For poisson or deterministic inputs
                 if self.stoch_input:
-                    se = int(time.time())
                     seeds.append(se)
                     seeds1 = [j + se for j in range(num_realizations)]
                     seeds2 = [j + se + 2 for j in range(num_realizations)]
                     seeds3 = [j + se + 3 for j in range(num_realizations)]
 
+                # For neuron noise
+                if n_noise:
+                    if not self.stoch_input: seeds.append(se)
+                    n_seeds = [j + se for j in range(int(2 * L / 3))] + [j + se for j in range(int(L / 3))]
+
                 ref_signals = simple_spike_train(sfreq, f_vector[i], int(L / num_changes_rate),
                                                  num_realizations=aux_num_r, poisson=self.stoch_input, seeds=seeds1)
-                # ISIs, histograms = inter_spike_intervals(ref_signals, dt, 1e-3)
+                # ISIs, histograms = inter_spike_intervals(ref_signals, 1 / sfreq, 1e-3)
+                # histograms[0][1] *= 1000
                 # plot_isi_histogram(histograms, 0)
                 cons_aux = simple_spike_train(sfreq, proportional_changes[i], int(L / num_changes_rate),
                                               num_realizations=aux_num_r, poisson=stoch_input, seeds=seeds2)
@@ -298,24 +297,24 @@ class GC_prop_cons:
                 if dyn_synapse:
                     # Reseting initial conditions
                     self.stp_prop.set_initial_conditions()
-                    self.lif_prop.set_simulation_params(sim_params)
+                    self.neuron_prop.set_simulation_params(sim_params, seeds1[0])
                     self.stp_fix.set_initial_conditions()
-                    self.lif_fix.set_simulation_params(sim_params)
+                    self.neuron_fix.set_simulation_params(sim_params, seeds1[0])
                     # Running the models
-                    model_stp_parallel(self.stp_prop, self.lif_prop, stp_params, cons_input)
+                    model_stp_parallel(self.stp_prop, self.neuron_prop, stp_params, cons_input, n_seeds, n_noise)
                     # model_stp_parallel(self.stp_fix, self.lif_fix, stp_params, fix_input)
                 else:
                     # Reseting initial conditions
-                    self.lif_prop.set_simulation_params(sim_params)
+                    self.neuron_prop.set_simulation_params(sim_params)
                     # lif_fix.set_simulation_params(sim_params)
                     # Running the models
-                    static_synapse(self.lif_prop, cons_input, 9e0)  # , 0.0125e-6)
+                    static_synapse(self.neuron_prop, cons_input, 9e0)  # , 0.0125e-6)
                     # static_synapse(lif_fix, fix_input, 9e0)  # , 0.0125e-6)
 
                 # Defining output of the model in order to compute statistics
                 signal_prop, signal_fix = self.stp_prop.get_output(), self.stp_fix.get_output()
                 if lif_output:
-                    signal_prop, signal_fix = self.lif_prop.membrane_potential, self.lif_fix.membrane_potential
+                    signal_prop, signal_fix = self.neuron_prop.membrane_potential, self.neuron_fix.membrane_potential
 
                 # getting transition time for rate of proportional change if possible
                 aux_cond = np.where(proportional_changes[i] <= f_vector)
@@ -349,6 +348,10 @@ class GC_prop_cons:
                                                    title_graph_, path_save=path_save, save_figs=self.save_figs,
                                                    y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
 
+                # Computing Postsynaptic response (PSR) to compute H(PSR) -unconditional entropy-
+                PSR_per_freq[i].append(self.neuron_prop.output_spike_events)
+                spike_event_per_freq[i].append(self.neuron_prop.time_spike_events)
+
                 # Final print of the loop
                 print_time(m_time() - loop_experiments, file_name + ", Realisation " + str(realization) +
                            ", frequency " + str(f_vector[i]))
@@ -369,16 +372,66 @@ class GC_prop_cons:
             self.tr_time_series = tr_time_series
             st_tr_a, res = get_time_series_statistics_of_transitions(tr_time_series, f_vector, proportional_changes,
                                                                      th_percentage)
+
+            # ##########################################################################################################
+            # Getting information theory analysis
+            dr['PSR_events'] = PSR_per_freq
+            dr['spike_events'] = spike_event_per_freq
+
+            # Iterating through general realizations
+            aux = [[] for _ in range(num_freq_exp)]
+            PSR_per_freq_iniw, PSR_per_freq_midw, PSR_per_freq_endw = aux.copy(), aux.copy(), aux.copy()
+            ISI_per_freq_iniw, ISI_per_freq_midw, ISI_per_freq_endw = aux.copy(), aux.copy(), aux.copy()
+
+            realization = 0
+            for realization in range(num_loop_realizations):
+                # Iterating through frequencies
+                i = num_freq_exp - 1
+                for i in range(num_freq_exp):
+                    f_ = f_vector[i]
+                    # Iterating through specific realizations
+                    for neuron_realization in range(num_realizations):
+                        ta = np.array(spike_event_per_freq[i][realization][neuron_realization]) / sfreq
+                        mask_iniw = ta < 2
+                        mask_endw = ta >= 4
+                        mask_midw = np.logical_not(np.logical_xor(mask_iniw, mask_endw))
+                        PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
+                        PSR_iniw = PSR_aux[mask_iniw]
+                        PSR_midw = PSR_aux[mask_midw]
+                        PSR_endw = PSR_aux[mask_endw]
+                        spike_events_iniw = np.append(ta[mask_iniw], 2.0)
+                        spike_events_midw = np.append(ta[mask_midw], 4.0)
+                        spike_events_endw = np.append(ta[mask_endw], 6.0)
+                        ISI_iniw = np.diff(spike_events_iniw)
+                        ISI_midw = np.diff(spike_events_midw)
+                        ISI_endw = np.diff(spike_events_endw)
+
+                        PSR_per_freq_iniw[i] = PSR_per_freq_iniw[i] + list(PSR_iniw)
+                        PSR_per_freq_midw[i] = PSR_per_freq_midw[i] + list(PSR_midw)
+                        PSR_per_freq_endw[i] = PSR_per_freq_endw[i] + list(PSR_endw)
+                        ISI_per_freq_iniw[i] = ISI_per_freq_iniw[i] + list(ISI_iniw)
+                        ISI_per_freq_midw[i] = ISI_per_freq_midw[i] + list(ISI_midw)
+                        ISI_per_freq_endw[i] = ISI_per_freq_endw[i] + list(ISI_endw)
+
+            # Getting information theory analysis
+            dr['PSR_events_wind'] = [PSR_per_freq_iniw, PSR_per_freq_midw, PSR_per_freq_endw]
+            dr['spike_events_wind'] = [ISI_per_freq_iniw, ISI_per_freq_midw, ISI_per_freq_endw]
+            # ##########################################################################################################
+
+            # Saving extra variables
             dr['stat_tSeries_transition'] = res
             dr['stat_time_transition'] = st_tr_a
 
             # transition-state
-            for i in range(num_experiments):
+            for i in range(num_freq_exp):
                 t_tra[i] = np.ravel(t_tra[i])
             t_tra = np.array(t_tra).T
 
             # Saving transition times of each window
             dr['time_transition'] = t_tra
+
+            # Saving varible to know if
+            dr['neuron_noise'] = n_noise
 
         # Saving final dictionary if file does not exist
         if not os.path.isfile(folder_vars + file_name):

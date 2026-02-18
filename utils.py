@@ -31,13 +31,20 @@ ext_par_tm = [0.03, 530e-3, 130e-3, 1540, 2.5e-3]
 selected_params_tm = [0, 1, 2, 3, 4]
 
 """LAP Model"""
-# From the paper "Differential signaling via the same axon of neocortical pyramidal neurons" Markram, Wang, Tsodyks
+# From the paper "Kinetic model" Lee, Anton, Poon
 params_name_lap = ['KCa', 'tau_Cai', 'Krel_half', 'Krecov_0', 'Krecov_max', 'Prel0', 'Prel_max', 'Krecov_half',
                    'tau_EPSC', 'KGlu', 'n', 'Ntotal']
 ext_par_lap = [120, 100e-3, 9, 2.2e-2, 2.2e-2, 0.06, 0.9, 0, 5e-3, 1e-10/5.5, 1, 9.2e5]  # facilitation
 ext_par_lap = [9e2*4/1.5, 90e-3, 0.015e2*4/1.5, 1e-4, 6.6e-3, 0.46, 0.57, 0.43e2*4/1.5, 10e-3, 1.9*3.5e-11, 1, 30e5]  # depression
 ext_par_lap = [515, 450e-3, 20, 7.5e-3, 7.5e-3, 0.02, 1, 0, 15e-4, 3.7e-4, 1, 9.5e6]  # facilitation-depression
 selected_params_lap = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+
+"""Doorn Model"""
+# From the paper "Breaking the burst: Unveiling mechanisms behind fragmented network bursts in patient-derived neurons" Doorn
+params_name_doorn = ['g_ampa', 'g_nmda', 'E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay',
+                     'alpha_nmda', 'tau_d', 'U', 'S']
+ext_par_doorn = [0.4, 0.4, 0.0e-3, 0.0e-3, 2.05042e-3, 2e-3, 100e-3, 0.05, 200e-3, 0.2, 0.4]
+selected_params_lap = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 # labels for uploading examples of facilitation and depression
 prefix_v = ['depression', 'facilitation']

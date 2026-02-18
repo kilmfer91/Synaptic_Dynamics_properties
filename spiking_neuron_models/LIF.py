@@ -19,6 +19,16 @@ class LIF_model:
         self.time_vector = None
         self.L = None
         self.n_neurons = n_neu
+        self.seed = None
+
+        # Spike event tracking
+        self.edge_detection = None
+        self.membrane_potential_events = None
+        self.time_spike_events = None
+        self.output_spike_events = None
+        self.output_spike_events_tonic = None
+        self.ind_spike_events = None
+        self.ind_spike_events_tonic = None
 
         # Output
         self.membrane_potential = None
@@ -32,7 +42,7 @@ class LIF_model:
         self.set_simulation_params()
 
     def set_model_params(self, model_params):
-        assert isinstance(sim_params, dict), 'params should be a dict'
+        assert isinstance(model_params, dict), 'params should be a dict'
         for key, value in model_params.items():
             if key in self.params.keys():
                 self.params[key] = value
@@ -46,12 +56,20 @@ class LIF_model:
         self.t_refractory = self.params['t_refractory']
         self.t_r_counter = np.zeros(self.n_neurons)
 
-    def set_simulation_params(self, sim_params=None):
+    def set_seed(self, seed):
+        # Assign seed
+        if seed is not None: self.seed = seed
+        np.random.seed(seed)
+
+    def set_simulation_params(self, sim_params=None, seed=None):
         if sim_params is not None:
             assert isinstance(sim_params, dict), 'params should be a dict'
             for key, value in sim_params.items():
                 if key in self.sim_params.keys():
                     self.sim_params[key] = value
+
+        # Set seed
+        # self.set_seed(seed)
 
         # time simulation variables
         self.dt = 1 / self.sim_params['sfreq']
@@ -62,7 +80,27 @@ class LIF_model:
         self.membrane_potential = np.zeros((self.n_neurons, self.L))
         self.membrane_potential[:, 0] = self.V_init
 
-    def update_state(self, I_input, it):
+        # Spike event tracking
+        self.membrane_potential_events = [[] for _ in range(self.n_neurons)]
+        self.output_spike_events = [[] for _ in range(self.n_neurons)]
+        self.output_spike_events_tonic = [[] for _ in range(self.n_neurons)]
+        self.ind_spike_events = [[] for _ in range(self.n_neurons)]
+        self.ind_spike_events_tonic = [[] for _ in range(self.n_neurons)]
+        self.time_spike_events = [[] for _ in range(self.n_neurons)]
+
+    def update_state(self, it, seed=None, use_noise=False, *args):
+        """
+        Update neuron state using explicit Euler.
+        it: current time step
+        seed: random seed
+        use_noise: whether to use noise or not.
+        args:
+            I_input: Input current [pA]
+        """
+        # Seed
+        if seed is not None: np.random.seed(seed)
+
+        I_input = args[0][0]
         g_L = self.g_L
         E_L = self.V_equilibrium
         tau_m = self.tau_m
@@ -133,3 +171,121 @@ class LIF_model:
             # Update the membrane potential
             # v[it + 1] = dv + v[it]
         # """
+
+    def detect_spike_event(self, t, Input, output):
+        """
+        Parameters
+        ----------
+        t
+        Input
+        output
+        """
+        # Detecting raising edges
+        # When t is 0
+        if t == 0:
+            # Detecting raising edges
+            self.edge_detection = np.where(Input[:, t] > 0.0)[0]
+        else:
+            # Edge detector
+            self.edge_detection = Input[:, t] > Input[:, t - 1]
+
+        if np.sum(self.edge_detection) > 0:
+            self.append_spike_event(t, self.edge_detection, output)
+
+    def append_spike_event(self, t, output):
+        """Store spike events for analysis (override parent)."""
+        self.membrane_potential_events.append(self.membrane_potential[:, t])
+        self.time_spike_events.append(t)
+
+        if len(self.time_spike_events) > 1:
+            spike_range = (self.time_spike_events[-2], self.time_spike_events[-1])
+            self.compute_output_spike_event(spike_range, output)
+
+    def compute_output_spike_event(self, spike_range, output):
+        # print("TM, append_spike_event(), spike range ", spike_range, " in time ", spike_range[0])
+        assert isinstance(spike_range, tuple), "Param 'spike_range' must be a tuple"
+        assert len(spike_range) == 2, "Param 'spike_range' must be a tuple of 2 values"
+        assert isinstance(spike_range[0], int), "first element of param 'spike_range' must be integer"
+        assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
+        assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
+        assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
+        assert len(output.shape) == 2, "Param 'output' must be a 2D-array"
+        assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+                                                   "the length of param 'output'")
+        """
+        if spike_range[1] == spike_range[0]:
+            # phasic component of spiking responses
+            self.output_spike_events.append(output[:, spike_range[0]])
+            # tonic component of spiking responses
+            self.output_spike_events_tonic.appen(output[:, 0])
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic.append(spike_range[0] - 1)
+            self.ind_spike_events.append(a + spike_range[0])
+
+        else: # """
+        # Tonic component of the spiking response
+        self.output_spike_events_tonic.append(output[:, spike_range[0] - 1])
+
+        # Excitatory response
+        if np.sum(output) > 0:
+            self.output_spike_events.append(np.max(output[:, spike_range[0]: spike_range[1]], axis=1))
+            a = np.argmax(output[:, spike_range[0]: spike_range[1]], axis=1)
+        # Inhibitory response
+        else:
+            self.output_spike_events.append(np.min(output[:, spike_range[0]: spike_range[1]], axis=1))
+            a = np.argmin(output[:, spike_range[0]: spike_range[1]], axis=1)
+
+        # Updating index of phasic and tonic spike event occurences
+        self.ind_spike_events_tonic.append(spike_range[0] - 1)
+        self.ind_spike_events.append(a + spike_range[0])
+
+    def append_spike_event(self, t, activated_neurons, output, append_time=True):
+        """Store spike events for analysis (override parent)."""
+        neurons_with_input_event = np.array(range(self.n_neurons))[activated_neurons]
+        for n in neurons_with_input_event:
+            if append_time: self.membrane_potential_events[n].append(self.membrane_potential[n, t])
+            if append_time: self.time_spike_events[n].append(t)
+
+            if len(self.time_spike_events[n]) > 1:
+                spike_range = (self.time_spike_events[n][-2], self.time_spike_events[n][-1])
+                self.compute_output_spike_event(spike_range, n, output)
+
+    def compute_output_spike_event(self, spike_range, n, output):
+        """
+        assert isinstance(spike_range, tuple), "Param 'spike_range' must be a tuple"
+        assert len(spike_range) == 2, "Param 'spike_range' must be a tuple of 2 values"
+        assert isinstance(spike_range[0], int), "first element of param 'spike_range' must be integer"
+        assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
+        assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
+        assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
+        assert len(output.shape) == 2, "Param 'output' must be a 2D-array"
+        assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+                                                   "the length of param 'output'")
+
+        if spike_range[1] == spike_range[0]:
+            # phasic component of spiking responses
+            self.output_spike_events.append(output[:, spike_range[0]])
+            # tonic component of spiking responses
+            self.output_spike_events_tonic.appen(output[:, 0])
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic.append(spike_range[0] - 1)
+            self.ind_spike_events.append(a + spike_range[0])
+
+        else: # """
+        # Tonic component of the spiking response
+        self.output_spike_events_tonic[n].append(output[n, spike_range[0] - 1])
+
+        # Excitatory response
+        # if np.sum(output) > 0:
+        self.output_spike_events[n].append(np.max(output[n, spike_range[0]: spike_range[1]]))
+        a = np.argmax(output[n, spike_range[0]: spike_range[1]])
+        # Inhibitory response
+        # else:
+        #     self.output_spike_events.append(np.min(output[:, spike_range[0]: spike_range[1]], axis=1))
+        #     a = np.argmin(output[:, spike_range[0]: spike_range[1]], axis=1)
+
+        # Updating index of phasic and tonic spike event occurences
+        self.ind_spike_events_tonic[n].append(spike_range[0] - 1)
+        self.ind_spike_events[n].append(a + spike_range[0])
