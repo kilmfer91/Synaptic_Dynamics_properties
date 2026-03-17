@@ -3,12 +3,15 @@ from gain_control.utils_gc import *
 # ******************************************************************************************************************
 # Depression using the MSSM
 model = 'MSSM'
+n_model = 'LIF'
+
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) slow-decay frequency response
-ind = 7
+ind = 4
+tau_m = 30
 
 # For gain control, 100 inputs to a single LIF neuron
-plots_net = False
+plots_net = True
 dyn_synapse = True
 gaincontrol_sinusoidal = False
 
@@ -21,11 +24,15 @@ num_syn = 200
 val_params, description, name_params = get_params_stp(model, ind)
 
 out_ylim_min, out_ylim_max, description_2 = -70, -50, ""
-if ind == 4: out_ylim_min, out_ylim_max, description_2 = -67, -57, r'Fast-decay synapse with $freq_{st}$ of efficacy=260Hz'
-if ind == 5: out_ylim_min, out_ylim_max, description_2 = -70, -50, r'Slow-decay synapse with $freq_{st}$ of efficacy=560Hz'
+# if ind == 4: out_ylim_min, out_ylim_max, description_2 = -67, -57, r'Fast-decay synapse with $freq_{st}$ of efficacy=260Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
+# if ind == 5: out_ylim_min, out_ylim_max, description_2 = -70, -50, r'Slow-decay synapse with $freq_{st}$ of efficacy=560Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
+if ind == 4: out_ylim_min, out_ylim_max, description_2 = -70, -35, r'Fast-decay synapse with $freq_{st}$ of efficacy=260Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
+if ind == 5: out_ylim_min, out_ylim_max, description_2 = -70, -35, r'Slow-decay synapse with $freq_{st}$ of efficacy=560Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
+if ind == 7: out_ylim_min, out_ylim_max, description_2 = -60, 400, r'Facilitation ($\tau_m$ ' + str (tau_m) + 'ms)'
+if ind == 8: out_ylim_min, out_ylim_max, description_2 = -70, -20, r'Diff. signaling synapse from Tsodyks, et al. ($\tau_m$ ' + str (tau_m) + 'ms)'
 
 # time conditions
-max_t, min_imp, max_imp, sfreq = 0.8, 0.0, 0.8, 5e3  # 15, 0.0, 10, 5e3
+max_t, min_imp, max_imp, sfreq = 15, 0.0, 10, 5e3
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)
 L = time_vector.shape[0]
@@ -46,13 +53,13 @@ s_dep = Simple_Depression(n_syn=num_syn)
 s_dep.set_simulation_params(sim_params)
 
 # Frequency ranges for Frequency response of efficacy
-range_f = [10, 20, 30, 40, 50, 60, 70, 80]  # [i for i in range(10, 801, 10)]
+range_f = [10, 20, 30, 40, 50, 60, 70, 80, 100, 200, 300, 400, 500]  # [i for i in range(10, 801, 10)]
 loop_frequencies = np.array(range_f)
 
 # ******************************************************************************************************************
 # LIF MODEL
 lif = LIF_model(n_neu=1)  # (n_neu=100)
-lif_params = get_neuron_params(tau_m=10, y_lim_ind_plot=True, num_syn=1)
+lif_params = get_neuron_params(n_model=n_model, tau_m=tau_m, ind=ind, y_lim_ind_plot=True, num_syn=1)
 
 lif.set_model_params(lif_params)
 lif.set_simulation_params(sim_params)
@@ -61,9 +68,9 @@ lif.set_simulation_params(sim_params)
 mean_rates, max_oscils, fix_rates = [], [], []
 
 if gaincontrol_sinusoidal:
-    mean_rates = [[50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]
-    max_oscils = [[25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]
-    fix_rates = [[10,  50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]
+    mean_rates = [[10, 10, 10], [20, 10, 20], [50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]
+    max_oscils = [[5, 5,  5],  [10, 5,  5],   [25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]
+    fix_rates = [[10, 10, 10], [10, 20, 10],  [10, 50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]
 
 # Results variable
 res_per_reali = np.zeros((10, 3, len(mean_rates)))  # statistical descriptors, num. scenarios, num. ref rate
@@ -76,7 +83,10 @@ seeds = []
 if plots_net:
     # Plotting
     fig_size = (10, 5)
-    if ind == 4 or ind == 2 or ind == 5: fig_size = (12, 1.6)
+    if ind in [2, 4, 5, 7, 8]:
+        fig_size = (12, 2)  # 1.6)
+        if len(mean_rates) > 6:
+            fig_size = (12, 3.5)
     fig_esann = plt.figure(figsize=fig_size)
     fig_esann.suptitle(description_2, fontsize=18)
 
@@ -139,15 +149,21 @@ while ind_exp < len(mean_rates):  # len(mean_rates): # for ind_exp in range(len(
             plot_gc_sin_three_scenarios(fig3, i, time_vector, mean_rate, max_oscil, lif, coff, sfreq,
                                         modulation_signal1, modulation_signal2,
                                         modulated_signal1, modulated_signal2)
-
+            fig3.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
             if mean_rate[0] == 100 and i == 0:
                 plot_gc_sin_input_example(time_vector, dt, ind_exp, modulation_signal1, modulation_signal2,
                                           modulated_signal1[0, :], modulated_signal2[0, :])
 
     if plots_net:
+        # plot_gc_sin_mp_high_rates_esann(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann,
+        #                                 out_ylim_min, out_ylim_max, output_mp_low_filt_esann)
+        path_save = r'../gain_control/plots/gain_control_sin_' + model + '_ind_' + str(ind) + '_high_rate_v(t)_taum_' + str(tau_m) + 'ms.png'
         plot_gc_sin_mp_high_rates(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann, out_ylim_min,
-                                  out_ylim_max, output_mp_low_filt_esann)
-        fig3.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+                                  out_ylim_max, output_mp_low_filt_esann, num_graphs=len(mean_rates),
+                                  pathsave=path_save, savefig=False)
+        fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+        fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+        fig_esann.savefig(path_save, format='png')
 
     time_desc = (f'[%dsin(0.2pit) + %d, %d], [%d, %dsin(0.2pit) + %d], [%dsin(0.2pit) + %d, %d]' %
                  (max_oscil[0], mean_rate[0], fix_rate[0], fix_rate[1], max_oscil[1], mean_rate[1],
@@ -187,7 +203,7 @@ if freq_analysis:
         ax.grid()
         ax.set_title("Frequency response of efficacy")
         ax.set_xlim(0, loop_frequencies[-1] + 20)
-        ax.set_ylim([-0.001, 0.075])
+        ax.set_ylim([-0.001, 0.085])
         # x.legend()
         # fig.savefig("../gain_control/plots/MSSM_fac_freq_res_" + str(loop_frequencies[i]) + "_2.png", format='png')
     # """

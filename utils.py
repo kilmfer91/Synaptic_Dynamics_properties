@@ -41,10 +41,9 @@ selected_params_lap = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
 """Doorn Model"""
 # From the paper "Breaking the burst: Unveiling mechanisms behind fragmented network bursts in patient-derived neurons" Doorn
-params_name_doorn = ['g_ampa', 'g_nmda', 'E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay',
-                     'alpha_nmda', 'tau_d', 'U', 'S']
-ext_par_doorn = [0.4, 0.4, 0.0e-3, 0.0e-3, 2.05042e-3, 2e-3, 100e-3, 0.05, 200e-3, 0.2, 0.4]
-selected_params_lap = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+params_name_doorn = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U', 'S']
+ext_par_doorn = [0.0e-3, 0.0e-3, 2.05042e-3, 2e-3, 100e-3, 0.05, 200e-3, 0.2, 0.4]
+selected_params_lap = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
 # labels for uploading examples of facilitation and depression
 prefix_v = ['depression', 'facilitation']

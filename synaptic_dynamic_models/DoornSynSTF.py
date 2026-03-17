@@ -8,6 +8,7 @@ import numpy as np
 
 class DoornSTF_model(SynDynModel):
     """
+    # BE AWARE THAT I AM MULTIPLYING alpha_nmda BY 1e-1 TO MATCH BRIAN SIMULATIONS
     AMPA/NMDA synaptic dynamics with short-term depression (STD) + facilitation (STF)
     matching the Brian2 STF case.
     Units: t [s], conductances unitless (0–1) mapped later to currents via neuron.
@@ -65,7 +66,8 @@ class DoornSTF_model(SynDynModel):
         self.set_simulation_params()
 
     def set_model_params(self, model_params):
-        """Set synaptic parameters from dictionary."""
+        """Set synaptic parameters from dictionary.
+        # BE AWARE THAT I AM MULTIPLYING alpha_nmda BY 1e-1 TO MATCH BRIAN SIMULATIONS"""
         assert isinstance(model_params, dict), 'params should be a dict'
         for key, value in model_params.items():
             if key in self.params.keys():
@@ -73,7 +75,7 @@ class DoornSTF_model(SynDynModel):
         # CHECK IF ALL PARAMETERS ARE HERE
         self.tau_d, self.tau_f, self.tau_ampa = self.params['tau_d'], self.params['tau_f'], self.params['tau_ampa']
         self.tau_nmda_rise, self.tau_nmda_decay = self.params['tau_nmda_rise'], self.params['tau_nmda_decay']
-        self.alpha_nmda, self.U, self.S = self.params['alpha_nmda'], self.params['U'], self.params['S']
+        self.alpha_nmda, self.U, self.S = self.params['alpha_nmda'] * 1e-1, self.params['U'], self.params['S']
 
     def set_initial_conditions(self, Input=None):
         """Initialize all state variables to steady-state."""

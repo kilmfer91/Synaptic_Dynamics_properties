@@ -3,6 +3,13 @@ from libraries.proportional_constant_rate_change import GC_prop_cons
 
 # ******************************************************************************************************************
 # Global variables
+# DoornSTD + HH
+# (Experiment 1) DoornSTD control
+# (Experiment 2 and 3) DoornSTD strong STD (a and b)
+# (Experiment 4 and 5) DoornSTD + Asynchronous release (low and high)
+# (Experiment 6) DoornSTD + strong NMDA current
+# (Experiment 7) DoornSTF
+# LIF + MSSM/TM
 # (Experiment 2) freq. response decay around 100Hz (depression)
 # (Experiment 3) freq. response decay around 10Hz (depression)
 # (Experiment 4) freq. response from Gain Control paper (depression)
@@ -12,8 +19,8 @@ from libraries.proportional_constant_rate_change import GC_prop_cons
 
 s_model = 'DoornSTD'
 n_model = "HH"
-ind = 1
-save_vars = True
+ind = 6
+save_vars = False
 force_experiment = False
 stoch_input = True
 
@@ -23,30 +30,37 @@ save_figs = False
 imputations = True
 lif_output = True
 dyn_synapse = True
-n_noise = False  # Neuron noise
+n_noise = True  # Neuron noise
+
+# tr_st_time variables
+# # th_percentage=1e-3 for not filtering (Doorn 1, 2, 3, 6, 7)
+filtering_tr = False
+cutoff_filt = 5
+threshold_per = 1e-3
 
 tau_m_lif = 1  # ms
-total_realizations = 104  # 100
-num_realizations = 8
-gain_v = [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+total_realizations = 2  # 100  # 104
+num_realizations = 2  # 8
+gain_v = [0.55]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+max_freq = 601
 folder_vars = "../gain_control/variables/"
 folder_plots = '../gain_control/plots/'
-# ******************************************************************************************************************
+# **********************************************************************************************************************
 # Time conditions
-sfreq = 1e4
+sfreq = 10e3
 max_t = 6
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)
 L = time_vector.shape[0]
 sim_params = {'sfreq': sfreq, 'max_t': max_t, 'L': L, 'time_vector': time_vector}
 
-# ******************************************************************************************************************
+# **********************************************************************************************************************
 # STP model
 num_syn = 1
 syn_params, description, name_params = get_params_stp(s_model, ind)
 
 # Neuron model
-neuron_params = get_neuron_params(n_model=n_model, tau_m=tau_m_lif, y_lim_ind_plot=True, num_syn=num_syn)
+neuron_params = get_neuron_params(n_model=n_model, tau_m=tau_m_lif, ind=ind, y_lim_ind_plot=True, num_syn=num_syn)
 
 dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_params': syn_params, 'num_syn': num_syn,
                'neuron_model': n_model, 'neuron_params': neuron_params, 'sim_params': sim_params, 'gain_vector': gain_v,
@@ -56,28 +70,65 @@ dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_
                'num_realizations': num_realizations, 'total_realizations': total_realizations, 'neuron_noise': n_noise}
 
 # Instance of Gain-Control class
-initial_frequencies = np.array([10]) if force_experiment else None  # [10, 50, 600]
+initial_frequencies = np.array([10, 100, 600]) if force_experiment else None  # [10, 50, 600]
 gc_prop_cons = GC_prop_cons(dict_params)
-_ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=601)
+_ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=max_freq)
 
 # Running Gain-Control process for different gains
 file_name = ""
 dr = {}
 for gain in gain_v:
-    file_name = gc_prop_cons.get_folder_file_name(s_model, n_model, gain, ind)
+    # if not gc_prop_cons.stoch_input:
+    print("Loading/computing deterministic experiments")
+    file_name = gc_prop_cons.get_folder_file_name(s_model, n_model, gain, ind, tau_n=tau_m_lif)
     file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
     gc_prop_cons.models_creation()
-    dr = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded or force_experiment),
-                          plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'])
+    dr = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded),
+                          plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
+                          th_percentage=threshold_per, filtering=filtering_tr, cutoff=cutoff_filt)  # th_percentage=1e-3 for not filtering (Doorn 1, 2, 3, 6, 7)
+    """
+    else:
+        print("Loading/computing stochastic experiments. First deterministic experiment")
+        # First load or compute deterministic response
+        # Forcing flags
+        gc_prop_cons.stoch_input = False
+        old_save_vars = save_vars
+        gc_prop_cons.save_vars = True
 
+        # running gain_control
+        aux_max_freq = int(np.min([max_freq * gain + max_freq + 50, (sfreq / 6) - 10]))
+        _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=aux_max_freq)
+        file_name = gc_prop_cons.get_folder_file_name(s_model, n_model, gain, ind, tau_n=tau_m_lif)
+        file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
+        gc_prop_cons.models_creation()
+        dr_det = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded or force_experiment),
+                                  plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
+                                  th_percentage=1e-5)
+        # Default setting of flags
+        gc_prop_cons.stoch_input = True
+        gc_prop_cons.save_vars = old_save_vars
+        _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=max_freq)
+        print("Loading/computing stochastic experiments. Second stochastic experiment")
+
+        # Now compute the stochastic response
+        st_k = ['st_ini_prop_q5', 'st_ini_prop_q10', 'st_ini_prop_q90', 'st_ini_prop_q95',
+                'st_ini_prop_min', 'st_ini_prop_max', 'st_ini_prop_mean', 'st_ini_prop_med']
+        st_prior = np.array([dr_det['initial_frequencies']] + [dr_det[k][0, :] for k in st_k])
+        file_name = gc_prop_cons.get_folder_file_name(s_model, n_model, gain, ind, tau_n=tau_m_lif)
+        file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
+        gc_prop_cons.models_creation()
+        dr = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded or force_experiment),
+                              plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
+                              th_percentage=1e-5, st_prior=st_prior)
+    # """
 # **********************************************************************************************************************
 # FOR TRANSITION CALCULATIONS
 lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop']
 st_lbl = ['_mean', '_med', '_max', '_min', '_q10', '_q90', '_q5', '_q95']
 cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:olive', 'tab:olive']
 
-res = dr['stat_tSeries_transition']
-st_tr_a = dr['stat_time_transition']
+# res = dr['stat_tSeries_transition']
+# st_tr_a = dr['stat_time_transition']
 
 """
 fig = plt.figure(figsize=[14, 5])
@@ -109,7 +160,7 @@ plt.suptitle("Transition-states statistics for rate " + str(gc_prop_cons.f_vecto
 # **********************************************************************************************************************
 # PLOTS
 # PLOT OF CHARACTERISTICS FOR INI, MID, AND END WINDOWS. SPLITTED BY PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
-# """
+"""
 initial_frequencies = dr['initial_frequencies']
 # Steady-state
 lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_fix', 'st_mid_fix', 'st_end_fix']
@@ -139,7 +190,7 @@ plot_features_2windows_prop_fix(initial_frequencies, dr, lbl, lbl2, st_lbl, cols
 
 # SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
 # AND THE DIFFERENCES BETWEEN MAX OF MID WINDOW AND MEDIAN OF INI WINDOW
-# """
+"""
 # lbl = ['st_mid_prop', 'st_mid_fix']
 # lbl2 = ['st_ini_prop', 'st_ini_fix']
 lbl = ['st_mid_prop']

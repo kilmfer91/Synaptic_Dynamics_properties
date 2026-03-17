@@ -269,7 +269,7 @@ class Freq_analysis:
             aux_time_max = phasic_ind_max * self.dt
             aux_time_max_tonic = tonic_ind_max * self.dt
 
-            """
+            # """
             fig = plt.figure()
             ax = fig.add_subplot(111)
             ax.plot([0.1, 0.8], [phasic_st[0], phasic_st[0]], c='tab:red', alpha=0.5)
@@ -278,9 +278,10 @@ class Freq_analysis:
             ax.set_ylabel(r"$E_{psp}$(t)")
             ax.grid(True)
             ax.set_title("Rate at " + str(r) + "Hz")
-            # ax.set_ylim([-0.005, 0.075])
+            ax.set_ylim([-0.005, 0.085])
             # x.legend()
             fig.savefig("../gain_control/plots/MSSM_fac_freq_res_" + str(r) + ".png", format='png')
+            plt.close(fig)
             # """
 
             # Update times of maximum and stedy-state

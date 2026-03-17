@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class HH_AHP_model:
@@ -46,6 +47,7 @@ class HH_AHP_model:
         self.output_spike_events_tonic = None
         self.ind_spike_events = None
         self.ind_spike_events_tonic = None
+        self.time_spikes_generated = None
 
         # State variables (all shape: [n_neurons, L])
         self.membrane_potential = None  # V [mV]
@@ -176,6 +178,7 @@ class HH_AHP_model:
         self.ind_spike_events = [[] for _ in range(self.n_neurons)]
         self.ind_spike_events_tonic = [[] for _ in range(self.n_neurons)]
         self.time_spike_events = [[] for _ in range(self.n_neurons)]
+        self.time_spikes_generated = [[] for _ in range(self.n_neurons)]
 
     def initialize_state_variables(self):
         # Initialize state variables
@@ -281,15 +284,16 @@ class HH_AHP_model:
             m = self.m_gate[:, it - 1]
             h = self.h_gate[:, it - 1]
             n = self.n_gate[:, it - 1]
-            # hp = self.hp_gate[:, it - 1]  # I doubt this is used!
             Ca = self.Ca[:, it - 1]  # This Ca is gAHP in the paper "Breaking the burst"
 
+        """
         # Refractory period: clamp V to reset and decrement counter
         cond_counter = np.where(self.t_r_counter > 0)[0]
         if len(cond_counter) > 0:
-            self.membrane_potential[cond_counter, it] = self.V_reset[cond_counter]
-            V[cond_counter] = self.V_reset[cond_counter]
+            # self.membrane_potential[cond_counter, it] = self.V_reset[cond_counter]
+            # V[cond_counter] = self.V_reset[cond_counter]
             self.t_r_counter[cond_counter] -= 1
+        #  """
 
         # Threshold crossing (only for non-refractory neurons)
         cond_n = np.where(self.t_r_counter == 0)[0]
@@ -298,10 +302,50 @@ class HH_AHP_model:
         else:
             cond_threshold = np.array([])
 
+        """
+        cond_Ca = []
         if len(cond_threshold) > 0:
+            # Ca[cond_threshold] += self.alpha_Ca[cond_threshold]  # This Ca is gAHP in the paper "Breaking the burst"
             # Spike occurred: increment Ca, reset refractory counter
-            Ca[cond_threshold] += self.alpha_Ca[cond_threshold]  # This Ca is gAHP in the paper "Breaking the burst"
             self.t_r_counter[cond_threshold] = self.t_refractory[cond_threshold] / self.dt
+            # which neurons should increase Ca
+            cond_Ca = np.where(self.t_r_counter == (self.t_refractory[cond_threshold] / self.dt))[0]
+
+        # Refractory period: decrement counter
+        cond_counter = np.where(self.t_r_counter > 0)[0]  # which neurons are in refractory period
+        if len(cond_counter) > 0:
+            # Spike occurred: increment Ca, reset refractory counter
+            Ca[cond_Ca] += self.alpha_Ca[cond_Ca]  # This Ca is gAHP in the paper "Breaking the burst"
+            self.t_r_counter[cond_counter] -= 1
+        # """
+
+        cond_Ca = []
+        # This loop is execute only once when a spike is fired from a neuron
+        if len(cond_threshold) > 0:
+            # Ca[cond_threshold] += self.alpha_Ca[cond_threshold]  # This Ca is gAHP in the paper "Breaking the burst"
+            # Updating array time-of-spikes-generated
+            for neuron in cond_threshold:
+                self.time_spikes_generated[neuron].append(it)
+                # for x1 in range(self.n_neurons): plt.plot(self.membrane_potential[x1, :] + x1 * 1e-1)
+
+            # Spike occurred: increment Ca, reset refractory counter
+            # self.t_r_counter[cond_threshold] = 2
+            self.t_r_counter[cond_threshold] = self.t_refractory[0] / self.dt  # self.t_refractory[cond_threshold]/dt
+            # which neurons should increase Ca
+            cond_Ca = np.where(self.t_r_counter == (self.t_refractory[0] / self.dt))[0]  # t_refractory[cond_thresho]/dt
+            # cond_Ca = np.where(self.t_r_counter == 2)[0]
+
+        # Refractory period: decrement counter
+        cond_counter = np.where(self.t_r_counter > 0)[0]  # which neurons are in refractory period
+        if len(cond_counter) > 0:
+            # Spike occurred: increment Ca, reset refractory counter
+            Ca[cond_Ca] += self.alpha_Ca[cond_Ca]  # This Ca is gAHP in the paper "Breaking the burst"
+            self.t_r_counter[cond_counter] -= 1
+            # Don't allow neurons that have already fired to finish the counter if V(t) is still greater than threshold
+            cond_lower_than_thr = np.where(V[cond_counter] >= self.V_threshold[cond_counter])[0]
+            if len(cond_lower_than_thr) > 0:
+                self.t_r_counter[cond_counter[cond_lower_than_thr]] = 1
+            # Appending spike
 
         # Gating variable rates
         const = 1e3
@@ -317,14 +361,11 @@ class HH_AHP_model:
         self.bet_h[:, it] = beta_h
         self.alp_n[:, it] = alpha_n
         self.bet_n[:, it] = beta_n
-        # alpha_hp = 0.128 * np.exp((17.0 - V + (self.VT * 1e3)) / 18.0)  # I doubt this is used!
-        # beta_hp = 4.0 / (1.0 + np.exp((30.0 - V + (self.VT * 1e3)) / 5.0))  # I doubt this is used!
 
         # Euler integration (all in consistent units)
         dm = (alpha_m * (1.0 - m) - beta_m * m) * self.dt
         dh = (alpha_h * (1.0 - h) - beta_h * h) * self.dt
         dn = (alpha_n * (1.0 - n) - beta_n * n) * self.dt
-        # dhp = (alpha_hp * (1.0 - hp) - beta_hp * hp) * self.dt  # I doubt this is used!
         dCa = -Ca / self.tau_Ca * self.dt  # This Ca is gAHP in the paper "Breaking the burst"
 
         # Membrane equation: C_m dV/dt = I_ext - I_ampa - I_nmda - I_Na - I_K - I_L + I_AHP + noise
@@ -353,7 +394,6 @@ class HH_AHP_model:
             noise_scale = self.sigma * np.sqrt(2.0 * self.g_l / self.Cm)
             noise = noise_scale * np.random.randn(self.n_neurons) / np.sqrt(self.dt)
 
-        # dV = (I_ext + I_ampa + I_nmda - I_Na - I_K - I_L + I_AHP + noise) / self.Cm * self.dt  # *********
         dV = (noise + (I_ext - I_ampa - I_nmda - I_Na - I_K - I_L + I_AHP) / self.Cm) * self.dt
 
         # Store updated states
@@ -361,7 +401,6 @@ class HH_AHP_model:
         self.m_gate[:, it] = m + dm
         self.h_gate[:, it] = h + dh
         self.n_gate[:, it] = n + dn
-        # self.hp_gate[:, it] = hp + dhp  # I doubt this is used!
         self.Ca[:, it] = Ca + dCa
 
     def detect_spike_event(self, t, Input, output):
@@ -387,9 +426,14 @@ class HH_AHP_model:
     def append_spike_event(self, t, activated_neurons, output, append_time=True):
         """Store spike events for analysis (override parent)."""
         neurons_with_input_event = np.array(range(self.n_neurons))[activated_neurons]
+
         for n in neurons_with_input_event:
             if append_time: self.membrane_potential_events[n].append(self.membrane_potential[n, t])
-            if append_time: self.time_spike_events[n].append(t)
+            if append_time:
+                if t not in self.time_spike_events[n]:
+                    self.time_spike_events[n].append(t)
+                else:
+                    break
 
             if len(self.time_spike_events[n]) > 1:
                 spike_range = (self.time_spike_events[n][-2], self.time_spike_events[n][-1])

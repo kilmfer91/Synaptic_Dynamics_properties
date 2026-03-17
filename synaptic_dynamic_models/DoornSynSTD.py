@@ -4,6 +4,7 @@ import numpy as np
 
 class DoornSTD_model(SynDynModel):
     """
+    # BE AWARE THAT I AM MULTIPLYING alpha_nmda BY 1e-1 TO MATCH BRIAN SIMULATIONS
     AMPA/NMDA synaptic dynamics with short-term depression (STD) from Doorn et al. 2024.
     Units: t [s], g [nS], I [pA]
     Implements Brian2 synapse model without STF/Asynchronous release (base case).
@@ -35,8 +36,8 @@ class DoornSTD_model(SynDynModel):
         self.d_x_d = None
 
         # Auxiliar variables
-        self.g_ampa, self.E_ampa, self.tau_ampa = None, None, None
-        self.g_nmda, self.E_nmda, self.tau_nmda_rise = None, None, None
+        self.E_ampa, self.tau_ampa = None, None
+        self.E_nmda, self.tau_nmda_rise = None, None
         self.tau_nmda_decay, self.alpha_nmda = None, None
         self.tau_d, self.U, self.S = None, None, None
 
@@ -45,7 +46,7 @@ class DoornSTD_model(SynDynModel):
             'tau_ampa': 0.00205042,  # 0.002,  # s (2 ms)
             'tau_nmda_rise': 0.002,  # s (2 ms)
             'tau_nmda_decay': 0.100,  # s (100 ms)
-            'alpha_nmda': 0.05,  # Hz (0.5 kHz)
+            'alpha_nmda': 0.5,  # Hz (0.5 kHz) # BE AWARE THAT I AM MULTIPLYING THIS TERM BY 1e-1 TO MATCH BRIAN SIM.
             'tau_d': 0.200,  # s (200 ms) - STD recovery
             'U': 0.2,  # unitless - STD release probability
             'S': 0.4  # unitless - overall strength
@@ -56,14 +57,15 @@ class DoornSTD_model(SynDynModel):
         self.set_simulation_params()
 
     def set_model_params(self, model_params):
-        """Set synaptic parameters from dictionary."""
+        """Set synaptic parameters from dictionary.
+        # BE AWARE THAT I AM MULTIPLYING alpha_nmda BY 1e-1 TO MATCH BRIAN SIMULATIONS"""
         assert isinstance(model_params, dict), 'params should be a dict'
         for key, value in model_params.items():
             if key in self.params.keys():
                 self.params[key] = value
 
         self.tau_ampa, self.S = self.params['tau_ampa'], self.params['S']
-        self.tau_nmda_decay, self.alpha_nmda = self.params['tau_nmda_decay'], self.params['alpha_nmda']
+        self.tau_nmda_decay, self.alpha_nmda = self.params['tau_nmda_decay'], self.params['alpha_nmda'] * 1e-1
         self.tau_d, self.U, self.tau_nmda_rise = self.params['tau_d'], self.params['U'], self.params['tau_nmda_rise']
 
     def set_initial_conditions(self, Input=None):
