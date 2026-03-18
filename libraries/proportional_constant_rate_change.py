@@ -94,9 +94,9 @@ class GC_prop_cons:
             if max_freq > aux_max_freq:
                 max_freq = aux_max_freq
         # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 951
-        range_f = [10] # [i for i in range(10, 100, 5)]
-        range_f2 = [100] # [i for i in range(100, 500, 10)] if 500 < max_freq else [i for i in range(100, max_freq, 10)]
-        range_f3 = [600] # [i for i in range(500, max_freq, 50)] if 500 < max_freq else []
+        range_f = [i for i in range(10, 100, 5)]
+        range_f2 = [i for i in range(100, 500, 10)] if 500 < max_freq else [i for i in range(100, max_freq, 10)]
+        range_f3 = [i for i in range(500, max_freq, 50)] if 500 < max_freq else []
 
         self.f_vector = np.array(range_f + range_f2 + range_f3) if f_vec is None else f_vec
 
@@ -493,7 +493,7 @@ class GC_prop_cons:
             dr['time_transition_syn'] = t_tra_syn
             if self.stp_prop.get_output().ndim == 3: dr['time_transition_syn_b'] = t_tra_syn_b
             # ##########################################################################################################
-            # """
+            """
             # Getting information theory analysis
             dr['PSR_events'] = PSR_per_freq
             dr['spike_events'] = spike_event_per_freq
