@@ -246,12 +246,13 @@ class GC_prop_cons:
         num_loop_realizations = int(total_realizations / num_realizations)
 
         # Auxiliar variables for statistics
-        res_per_reali = np.zeros((51, num_freq_exp, num_realizations))
-        res_per_reali_syn = np.zeros((51, num_freq_exp, num_realizations))
-        res_per_reali_syn_b = np.zeros((51, num_freq_exp, num_realizations))
-        res_real = np.zeros((51, total_realizations, num_freq_exp))
-        res_real_syn = np.zeros((51, total_realizations, num_freq_exp))
-        res_real_syn_b = np.zeros((51, total_realizations, num_freq_exp))
+        shape_stat = 54
+        res_per_reali = np.zeros((shape_stat, num_freq_exp, num_realizations))
+        res_per_reali_syn = np.zeros((shape_stat, num_freq_exp, num_realizations))
+        res_per_reali_syn_b = np.zeros((shape_stat, num_freq_exp, num_realizations))
+        res_real = np.zeros((shape_stat, total_realizations, num_freq_exp))
+        res_real_syn = np.zeros((shape_stat, total_realizations, num_freq_exp))
+        res_real_syn_b = np.zeros((shape_stat, total_realizations, num_freq_exp))
 
         # Auxiliar variables for Information theory
         PSR_per_freq = [[] for _ in range(num_freq_exp)]
