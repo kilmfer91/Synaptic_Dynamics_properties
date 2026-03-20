@@ -494,15 +494,19 @@ class GC_prop_cons:
             dr['time_transition_syn'] = t_tra_syn
             if self.stp_prop.get_output().ndim == 3: dr['time_transition_syn_b'] = t_tra_syn_b
             # ##########################################################################################################
-            """
+            # """
             # Getting information theory analysis
-            dr['PSR_events'] = PSR_per_freq
-            dr['spike_events'] = spike_event_per_freq
+            # dr['PSR_events'] = PSR_per_freq
+            # dr['spike_events'] = spike_event_per_freq
 
             # Iterating through general realizations
             aux = [[] for _ in range(num_freq_exp)]
             PSR_per_freq_iniw, PSR_per_freq_midw, PSR_per_freq_endw = aux.copy(), aux.copy(), aux.copy()
             ISI_per_freq_iniw, ISI_per_freq_midw, ISI_per_freq_endw = aux.copy(), aux.copy(), aux.copy()
+            PSR_per_freq_iw_tr, PSR_per_freq_mw_tr, PSR_per_freq_ew_tr = aux.copy(), aux.copy(), aux.copy()
+            ISI_per_freq_iw_tr, ISI_per_freq_mw_tr, ISI_per_freq_ew_tr = aux.copy(), aux.copy(), aux.copy()
+            PSR_per_freq_iw_st, PSR_per_freq_mw_st, PSR_per_freq_ew_st = aux.copy(), aux.copy(), aux.copy()
+            ISI_per_freq_iw_st, ISI_per_freq_mw_st, ISI_per_freq_ew_st = aux.copy(), aux.copy(), aux.copy()
 
             realization = 0
             for realization in range(num_loop_realizations):
@@ -513,30 +517,99 @@ class GC_prop_cons:
                     # Iterating through specific realizations
                     for neuron_realization in range(num_realizations):
                         ta = np.array(spike_event_per_freq[i][realization][neuron_realization]) / sfreq
+                        PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
+                        # Getting time of reaching steady-state for ini and end windows
+                        tr_st_time = dr['time_transition'][num_realizations * realization + neuron_realization, i]
+                        # Getting time of reaching steady-state for mid window
+                        tr_st_time_mw = tr_st_time  # In case there is no tr_st_time for rate of mid window
+                        aux_cond = np.where(proportional_changes[i] <= f_vector)
+                        if len(aux_cond[0]) > 0:
+                            aux_i = aux_cond[0][0]
+                            tr_st_time_mw = dr['time_transition'][num_realizations * realization + neuron_realization, aux_i]
+                        # Getting masks to separate transitory and stationary states for ini, mid and end windows
+                        mask_iw_tr = (ta >= 0) & (ta < tr_st_time)
+                        mask_iw_st = (ta >= tr_st_time) & (ta < 2)
+                        mask_mw_tr = (ta >= 2) & (ta < 2 + tr_st_time_mw)
+                        mask_mw_st = (ta >= 2 + tr_st_time_mw) & (ta < 4)
+                        mask_ew_tr = (ta >= 4) & (ta < 4 + tr_st_time)
+                        mask_ew_st = (ta >= 4 + tr_st_time)
+                        
+                        # Getting masks to separate ini, mid and end windows
                         mask_iniw = ta < 2
                         mask_endw = ta >= 4
                         mask_midw = np.logical_not(np.logical_xor(mask_iniw, mask_endw))
-                        PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
+                        # Separating ini, mid and end windows of PSR
                         PSR_iniw = PSR_aux[mask_iniw]
                         PSR_midw = PSR_aux[mask_midw]
                         PSR_endw = PSR_aux[mask_endw]
+                        # Separating ini, mid and end windows of spike events
                         spike_events_iniw = np.append(ta[mask_iniw], 2.0)
                         spike_events_midw = np.append(ta[mask_midw], 4.0)
                         spike_events_endw = np.append(ta[mask_endw], 6.0)
+                        # Separating ini, mid and end windows of ISI
                         ISI_iniw = np.diff(spike_events_iniw)
                         ISI_midw = np.diff(spike_events_midw)
                         ISI_endw = np.diff(spike_events_endw)
-
-                        PSR_per_freq_iniw[i] = PSR_per_freq_iniw[i] + list(PSR_iniw)
-                        PSR_per_freq_midw[i] = PSR_per_freq_midw[i] + list(PSR_midw)
-                        PSR_per_freq_endw[i] = PSR_per_freq_endw[i] + list(PSR_endw)
-                        ISI_per_freq_iniw[i] = ISI_per_freq_iniw[i] + list(ISI_iniw)
-                        ISI_per_freq_midw[i] = ISI_per_freq_midw[i] + list(ISI_midw)
-                        ISI_per_freq_endw[i] = ISI_per_freq_endw[i] + list(ISI_endw)
+                        
+                        # Separating ini, mid and end windows of PSR
+                        PSR_iw_tr = PSR_aux[mask_iw_tr]
+                        PSR_iw_st = PSR_aux[mask_iw_st]
+                        PSR_mw_tr = PSR_aux[mask_mw_tr]
+                        PSR_mw_st = PSR_aux[mask_mw_st]
+                        PSR_ew_tr = PSR_aux[mask_ew_tr]
+                        PSR_ew_st = PSR_aux[mask_ew_st]
+                        # Separating ini, mid and end windows of spike events
+                        spike_ev_iw_tr = np.append(ta[mask_iw_tr], tr_st_time)
+                        spike_ev_iw_st = np.append(ta[mask_iw_st], 2.)
+                        spike_ev_mw_tr = np.append(ta[mask_mw_tr], 2. + tr_st_time_mw)
+                        spike_ev_mw_st = np.append(ta[mask_mw_st], 4.)
+                        spike_ev_ew_tr = np.append(ta[mask_ew_tr], 4. + tr_st_time)
+                        spike_ev_ew_st = np.append(ta[mask_ew_st], 6.)
+                        # Separating ini, mid and end windows of ISI
+                        ISI_iw_tr = np.diff(spike_ev_iw_tr)
+                        ISI_iw_st = np.diff(spike_ev_iw_st)
+                        ISI_mw_tr = np.diff(spike_ev_mw_tr)
+                        ISI_mw_st = np.diff(spike_ev_mw_st)
+                        ISI_ew_tr = np.diff(spike_ev_ew_tr)
+                        ISI_ew_st = np.diff(spike_ev_ew_st)
+                        
+                        PSR_per_freq_iw_tr[i] = PSR_per_freq_iw_tr[i] + list(PSR_iw_tr)
+                        PSR_per_freq_iw_st[i] = PSR_per_freq_iw_st[i] + list(PSR_iw_st)
+                        PSR_per_freq_mw_tr[i] = PSR_per_freq_mw_tr[i] + list(PSR_mw_tr)
+                        PSR_per_freq_mw_st[i] = PSR_per_freq_mw_st[i] + list(PSR_mw_st)
+                        PSR_per_freq_ew_tr[i] = PSR_per_freq_ew_tr[i] + list(PSR_ew_tr)
+                        PSR_per_freq_ew_st[i] = PSR_per_freq_ew_st[i] + list(PSR_ew_st)
+                        ISI_per_freq_iw_tr[i] = ISI_per_freq_iw_tr[i] + list(ISI_iw_tr)
+                        ISI_per_freq_iw_st[i] = ISI_per_freq_iw_st[i] + list(ISI_iw_st)
+                        ISI_per_freq_mw_tr[i] = ISI_per_freq_mw_tr[i] + list(ISI_mw_tr)
+                        ISI_per_freq_mw_st[i] = ISI_per_freq_mw_st[i] + list(ISI_mw_st)
+                        ISI_per_freq_ew_tr[i] = ISI_per_freq_ew_tr[i] + list(ISI_ew_tr)
+                        ISI_per_freq_ew_st[i] = ISI_per_freq_ew_st[i] + list(ISI_ew_st)
 
             # Getting information theory analysis
-            dr['PSR_events_wind'] = [PSR_per_freq_iniw, PSR_per_freq_midw, PSR_per_freq_endw]
-            dr['spike_events_wind'] = [ISI_per_freq_iniw, ISI_per_freq_midw, ISI_per_freq_endw]
+            H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr = [], [], []
+            H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st = [], [], []
+            H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr = [], [], []
+            H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st = [], [], []
+            for i in range(num_freq_exp):
+                H_PSR_iw_tr.append(binned_entropy(PSR_per_freq_iw_tr[i], n_bins=100))
+                H_PSR_iw_st.append(binned_entropy(PSR_per_freq_iw_st[i], n_bins=100))
+                H_PSR_mw_tr.append(binned_entropy(PSR_per_freq_mw_tr[i], n_bins=100))
+                H_PSR_mw_st.append(binned_entropy(PSR_per_freq_mw_st[i], n_bins=100))
+                H_PSR_ew_tr.append(binned_entropy(PSR_per_freq_ew_tr[i], n_bins=100))
+                H_PSR_ew_st.append(binned_entropy(PSR_per_freq_ew_st[i], n_bins=100))
+                H_ISI_iw_tr.append(binned_entropy(ISI_per_freq_iw_tr[i], n_bins=100))
+                H_ISI_iw_st.append(binned_entropy(ISI_per_freq_iw_st[i], n_bins=100))
+                H_ISI_mw_tr.append(binned_entropy(ISI_per_freq_mw_tr[i], n_bins=100))
+                H_ISI_mw_st.append(binned_entropy(ISI_per_freq_mw_st[i], n_bins=100))
+                H_ISI_ew_tr.append(binned_entropy(ISI_per_freq_ew_tr[i], n_bins=100))
+                H_ISI_ew_st.append(binned_entropy(ISI_per_freq_ew_st[i], n_bins=100))
+
+            dr['H_PSR_tr'] = np.array([H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr])
+            dr['H_PSR_st'] = np.array([H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st])
+            dr['H_ISI_tr'] = np.array([H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr])
+            dr['H_ISI_st'] = np.array([H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st])
+
             # """
             # ##########################################################################################################
 

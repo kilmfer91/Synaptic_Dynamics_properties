@@ -250,7 +250,7 @@ def get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_n, stoc
     if not stoch_inp:
         file_name = s_model + '_det' + aux_name
     else:
-        if n_noise: self.file_name += '_noise'
+        if n_noise: file_name += '_noise'
     return file_name
 
 
@@ -351,6 +351,13 @@ def update_tr_st_trackers(conds, tr_st_array, window_length, num_slid_wins, slid
         aux_array[2, mask_neurons] += 1
 
     return aux_array
+
+
+def binned_entropy(values, n_bins=20):
+    hist, edges = np.histogram(values, bins=n_bins, density=False)
+    p = hist / hist.sum()
+    p = p[p > 0]
+    return -np.sum(p * np.log2(p))
 
 
 def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=False, lif_n=None, I_ext=0,

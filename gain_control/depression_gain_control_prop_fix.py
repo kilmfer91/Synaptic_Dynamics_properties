@@ -19,8 +19,8 @@ from libraries.proportional_constant_rate_change import GC_prop_cons
 
 s_model = 'DoornSTD'
 n_model = "HH"
-ind = 6
-save_vars = False
+ind = 2
+save_vars = True
 force_experiment = False
 stoch_input = True
 
@@ -39,9 +39,9 @@ cutoff_filt = 5
 threshold_per = 1e-3
 
 tau_m_lif = 1  # ms
-total_realizations = 2  # 100  # 104
-num_realizations = 2  # 8
-gain_v = [0.55]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+total_realizations = 104  # 100  # 104
+num_realizations = 8  # 8
+gain_v = [0.1]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 max_freq = 601
 folder_vars = "../gain_control/variables/"
 folder_plots = '../gain_control/plots/'
@@ -121,6 +121,17 @@ for gain in gain_v:
                               plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
                               th_percentage=1e-5, st_prior=st_prior)
     # """
+
+"""
+dr_aux = {}
+for k in dr.keys():
+    if k not in ['PSR_events', 'PSR_events_wind', 'spike_events', 'spike_events_wind', 'PSR_events_wind']:
+        dr_aux[k] = dr[k]
+# saveObject(dr_aux, file_name, folder_vars)
+pickleFile = open(folder_vars + file_name, 'wb')
+pickle.dump(dr_aux, pickleFile)
+pickleFile.close()
+# """
 # **********************************************************************************************************************
 # FOR TRANSITION CALCULATIONS
 lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop']
