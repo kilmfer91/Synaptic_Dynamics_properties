@@ -4,7 +4,7 @@ from libraries.proportional_constant_rate_change import GC_prop_cons
 gain_v = [0.1]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 s_model = 'DoornSTD'
 n_model = "HH"
-ind = 1
+ind = 2
 
 # ******************************************************************************************************************
 # Global variables

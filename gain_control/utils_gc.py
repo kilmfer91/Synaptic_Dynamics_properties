@@ -54,7 +54,7 @@ def get_neuron_params(n_model, tau_m, ind, y_lim_ind_plot=False, num_syn=1, num_
             if tau_m == 10 and num_syn == 1: y_lim_memPot = [-70.05, -69]
             if tau_m == 30 and num_syn == 1: y_lim_memPot = [-70.05, -69.5]
 
-        n_params = {'V_threshold': np.array([1000 for _ in range(n)]), 'V_reset': np.array([-70 for _ in range(n)]),
+        n_params = {'V_threshold': np.array([-55 for _ in range(n)]), 'V_reset': np.array([-70 for _ in range(n)]),
                     'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]), 'g_L': np.array([2.7e-2 for _ in range(n)]),
                     'V_init': np.array([-70 for _ in range(n)]), 'V_equilibrium': np.array([-70 for _ in range(n)]),
                     't_refractory': np.array([0.01 for _ in range(n)]), 'y_lim_plot': y_lim_memPot}

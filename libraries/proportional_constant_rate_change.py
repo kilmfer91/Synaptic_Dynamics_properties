@@ -525,7 +525,9 @@ class GC_prop_cons:
                     # Iterating through specific realizations
                     for neuron_realization in range(num_realizations):
                         ta = np.array(spike_event_per_freq[i][realization][neuron_realization]) / sfreq
+                        # Postsynaptic contribution on the neuron
                         PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
+                        # Postsynaptic contribution on the receptor
                         PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization])
                         # Getting time of reaching steady-state for ini and end windows
                         tr_st_time = dr['time_transition'][num_realizations * realization + neuron_realization, i]
@@ -577,6 +579,13 @@ class GC_prop_cons:
                         PSR_mw_st = PSR_aux[mask_mw_st]
                         PSR_ew_tr = PSR_aux[mask_ew_tr]
                         PSR_ew_st = PSR_aux[mask_ew_st]
+                        # Not considering suptrathreshold components of neuronal PSRs
+                        PSR_iw_tr = PSR_iw_tr[np.where(PSR_iw_tr < self.neuron_prop.params['V_threshold'][0])[0]]
+                        PSR_iw_st = PSR_iw_st[np.where(PSR_iw_st < self.neuron_prop.params['V_threshold'][0])[0]]
+                        PSR_mw_tr = PSR_mw_tr[np.where(PSR_mw_tr < self.neuron_prop.params['V_threshold'][0])[0]]
+                        PSR_mw_st = PSR_mw_st[np.where(PSR_mw_st < self.neuron_prop.params['V_threshold'][0])[0]]
+                        PSR_ew_tr = PSR_ew_tr[np.where(PSR_ew_tr < self.neuron_prop.params['V_threshold'][0])[0]]
+                        PSR_ew_st = PSR_ew_st[np.where(PSR_ew_st < self.neuron_prop.params['V_threshold'][0])[0]]
                         # Updating general varibles of neuron PSR
                         PSR_per_freq_iw_tr[i] = PSR_per_freq_iw_tr[i] + list(PSR_iw_tr)
                         PSR_per_freq_iw_st[i] = PSR_per_freq_iw_st[i] + list(PSR_iw_st)
@@ -584,7 +593,7 @@ class GC_prop_cons:
                         PSR_per_freq_mw_st[i] = PSR_per_freq_mw_st[i] + list(PSR_mw_st)
                         PSR_per_freq_ew_tr[i] = PSR_per_freq_ew_tr[i] + list(PSR_ew_tr)
                         PSR_per_freq_ew_st[i] = PSR_per_freq_ew_st[i] + list(PSR_ew_st)
-                        
+
                         # Separating ini, mid and end windows of synapse PSR
                         PSR_syn_iw_tr = PSR_aux_syn[mask_iw_tr]
                         PSR_syn_iw_st = PSR_aux_syn[mask_iw_st]
