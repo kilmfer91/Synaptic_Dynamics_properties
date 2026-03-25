@@ -222,9 +222,9 @@ class DoornSTD_model(SynDynModel):
                                                    "the length of param 'output'")
         if spike_range[1] == spike_range[0]:
             # phasic component of spiking responses
-            self.output_spike_events[s].append(output[:, s, spike_range[0]])
+            self.output_spike_events[s].append(list(output[:, s, spike_range[0]]))
             # tonic component of spiking responses
-            self.output_spike_events_tonic[s].appen(output[:, s, 0])
+            self.output_spike_events_tonic[s].appen(list(output[:, s, 0]))
 
             # Updating index of phasic and tonic spike event occurences
             self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
@@ -232,15 +232,15 @@ class DoornSTD_model(SynDynModel):
 
         else:
             # Tonic component of the spiking response
-            self.output_spike_events_tonic[s].append(output[:, s,  spike_range[0] - 1])
+            self.output_spike_events_tonic[s].append(list(output[:, s,  spike_range[0] - 1]))
 
             # EPSP
             if np.sum(output) > 0:
-                self.output_spike_events[s].append(np.max(output[:, s, spike_range[0]: spike_range[1]], axis=1))
+                self.output_spike_events[s].append(list(np.max(output[:, s, spike_range[0]: spike_range[1]], axis=1)))
                 a = np.argmax(output[:, s, spike_range[0]: spike_range[1]], axis=1)
             # EPSC
             else:
-                self.output_spike_events[s].append(np.min(output[:, s, spike_range[0]: spike_range[1]], axis=1))
+                self.output_spike_events[s].append(list(np.min(output[:, s, spike_range[0]: spike_range[1]], axis=1)))
                 a = np.argmin(output[:, s, spike_range[0]: spike_range[1]], axis=1)
 
             # Updating index of phasic and tonic spike event occurences
