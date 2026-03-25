@@ -180,6 +180,9 @@ class HH_AHP_model:
         self.time_spike_events = [[] for _ in range(self.n_neurons)]
         self.time_spikes_generated = [[] for _ in range(self.n_neurons)]
 
+    def max_syn_cont(self):
+        return [self.params['g_ampa'], self.params['g_nmda']]
+
     def initialize_state_variables(self):
         # Initialize state variables
         V = self.V_init
@@ -428,8 +431,9 @@ class HH_AHP_model:
         neurons_with_input_event = np.array(range(self.n_neurons))[activated_neurons]
 
         for n in neurons_with_input_event:
-            if append_time: self.membrane_potential_events[n].append(self.membrane_potential[n, t])
             if append_time:
+                self.membrane_potential_events[n].append(self.membrane_potential[n, t])
+                # In case of appending a spike event externally
                 if t not in self.time_spike_events[n]:
                     self.time_spike_events[n].append(t)
                 else:

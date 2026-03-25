@@ -55,9 +55,9 @@ class Simple_Depression(SynDynModel):
         self.d_alpha = np.zeros((self.n_syn, self.L))
 
         # Variables for spike events and steady-state calculations
-        self.alpha_spike_events = []
-        self.output_spike_events = []
-        self.time_spike_events = []
+        self.alpha_spike_events = [[] for _ in range(self.n_syn)]
+        self.output_spike_events = [[] for _ in range(self.n_syn)]
+        self.time_spike_events = [[] for _ in range(self.n_syn)]
         self.alpha_steady_state = None
         self.output_steady_state = None
         self.efficacy = [0.0 for _ in range(self.n_syn)]
@@ -117,6 +117,23 @@ class Simple_Depression(SynDynModel):
 
     def get_output(self):
         return self.g
+
+    def append_spike_event(self, t, active_synapses, output, append_time=True):
+        """Store spike events for analysis (override parent)."""
+        synapses_with_input_event = np.array(range(self.n_syn))[active_synapses]
+
+        for s in synapses_with_input_event:
+            if append_time:
+                self.alpha_spike_events[s].append(self.alpha[s, t])
+                # In case of appending a spike event externally
+                if t not in self.time_spike_events[s]:
+                    self.time_spike_events[s].append(t)
+                else:
+                    break
+
+            if len(self.time_spike_events[s]) > 1:
+                spike_range = (self.time_spike_events[s][-2], self.time_spike_events[s][-1])
+                self.compute_output_spike_event(spike_range, s, output)
 
     def append_spike_event(self, t, output):
         """

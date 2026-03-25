@@ -52,13 +52,13 @@ class TM_model(SynDynModel):
         self.d_U = np.zeros((self.n_syn, self.L))
 
         # Variables for spike events and steady-state calculations
-        self.R_spike_events = []
-        self.U_spike_events = []
-        self.output_spike_events = []
-        self.output_spike_events_tonic = []
-        self.ind_spike_events = []
-        self.ind_spike_events_tonic = []
-        self.time_spike_events = []
+        self.R_spike_events = [[] for _ in range(self.n_syn)]
+        self.U_spike_events = [[] for _ in range(self.n_syn)]
+        self.output_spike_events = [[] for _ in range(self.n_syn)]
+        self.output_spike_events_tonic = [[] for _ in range(self.n_syn)]
+        self.ind_spike_events = [[] for _ in range(self.n_syn)]
+        self.ind_spike_events_tonic = [[] for _ in range(self.n_syn)]
+        self.time_spike_events = [[] for _ in range(self.n_syn)]
 
         # Steady-state tracking
         self.R_steady_state = None
@@ -132,14 +132,34 @@ class TM_model(SynDynModel):
             dI = -(dt / tau_syn) * self.I_out[:, it - 1] + Ase * self.R[:, it - 1] * self.U[:, it] * I_it
             self.I_out[:, it] = self.I_out[:, it - 1] + dI
 
+    def append_spike_event(self, t, active_synapses, output, append_time=True):
+        """Store spike events for analysis (override parent)."""
+        synapses_with_input_event = np.array(range(self.n_syn))[active_synapses]
+
+        for s in synapses_with_input_event:
+            if append_time:
+                self.R_spike_events[s].append(self.R[s, t])
+                self.U_spike_events[s].append(self.U[s, t])
+                # self.output_spike_events[s].append(self.I_out[s, t])
+                # In case of appending a spike event externally
+                if t not in self.time_spike_events[s]:
+                    self.time_spike_events[s].append(t)
+                else:
+                    break
+
+            if len(self.time_spike_events[s]) > 1:
+                spike_range = (self.time_spike_events[s][-2], self.time_spike_events[s][-1])
+                self.compute_output_spike_event(spike_range, s, output)
+
+    """
     def append_spike_event(self, t, output):
-        """
+        '''
         Storing spike events for each state variable given a t-time
         Parameters
         ----------
         t
         output
-        """
+        '''
         self.R_spike_events.append(self.R[:, t])
         self.U_spike_events.append(self.U[:, t])
         # self.output_spike_events.append(self.I_out[:, t])
@@ -150,3 +170,4 @@ class TM_model(SynDynModel):
         if len(self.time_spike_events) > 1:
             spike_range = (self.time_spike_events[-2], self.time_spike_events[-1])
             self.compute_output_spike_event(spike_range, output)
+    # """

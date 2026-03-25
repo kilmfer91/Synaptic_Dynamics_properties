@@ -78,16 +78,16 @@ class LAP_model(SynDynModel):
         self.impulse_response_e = [[] for _ in range(self.n_syn)]
 
         # Variables for spike events and steady-state calculations
-        self.Cai_spike_events = []
-        self.Rrel_spike_events = []
-        self.FluxGlu_spike_events = []
-        self.Prel_spike_events = []
-        self.Krecov_spike_events = []
-        self.output_spike_events = []  # [[] for _ in range(self.n_syn)][[] for _ in range(self.n_syn)]
-        self.output_spike_events_tonic = []
-        self.ind_spike_events = []
-        self.ind_spike_events_tonic = []
-        self.time_spike_events = []  # [[] for _ in range(self.n_syn)]
+        self.Cai_spike_events = [[] for _ in range(self.n_syn)]
+        self.Rrel_spike_events = [[] for _ in range(self.n_syn)]
+        self.FluxGlu_spike_events = [[] for _ in range(self.n_syn)]
+        self.Prel_spike_events = [[] for _ in range(self.n_syn)]
+        self.Krecov_spike_events = [[] for _ in range(self.n_syn)]
+        self.output_spike_events = [[] for _ in range(self.n_syn)]
+        self.output_spike_events_tonic = [[] for _ in range(self.n_syn)]
+        self.ind_spike_events = [[] for _ in range(self.n_syn)]
+        self.ind_spike_events_tonic = [[] for _ in range(self.n_syn)]
+        self.time_spike_events = [[] for _ in range(self.n_syn)]
         self.Cai_steady_state = None
         self.Rrel_steady_state = None
         self.FluxGlu_steady_state = None
@@ -466,6 +466,28 @@ class LAP_model(SynDynModel):
 
         self.Fres2 = (1 / KCa) * (-Cai_0 + np.power(Prel_max * Krel / (KCa * nHill * Krecov_aux * Krecov_0),
                                                     (-1 / (nHill + 1))))
+
+    def append_spike_event(self, t, active_synapses, output, append_time=True):
+        """Store spike events for analysis (override parent)."""
+        synapses_with_input_event = np.array(range(self.n_syn))[active_synapses]
+
+        for s in synapses_with_input_event:
+            if append_time:
+                self.Cai_spike_events[s].append(self.Cai[s, t])
+                self.Rrel_spike_events[s].append(self.Rrel[s, t])
+                self.FluxGlu_spike_events[s].append(self.FluxGlu[s, t])
+                self.Prel_spike_events[s].append(self.Prel[s, t])
+                self.Krecov_spike_events[s].append(self.Krecov[s, t])
+                # self.output_spike_events[s].append(self.EPSP[s, t])
+                # In case of appending a spike event externally
+                if t not in self.time_spike_events[s]:
+                    self.time_spike_events[s].append(t)
+                else:
+                    break
+
+            if len(self.time_spike_events[s]) > 1:
+                spike_range = (self.time_spike_events[s][-2], self.time_spike_events[s][-1])
+                self.compute_output_spike_event(spike_range, s, output)
 
     def append_spike_event(self, t, output):
         """

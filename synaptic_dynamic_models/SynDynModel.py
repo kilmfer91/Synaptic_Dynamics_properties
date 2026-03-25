@@ -75,36 +75,38 @@ class SynDynModel:
     def get_output(self):
         pass
 
-    def detect_spike_event(self, t, output):
+    def detect_spike_event(self, t, Input, output):
         """
         Parameters
         ----------
         t
+        Input
         output
         """
         # Detecting raising edges
         # When t is 0
         if t == 0:
             # Detecting raising edges
-            self.edge_detection = np.where(self.Input[:, t] > 0.0)[0]
+            self.edge_detection = np.where(Input[:, t] > 0.0)[0]
         else:
             # Edge detector
-            self.edge_detection = self.Input[:, t] > self.Input[:, t - 1]
+            self.edge_detection = Input[:, t] > Input[:, t - 1]
 
         if np.sum(self.edge_detection) > 0:
-            self.append_spike_event(t, output)
+            self.append_spike_event(t, self.edge_detection, output)
 
-    def append_spike_event(self, t, output):
+    def append_spike_event(self, t, active_synapses, output):
         """
         Storing spike events for each state variable given a t-time
         Parameters
         ----------
         t
+        active_synapses
         output
         """
         pass
 
-    def compute_output_spike_event(self, spike_range, output):
+    def compute_output_spike_event(self, spike_range, s, output):
         # print("TM, append_spike_event(), spike range ", spike_range, " in time ", spike_range[0])
         assert isinstance(spike_range, tuple), "Param 'spike_range' must be a tuple"
         assert len(spike_range) == 2, "Param 'spike_range' must be a tuple of 2 values"
@@ -112,35 +114,35 @@ class SynDynModel:
         assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
         assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
         assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
-        assert len(output.shape) == 2, "Param 'output' must be a 2D-array"
+        assert len(output.shape) == 2, "Param 'output' must be a 2D-array, current size is " + str(output.shape)
         assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
                                                    "the length of param 'output'")
         if spike_range[1] == spike_range[0]:
             # phasic component of spiking responses
-            self.output_spike_events.append(output[:, spike_range[0]])
+            self.output_spike_events[s].append(output[s, spike_range[0]])
             # tonic component of spiking responses
-            self.output_spike_events_tonic.appen(output[:, 0])
+            self.output_spike_events_tonic[s].appen(output[s, 0])
 
             # Updating index of phasic and tonic spike event occurences
-            self.ind_spike_events_tonic.append(spike_range[0] - 1)
-            self.ind_spike_events.append(a + spike_range[0])
+            self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
+            self.ind_spike_events[s].append(spike_range[0])
 
         else:
             # Tonic component of the spiking response
-            self.output_spike_events_tonic.append(output[:, spike_range[0] - 1])
+            self.output_spike_events_tonic[s].append(output[s, spike_range[0] - 1])
 
             # EPSP
             if np.sum(output) > 0:
-                self.output_spike_events.append(np.max(output[:, spike_range[0]: spike_range[1]], axis=1))
-                a = np.argmax(output[:, spike_range[0]: spike_range[1]], axis=1)
+                self.output_spike_events[s].append(np.max(output[s, spike_range[0]: spike_range[1]]))
+                a = np.argmax(output[s, spike_range[0]: spike_range[1]])
             # EPSC
             else:
-                self.output_spike_events.append(np.min(output[:, spike_range[0]: spike_range[1]], axis=1))
-                a = np.argmin(output[:, spike_range[0]: spike_range[1]], axis=1)
+                self.output_spike_events[s].append(np.min(output[s, spike_range[0]: spike_range[1]]))
+                a = np.argmin(output[s, spike_range[0]: spike_range[1]])
 
             # Updating index of phasic and tonic spike event occurences
-            self.ind_spike_events_tonic.append(spike_range[0] - 1)
-            self.ind_spike_events.append(a + spike_range[0])
+            self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
+            self.ind_spike_events[s].append(a + spike_range[0])
 
     @staticmethod
     def reach_steady_state(input_signals, size_window=10, epsilon=None):
@@ -365,7 +367,7 @@ class SynDynModel:
                     output_model = self.get_output()
 
                 # Detecting spike events and storing model output
-                self.detect_spike_event(t, output_model)
+                self.detect_spike_event(t, Input, output_model)
 
             # Computing output spike event in the last ISI
             t = L

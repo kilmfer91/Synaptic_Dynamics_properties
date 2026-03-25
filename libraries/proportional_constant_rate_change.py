@@ -257,6 +257,10 @@ class GC_prop_cons:
         # Auxiliar variables for Information theory
         PSR_per_freq = [[] for _ in range(num_freq_exp)]
         spike_event_per_freq = [[] for _ in range(num_freq_exp)]
+        PSR_per_freq_syn = [[] for _ in range(num_freq_exp)]
+        spike_event_per_freq_syn = [[] for _ in range(num_freq_exp)]
+        PSR_per_freq_syn_b = [[] for _ in range(num_freq_exp)]
+        spike_event_per_freq_syn_b = [[] for _ in range(num_freq_exp)]
 
         # Setting proportional and fixed rates of change
         proportional_changes = gain * f_vector + f_vector
@@ -448,8 +452,11 @@ class GC_prop_cons:
                 # """
 
                 # Computing Postsynaptic response (PSR) to compute H(PSR) -unconditional entropy-
+                # Neuron contribution
                 PSR_per_freq[i].append(self.neuron_prop.output_spike_events)
                 spike_event_per_freq[i].append(self.neuron_prop.time_spike_events)
+                # Synaptic contribution
+                PSR_per_freq_syn[i].append(self.stp_prop.output_spike_events)
 
                 # Final print of the loop
                 print_time(m_time() - loop_experiments, file_name + ", Realisation " + str(realization) +
@@ -496,18 +503,19 @@ class GC_prop_cons:
             # ##########################################################################################################
             # """
             # Getting information theory analysis
-            # dr['PSR_events'] = PSR_per_freq
-            # dr['spike_events'] = spike_event_per_freq
-
             # Iterating through general realizations
-            aux = [[] for _ in range(num_freq_exp)]
-            PSR_per_freq_iniw, PSR_per_freq_midw, PSR_per_freq_endw = aux.copy(), aux.copy(), aux.copy()
-            ISI_per_freq_iniw, ISI_per_freq_midw, ISI_per_freq_endw = aux.copy(), aux.copy(), aux.copy()
-            PSR_per_freq_iw_tr, PSR_per_freq_mw_tr, PSR_per_freq_ew_tr = aux.copy(), aux.copy(), aux.copy()
-            ISI_per_freq_iw_tr, ISI_per_freq_mw_tr, ISI_per_freq_ew_tr = aux.copy(), aux.copy(), aux.copy()
-            PSR_per_freq_iw_st, PSR_per_freq_mw_st, PSR_per_freq_ew_st = aux.copy(), aux.copy(), aux.copy()
-            ISI_per_freq_iw_st, ISI_per_freq_mw_st, ISI_per_freq_ew_st = aux.copy(), aux.copy(), aux.copy()
+            a = [[] for _ in range(num_freq_exp)]
+            ISI_per_freq_iw_tr, ISI_per_freq_mw_tr, ISI_per_freq_ew_tr = a.copy(), a.copy(), a.copy()
+            ISI_per_freq_iw_st, ISI_per_freq_mw_st, ISI_per_freq_ew_st = a.copy(), a.copy(), a.copy()
+            PSR_per_freq_iw_tr, PSR_per_freq_mw_tr, PSR_per_freq_ew_tr = a.copy(), a.copy(), a.copy()
+            PSR_per_freq_iw_st, PSR_per_freq_mw_st, PSR_per_freq_ew_st = a.copy(), a.copy(), a.copy()
+            PSR_syn_per_freq_iw_tr, PSR_syn_per_freq_mw_tr, PSR_syn_per_freq_ew_tr = a.copy(), a.copy(), a.copy()
+            PSR_syn_per_freq_iw_st, PSR_syn_per_freq_mw_st, PSR_syn_per_freq_ew_st = a.copy(), a.copy(), a.copy()
+            PSR_syn_b_per_freq_iw_tr, PSR_syn_b_per_freq_mw_tr, PSR_syn_b_per_freq_ew_tr = a.copy(), a.copy(), a.copy()
+            PSR_syn_b_per_freq_iw_st, PSR_syn_b_per_freq_mw_st, PSR_syn_b_per_freq_ew_st = a.copy(), a.copy(), a.copy()
 
+            # min-max of synaptic contributions
+            min_syn, max_syn, min_syn_b, max_syn_b = np.inf, -np.inf, np.inf, -np.inf
             realization = 0
             for realization in range(num_loop_realizations):
                 # Iterating through frequencies
@@ -518,6 +526,7 @@ class GC_prop_cons:
                     for neuron_realization in range(num_realizations):
                         ta = np.array(spike_event_per_freq[i][realization][neuron_realization]) / sfreq
                         PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
+                        PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization])
                         # Getting time of reaching steady-state for ini and end windows
                         tr_st_time = dr['time_transition'][num_realizations * realization + neuron_realization, i]
                         # Getting time of reaching steady-state for mid window
@@ -538,26 +547,7 @@ class GC_prop_cons:
                         mask_iniw = ta < 2
                         mask_endw = ta >= 4
                         mask_midw = np.logical_not(np.logical_xor(mask_iniw, mask_endw))
-                        # Separating ini, mid and end windows of PSR
-                        PSR_iniw = PSR_aux[mask_iniw]
-                        PSR_midw = PSR_aux[mask_midw]
-                        PSR_endw = PSR_aux[mask_endw]
-                        # Separating ini, mid and end windows of spike events
-                        spike_events_iniw = np.append(ta[mask_iniw], 2.0)
-                        spike_events_midw = np.append(ta[mask_midw], 4.0)
-                        spike_events_endw = np.append(ta[mask_endw], 6.0)
-                        # Separating ini, mid and end windows of ISI
-                        ISI_iniw = np.diff(spike_events_iniw)
-                        ISI_midw = np.diff(spike_events_midw)
-                        ISI_endw = np.diff(spike_events_endw)
                         
-                        # Separating ini, mid and end windows of PSR
-                        PSR_iw_tr = PSR_aux[mask_iw_tr]
-                        PSR_iw_st = PSR_aux[mask_iw_st]
-                        PSR_mw_tr = PSR_aux[mask_mw_tr]
-                        PSR_mw_st = PSR_aux[mask_mw_st]
-                        PSR_ew_tr = PSR_aux[mask_ew_tr]
-                        PSR_ew_st = PSR_aux[mask_ew_st]
                         # Separating ini, mid and end windows of spike events
                         spike_ev_iw_tr = np.append(ta[mask_iw_tr], tr_st_time)
                         spike_ev_iw_st = np.append(ta[mask_iw_st], 2.)
@@ -572,43 +562,204 @@ class GC_prop_cons:
                         ISI_mw_st = np.diff(spike_ev_mw_st)
                         ISI_ew_tr = np.diff(spike_ev_ew_tr)
                         ISI_ew_st = np.diff(spike_ev_ew_st)
-                        
-                        PSR_per_freq_iw_tr[i] = PSR_per_freq_iw_tr[i] + list(PSR_iw_tr)
-                        PSR_per_freq_iw_st[i] = PSR_per_freq_iw_st[i] + list(PSR_iw_st)
-                        PSR_per_freq_mw_tr[i] = PSR_per_freq_mw_tr[i] + list(PSR_mw_tr)
-                        PSR_per_freq_mw_st[i] = PSR_per_freq_mw_st[i] + list(PSR_mw_st)
-                        PSR_per_freq_ew_tr[i] = PSR_per_freq_ew_tr[i] + list(PSR_ew_tr)
-                        PSR_per_freq_ew_st[i] = PSR_per_freq_ew_st[i] + list(PSR_ew_st)
+                        # Updating general varibles of ISI
                         ISI_per_freq_iw_tr[i] = ISI_per_freq_iw_tr[i] + list(ISI_iw_tr)
                         ISI_per_freq_iw_st[i] = ISI_per_freq_iw_st[i] + list(ISI_iw_st)
                         ISI_per_freq_mw_tr[i] = ISI_per_freq_mw_tr[i] + list(ISI_mw_tr)
                         ISI_per_freq_mw_st[i] = ISI_per_freq_mw_st[i] + list(ISI_mw_st)
                         ISI_per_freq_ew_tr[i] = ISI_per_freq_ew_tr[i] + list(ISI_ew_tr)
                         ISI_per_freq_ew_st[i] = ISI_per_freq_ew_st[i] + list(ISI_ew_st)
+                        
+                        # Separating ini, mid and end windows of neuron PSR
+                        PSR_iw_tr = PSR_aux[mask_iw_tr]
+                        PSR_iw_st = PSR_aux[mask_iw_st]
+                        PSR_mw_tr = PSR_aux[mask_mw_tr]
+                        PSR_mw_st = PSR_aux[mask_mw_st]
+                        PSR_ew_tr = PSR_aux[mask_ew_tr]
+                        PSR_ew_st = PSR_aux[mask_ew_st]
+                        # Updating general varibles of neuron PSR
+                        PSR_per_freq_iw_tr[i] = PSR_per_freq_iw_tr[i] + list(PSR_iw_tr)
+                        PSR_per_freq_iw_st[i] = PSR_per_freq_iw_st[i] + list(PSR_iw_st)
+                        PSR_per_freq_mw_tr[i] = PSR_per_freq_mw_tr[i] + list(PSR_mw_tr)
+                        PSR_per_freq_mw_st[i] = PSR_per_freq_mw_st[i] + list(PSR_mw_st)
+                        PSR_per_freq_ew_tr[i] = PSR_per_freq_ew_tr[i] + list(PSR_ew_tr)
+                        PSR_per_freq_ew_st[i] = PSR_per_freq_ew_st[i] + list(PSR_ew_st)
+                        
+                        # Separating ini, mid and end windows of synapse PSR
+                        PSR_syn_iw_tr = PSR_aux_syn[mask_iw_tr]
+                        PSR_syn_iw_st = PSR_aux_syn[mask_iw_st]
+                        PSR_syn_mw_tr = PSR_aux_syn[mask_mw_tr]
+                        PSR_syn_mw_st = PSR_aux_syn[mask_mw_st]
+                        PSR_syn_ew_tr = PSR_aux_syn[mask_ew_tr]
+                        PSR_syn_ew_st = PSR_aux_syn[mask_ew_st]
+                        if PSR_syn_iw_tr.ndim == 2:
+                            # Updating general varibles of synapse PSR for AMPA
+                            PSR_syn_per_freq_iw_tr[i] = PSR_syn_per_freq_iw_tr[i] + list(PSR_syn_iw_tr[:, 0])
+                            PSR_syn_per_freq_iw_st[i] = PSR_syn_per_freq_iw_st[i] + list(PSR_syn_iw_st[:, 0])
+                            PSR_syn_per_freq_mw_tr[i] = PSR_syn_per_freq_mw_tr[i] + list(PSR_syn_mw_tr[:, 0])
+                            PSR_syn_per_freq_mw_st[i] = PSR_syn_per_freq_mw_st[i] + list(PSR_syn_mw_st[:, 0])
+                            PSR_syn_per_freq_ew_tr[i] = PSR_syn_per_freq_ew_tr[i] + list(PSR_syn_ew_tr[:, 0])
+                            PSR_syn_per_freq_ew_st[i] = PSR_syn_per_freq_ew_st[i] + list(PSR_syn_ew_st[:, 0])
+                            # Updating general varibles of synapse PSR for NMDA
+                            PSR_syn_b_per_freq_iw_tr[i] = PSR_syn_b_per_freq_iw_tr[i] + list(PSR_syn_iw_tr[:, 1])
+                            PSR_syn_b_per_freq_iw_st[i] = PSR_syn_b_per_freq_iw_st[i] + list(PSR_syn_iw_st[:, 1])
+                            PSR_syn_b_per_freq_mw_tr[i] = PSR_syn_b_per_freq_mw_tr[i] + list(PSR_syn_mw_tr[:, 1])
+                            PSR_syn_b_per_freq_mw_st[i] = PSR_syn_b_per_freq_mw_st[i] + list(PSR_syn_mw_st[:, 1])
+                            PSR_syn_b_per_freq_ew_tr[i] = PSR_syn_b_per_freq_ew_tr[i] + list(PSR_syn_ew_tr[:, 1])
+                            PSR_syn_b_per_freq_ew_st[i] = PSR_syn_b_per_freq_ew_st[i] + list(PSR_syn_ew_st[:, 1])
+                            # Updating min-max of synaptic contributions
+                            max_ = np.max(PSR_aux_syn, axis=0)
+                            if max_[0] > max_syn: max_syn = max_[0]
+                            if max_[1] > max_syn_b: max_syn_b = max_[1]
+                            min_ = np.min(PSR_aux_syn, axis=0)
+                            if min_[0] < min_syn: min_syn = min_[0]
+                            if min_[1] < min_syn_b: min_syn_b = min_[1]
+                        else:
+                            # Updating general varibles of synapse PSR
+                            PSR_syn_per_freq_iw_tr[i] = PSR_syn_per_freq_iw_tr[i] + list(PSR_syn_iw_tr)
+                            PSR_syn_per_freq_iw_st[i] = PSR_syn_per_freq_iw_st[i] + list(PSR_syn_iw_st)
+                            PSR_syn_per_freq_mw_tr[i] = PSR_syn_per_freq_mw_tr[i] + list(PSR_syn_mw_tr)
+                            PSR_syn_per_freq_mw_st[i] = PSR_syn_per_freq_mw_st[i] + list(PSR_syn_mw_st)
+                            PSR_syn_per_freq_ew_tr[i] = PSR_syn_per_freq_ew_tr[i] + list(PSR_syn_ew_tr)
+                            PSR_syn_per_freq_ew_st[i] = PSR_syn_per_freq_ew_st[i] + list(PSR_syn_ew_st)
+                            max_ = np.max(PSR_aux_syn)
+                            if max_ > max_syn: max_syn = max_
+                            min_ = np.min(PSR_aux_syn)
+                            if min_ < min_syn: min_syn = min_
+
+                        # Updating min-max of synaptic contributions
 
             # Getting information theory analysis
-            H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr = [], [], []
-            H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st = [], [], []
             H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr = [], [], []
             H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st = [], [], []
-            for i in range(num_freq_exp):
-                H_PSR_iw_tr.append(binned_entropy(PSR_per_freq_iw_tr[i], n_bins=100))
-                H_PSR_iw_st.append(binned_entropy(PSR_per_freq_iw_st[i], n_bins=100))
-                H_PSR_mw_tr.append(binned_entropy(PSR_per_freq_mw_tr[i], n_bins=100))
-                H_PSR_mw_st.append(binned_entropy(PSR_per_freq_mw_st[i], n_bins=100))
-                H_PSR_ew_tr.append(binned_entropy(PSR_per_freq_ew_tr[i], n_bins=100))
-                H_PSR_ew_st.append(binned_entropy(PSR_per_freq_ew_st[i], n_bins=100))
-                H_ISI_iw_tr.append(binned_entropy(ISI_per_freq_iw_tr[i], n_bins=100))
-                H_ISI_iw_st.append(binned_entropy(ISI_per_freq_iw_st[i], n_bins=100))
-                H_ISI_mw_tr.append(binned_entropy(ISI_per_freq_mw_tr[i], n_bins=100))
-                H_ISI_mw_st.append(binned_entropy(ISI_per_freq_mw_st[i], n_bins=100))
-                H_ISI_ew_tr.append(binned_entropy(ISI_per_freq_ew_tr[i], n_bins=100))
-                H_ISI_ew_st.append(binned_entropy(ISI_per_freq_ew_st[i], n_bins=100))
+            # Entropy for neuronal output
+            H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr = [], [], []
+            H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st = [], [], []
+            # Entropy for synaptic output(s)
+            H_PSR_syn_iw_tr, H_PSR_syn_mw_tr, H_PSR_syn_ew_tr = [], [], []
+            H_PSR_syn_iw_st, H_PSR_syn_mw_st, H_PSR_syn_ew_st = [], [], []
+            H_PSR_syn_b_iw_tr, H_PSR_syn_b_mw_tr, H_PSR_syn_b_ew_tr = [], [], []
+            H_PSR_syn_b_iw_st, H_PSR_syn_b_mw_st, H_PSR_syn_b_ew_st = [], [], []
+            # Getting information theory analysis
+            H_ISI_iw_tr_100bins, H_ISI_mw_tr_100bins, H_ISI_ew_tr_100bins = [], [], []
+            H_ISI_iw_st_100bins, H_ISI_mw_st_100bins, H_ISI_ew_st_100bins = [], [], []
+            # Entropy for neuronal output
+            H_PSR_iw_tr_100bins, H_PSR_mw_tr_100bins, H_PSR_ew_tr_100bins = [], [], []
+            H_PSR_iw_st_100bins, H_PSR_mw_st_100bins, H_PSR_ew_st_100bins = [], [], []
+            # Entropy for synaptic output(s)
+            H_PSR_syn_iw_tr_100bins, H_PSR_syn_mw_tr_100bins, H_PSR_syn_ew_tr_100bins = [], [], []
+            H_PSR_syn_iw_st_100bins, H_PSR_syn_mw_st_100bins, H_PSR_syn_ew_st_100bins = [], [], []
+            H_PSR_syn_b_iw_tr_100bins, H_PSR_syn_b_mw_tr_100bins, H_PSR_syn_b_ew_tr_100bins = [], [], []
+            H_PSR_syn_b_iw_st_100bins, H_PSR_syn_b_mw_st_100bins, H_PSR_syn_b_ew_st_100bins = [], [], []
 
-            dr['H_PSR_tr'] = np.array([H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr])
-            dr['H_PSR_st'] = np.array([H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st])
+            # conductance of synaptic contributions to neuron model
+            max_syn_contr = self.neuron_prop.max_syn_cont()
+            bin_size_syn, bin_size_syn_b = max_syn - min_syn, max_syn_b - min_syn_b
+            # if len(max_syn_contr) == 2:
+            #     bin_size_syn = max_syn_contr[0][0]
+            #     bin_size_syn_b = max_syn_contr[1][0]
+            # else:
+            #     bin_size_syn = max_syn_contr[0][0]
+
+            for i in range(num_freq_exp):
+                # ******************************************************************************************************
+                # ENTROPY COMPUTATION USING FIXED NUMBER OF BINS
+                # Entropy calculations for input
+                H_ISI_iw_tr_100bins.append(binned_entropy(ISI_per_freq_iw_tr[i], n_bins=100))
+                H_ISI_iw_st_100bins.append(binned_entropy(ISI_per_freq_iw_st[i], n_bins=100))
+                H_ISI_mw_tr_100bins.append(binned_entropy(ISI_per_freq_mw_tr[i], n_bins=100))
+                H_ISI_mw_st_100bins.append(binned_entropy(ISI_per_freq_mw_st[i], n_bins=100))
+                H_ISI_ew_tr_100bins.append(binned_entropy(ISI_per_freq_ew_tr[i], n_bins=100))
+                H_ISI_ew_st_100bins.append(binned_entropy(ISI_per_freq_ew_st[i], n_bins=100))
+                # Entropy calculations for neuronal responses
+                H_PSR_iw_tr_100bins.append(binned_entropy(PSR_per_freq_iw_tr[i], n_bins=100))
+                H_PSR_iw_st_100bins.append(binned_entropy(PSR_per_freq_iw_st[i], n_bins=100))
+                H_PSR_mw_tr_100bins.append(binned_entropy(PSR_per_freq_mw_tr[i], n_bins=100))
+                H_PSR_mw_st_100bins.append(binned_entropy(PSR_per_freq_mw_st[i], n_bins=100))
+                H_PSR_ew_tr_100bins.append(binned_entropy(PSR_per_freq_ew_tr[i], n_bins=100))
+                H_PSR_ew_st_100bins.append(binned_entropy(PSR_per_freq_ew_st[i], n_bins=100))
+                # Entropy calculations for synaptic response
+                H_PSR_syn_iw_tr_100bins.append(binned_entropy(PSR_syn_per_freq_iw_tr[i], n_bins=100))
+                H_PSR_syn_iw_st_100bins.append(binned_entropy(PSR_syn_per_freq_iw_st[i], n_bins=100))
+                H_PSR_syn_mw_tr_100bins.append(binned_entropy(PSR_syn_per_freq_mw_tr[i], n_bins=100))
+                H_PSR_syn_mw_st_100bins.append(binned_entropy(PSR_syn_per_freq_mw_st[i], n_bins=100))
+                H_PSR_syn_ew_tr_100bins.append(binned_entropy(PSR_syn_per_freq_ew_tr[i], n_bins=100))
+                H_PSR_syn_ew_st_100bins.append(binned_entropy(PSR_syn_per_freq_ew_st[i], n_bins=100))
+                if PSR_syn_iw_tr.ndim == 2:
+                    # Entropy calculations for second synaptic response
+                    H_PSR_syn_b_iw_tr_100bins.append(binned_entropy(PSR_syn_b_per_freq_iw_tr[i], n_bins=100))
+                    H_PSR_syn_b_iw_st_100bins.append(binned_entropy(PSR_syn_b_per_freq_iw_st[i], n_bins=100))
+                    H_PSR_syn_b_mw_tr_100bins.append(binned_entropy(PSR_syn_b_per_freq_mw_tr[i], n_bins=100))
+                    H_PSR_syn_b_mw_st_100bins.append(binned_entropy(PSR_syn_b_per_freq_mw_st[i], n_bins=100))
+                    H_PSR_syn_b_ew_tr_100bins.append(binned_entropy(PSR_syn_b_per_freq_ew_tr[i], n_bins=100))
+                    H_PSR_syn_b_ew_st_100bins.append(binned_entropy(PSR_syn_b_per_freq_ew_st[i], n_bins=100))
+                # ******************************************************************************************************
+                # ENTROPY COMPUTATION USING FIXED BIN SIZE
+                # Entropy calculation for input
+                bin_size = 0.1 / f_vector[i]  # 10% of T
+                H_ISI_iw_tr.append(H_entropy_dyn_bins(ISI_per_freq_iw_tr[i], bin_size=bin_size))
+                H_ISI_iw_st.append(H_entropy_dyn_bins(ISI_per_freq_iw_st[i], bin_size=bin_size))
+                H_ISI_ew_tr.append(H_entropy_dyn_bins(ISI_per_freq_ew_tr[i], bin_size=bin_size))
+                H_ISI_ew_st.append(H_entropy_dyn_bins(ISI_per_freq_ew_st[i], bin_size=bin_size))
+                bin_size = 0.1 / proportional_changes[i]  # 10% of T
+                H_ISI_mw_tr.append(H_entropy_dyn_bins(ISI_per_freq_mw_tr[i], bin_size=bin_size))
+                H_ISI_mw_st.append(H_entropy_dyn_bins(ISI_per_freq_mw_st[i], bin_size=bin_size))
+                # Entropy calculations for neuronal responses
+                bin_size = 0.1e-3  # 0.1mV
+                H_PSR_iw_tr.append(H_entropy_dyn_bins(PSR_per_freq_iw_tr[i], bin_size=bin_size))
+                H_PSR_iw_st.append(H_entropy_dyn_bins(PSR_per_freq_iw_st[i], bin_size=bin_size))
+                H_PSR_mw_tr.append(H_entropy_dyn_bins(PSR_per_freq_mw_tr[i], bin_size=bin_size))
+                H_PSR_mw_st.append(H_entropy_dyn_bins(PSR_per_freq_mw_st[i], bin_size=bin_size))
+                H_PSR_ew_tr.append(H_entropy_dyn_bins(PSR_per_freq_ew_tr[i], bin_size=bin_size))
+                H_PSR_ew_st.append(H_entropy_dyn_bins(PSR_per_freq_ew_st[i], bin_size=bin_size))
+                # Entropy calculations for synaptic response
+                bin_size = 0.01 * bin_size_syn  # 1% of max. synaptic contribution
+                H_PSR_syn_iw_tr.append(H_entropy_dyn_bins(PSR_syn_per_freq_iw_tr[i], bin_size=bin_size))
+                H_PSR_syn_iw_st.append(H_entropy_dyn_bins(PSR_syn_per_freq_iw_st[i], bin_size=bin_size))
+                H_PSR_syn_mw_tr.append(H_entropy_dyn_bins(PSR_syn_per_freq_mw_tr[i], bin_size=bin_size))
+                H_PSR_syn_mw_st.append(H_entropy_dyn_bins(PSR_syn_per_freq_mw_st[i], bin_size=bin_size))
+                H_PSR_syn_ew_tr.append(H_entropy_dyn_bins(PSR_syn_per_freq_ew_tr[i], bin_size=bin_size))
+                H_PSR_syn_ew_st.append(H_entropy_dyn_bins(PSR_syn_per_freq_ew_st[i], bin_size=bin_size))
+                if PSR_syn_iw_tr.ndim == 2:
+                    # Entropy calculations for second synaptic response
+                    bin_size = 0.01 * bin_size_syn_b  # 1% of max. synaptic contribution
+                    H_PSR_syn_b_iw_tr.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_tr[i], bin_size=bin_size))
+                    H_PSR_syn_b_iw_st.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_st[i], bin_size=bin_size))
+                    H_PSR_syn_b_mw_tr.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_tr[i], bin_size=bin_size))
+                    H_PSR_syn_b_mw_st.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_st[i], bin_size=bin_size))
+                    H_PSR_syn_b_ew_tr.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_tr[i], bin_size=bin_size))
+                    H_PSR_syn_b_ew_st.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_st[i], bin_size=bin_size))
+
+            # ******************************************************************************************************
+            # ENTROPY COMPUTATION USING FIXED NUMBER OF BINS
+            dr['H_ISI_tr_100'] = np.array([H_ISI_iw_tr_100bins, H_ISI_mw_tr_100bins, H_ISI_ew_tr_100bins])
+            dr['H_ISI_st_100'] = np.array([H_ISI_iw_st_100bins, H_ISI_mw_st_100bins, H_ISI_ew_st_100bins])
+            dr['H_PSR_tr_100'] = np.array([H_PSR_iw_tr_100bins, H_PSR_mw_tr_100bins, H_PSR_ew_tr_100bins])
+            dr['H_PSR_st_100'] = np.array([H_PSR_iw_st_100bins, H_PSR_mw_st_100bins, H_PSR_ew_st_100bins])
+            dr['H_PSR_syn_tr_100'] = np.array([H_PSR_syn_iw_tr_100bins, H_PSR_syn_mw_tr_100bins,
+                                               H_PSR_syn_ew_tr_100bins])
+            dr['H_PSR_syn_st_100'] = np.array([H_PSR_syn_iw_st_100bins, H_PSR_syn_mw_st_100bins,
+                                               H_PSR_syn_ew_st_100bins])
+            if PSR_syn_iw_tr.ndim == 2:
+                dr['H_PSR_syn_b_tr_100'] = np.array([H_PSR_syn_b_iw_tr_100bins, H_PSR_syn_b_mw_tr_100bins,
+                                                     H_PSR_syn_b_ew_tr_100bins])
+                dr['H_PSR_syn_b_st_100'] = np.array([H_PSR_syn_b_iw_st_100bins, H_PSR_syn_b_mw_st_100bins,
+                                                     H_PSR_syn_b_ew_st_100bins])
+            # ******************************************************************************************************
+            # ENTROPY COMPUTATION USING FIXED BIN SIZE
             dr['H_ISI_tr'] = np.array([H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr])
             dr['H_ISI_st'] = np.array([H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st])
+            dr['H_PSR_tr'] = np.array([H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr])
+            dr['H_PSR_st'] = np.array([H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st])
+            dr['H_PSR_syn_tr'] = np.array([H_PSR_syn_iw_tr, H_PSR_syn_mw_tr, H_PSR_syn_ew_tr])
+            dr['H_PSR_syn_st'] = np.array([H_PSR_syn_iw_st, H_PSR_syn_mw_st, H_PSR_syn_ew_st])
+            if PSR_syn_iw_tr.ndim == 2:
+                dr['H_PSR_syn_b_tr'] = np.array([H_PSR_syn_b_iw_tr, H_PSR_syn_b_mw_tr, H_PSR_syn_b_ew_tr])
+                dr['H_PSR_syn_b_st'] = np.array([H_PSR_syn_b_iw_st, H_PSR_syn_b_mw_st, H_PSR_syn_b_ew_st])
+
+            # Saving bin_size computation min-max limits
+            dr['H_PSR_syn_max_contr'] = [[min_syn, max_syn]]
+            if PSR_syn_iw_tr.ndim == 2: dr['H_PSR_syn_max_contr'].append([min_syn_b, max_syn_b])
 
             # """
             # ##########################################################################################################

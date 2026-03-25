@@ -1,6 +1,11 @@
 from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
+gain_v = [0.9, 1.0]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+s_model = 'DoornSTD'
+n_model = "HH"
+ind = 1
+
 # ******************************************************************************************************************
 # Global variables
 # DoornSTD + HH
@@ -17,10 +22,10 @@ from libraries.proportional_constant_rate_change import GC_prop_cons
 # (Experiment 6) freq. response decay around 10Hz (depression)
 # (Experiment 7) freq. response facilitation
 
-s_model = 'DoornSTD'
-n_model = "HH"
-ind = 2
-save_vars = True
+# s_model = 'DoornSTD'
+# n_model = "HH"
+# ind = 1
+save_vars = False
 force_experiment = False
 stoch_input = True
 
@@ -39,9 +44,9 @@ cutoff_filt = 5
 threshold_per = 1e-3
 
 tau_m_lif = 1  # ms
-total_realizations = 104  # 100  # 104
-num_realizations = 8  # 8
-gain_v = [0.1]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+total_realizations = 4  # 100  # 104
+num_realizations = 2  # 8
+# gain_v = [.15]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 max_freq = 601
 folder_vars = "../gain_control/variables/"
 folder_plots = '../gain_control/plots/'

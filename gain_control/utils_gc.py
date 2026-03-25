@@ -353,6 +353,53 @@ def update_tr_st_trackers(conds, tr_st_array, window_length, num_slid_wins, slid
     return aux_array
 
 
+def H_entropy_dyn_bins(data, bin_size=0.01, range_d=None, plot=False):
+    """
+    Compute Shannon entropy of data using histogram with dynamic number of bins.
+
+    Parameters
+    ----------
+    data : array_like
+        1D array of data (synaptic weights, membrane potentials, etc.)
+    bin_size : float
+        Width of each histogram bin (e.g. 0.01 for synaptic weights in [0,1]).
+        Number of bins will be dynamically computed as range_d/bin_size.
+    range_d : tuple, optional
+        (min, max) bounds for histogram. If None, uses data.min() and data.max().
+    plot : bool, optional
+    Returns
+    -------
+    H : float
+        Shannon entropy H = -∑ p_i log₂(p_i) in bits.
+    """
+    data = np.asarray(data)
+    data = data[~np.isnan(data)]  # remove NaNs
+
+    if len(data) == 0:
+        return np.nan
+
+    if range_d is None:
+        data_min, data_max = data.min(), data.max()
+    else:
+        data_min, data_max = range_d
+
+    if data_max == data_min:
+        return 0.0  # constant signal → H=0
+
+    # Dynamic number of bins based on bin_size
+    num_bins = int(np.ceil((data_max - data_min) / bin_size))
+    bin_edges = np.linspace(data_min, data_max, num_bins + 1)
+
+    if plot:
+        plt.figure()
+        plt.hist(data, density=False, bins=bin_edges)  # density=False would make counts
+        plt.ylabel('Probability')
+        plt.xlabel('Data')
+
+    # Shannon entropy for dynamic # of bins and fixed bin size
+    return binned_entropy(data, n_bins=bin_edges)
+
+
 def binned_entropy(values, n_bins=20):
     hist, edges = np.histogram(values, bins=n_bins, density=False)
     p = hist / hist.sum()
@@ -522,8 +569,9 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
         if seeds is not None: seed = seeds[flex_t]
         n_model.update_state(flex_t, seed, use_noise, I_args)
 
-        # Detecting spike events and storing model output
+        # Detecting spike events for synapse and neuron, storing model output
         n_model.detect_spike_event(flex_t, Input, n_model.membrane_potential)
+        stp_model.detect_spike_event(flex_t, Input, stp_model.get_output())
 
         """
         # **************************************************************************************************************
@@ -1001,8 +1049,8 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
 
         # Sliding window analysis
         # it, finish_sliding_window = slid_win.update(flex_t, it)
-        if finish_sliding_window:
-            print("finished sliding window")
+        # if finish_sliding_window:
+        #     print("finished sliding window")
             # aa, bb, cc, dd, ee = slid_win.analyse()
 
         # Forcing spike event when changing from ini-to-mid and mid-to-end windows
@@ -1016,6 +1064,7 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
             if np.sum(new_spikes) == num_neu:
                 # n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.membrane_potential)
                 n_model.append_spike_event(flex_t, new_spikes, n_model.membrane_potential)
+                stp_model.append_spike_event(flex_t, new_spikes, stp_model.get_output())
         else:
             pass
 
@@ -1044,7 +1093,7 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
     # Detecting spike events and storing model output
     spike_range = (n_model.time_spike_events[-1], it)
     n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.membrane_potential, append_time=False)
-
+    stp_model.append_spike_event(it, [True for _ in range(num_neu)], stp_model.get_output(), append_time=False)
     # return stat_descriptors_tr_st, tr_st_time
 
 

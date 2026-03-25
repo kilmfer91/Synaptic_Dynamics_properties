@@ -94,16 +94,16 @@ class DoornSTF_model(SynDynModel):
         self.d_u_d = np.zeros((self.n_syn, self.L))
 
         # Reset spike-event tracking
-        self.s_ampa_spike_events = []
-        self.s_nmda_spike_events = []
-        self.x_nmda_spike_events = []
-        self.x_d_spike_events = []
-        self.u_d_spike_events = []
-        self.output_spike_events = []
-        self.output_spike_events_tonic = []
-        self.ind_spike_events = []
-        self.ind_spike_events_tonic = []
-        self.time_spike_events = []
+        self.s_ampa_spike_events = [[] for _ in range(self.n_syn)]
+        self.s_nmda_spike_events = [[] for _ in range(self.n_syn)]
+        self.x_nmda_spike_events = [[] for _ in range(self.n_syn)]
+        self.x_d_spike_events = [[] for _ in range(self.n_syn)]
+        self.u_d_spike_events = [[] for _ in range(self.n_syn)]
+        self.output_spike_events = [[] for _ in range(self.n_syn)]
+        self.output_spike_events_tonic = [[] for _ in range(self.n_syn)]
+        self.ind_spike_events = [[] for _ in range(self.n_syn)]
+        self.ind_spike_events_tonic = [[] for _ in range(self.n_syn)]
+        self.time_spike_events = [[] for _ in range(self.n_syn)]
 
         # Steady-state tracking
         self.s_ampa_steady_state = None
@@ -220,14 +220,62 @@ class DoornSTF_model(SynDynModel):
             self.d_s_nmda[:, it] = ds
             self.s_nmda[:, it] = self.s_nmda[:, it - 1] + ds
 
-    def append_spike_event(self, t, output):
+    def append_spike_event(self, t, active_synapses, output, append_time=True):
         """Store spike events for analysis (override parent)."""
-        self.s_ampa_spike_events.append(self.s_ampa[:, t])
-        self.s_nmda_spike_events.append(self.s_nmda[:, t])
-        self.x_nmda_spike_events.append(self.x_nmda[:, t])
-        self.x_d_spike_events.append(self.x_d[:, t])
-        self.u_d_spike_events.append(self.u_d[:, t])
-        self.time_spike_events.append(t)
-        if len(self.time_spike_events) > 1:
-            spike_range = (self.time_spike_events[-2], self.time_spike_events[-1])
-            self.compute_output_spike_event(spike_range, output)
+        synapses_with_input_event = np.array(range(self.n_syn))[active_synapses]
+
+        for s in synapses_with_input_event:
+            if append_time:
+                self.s_ampa_spike_events[s].append(self.s_ampa[s, t])
+                self.s_nmda_spike_events[s].append(self.s_nmda[s, t])
+                self.x_nmda_spike_events[s].append(self.x_nmda[s, t])
+                self.x_d_spike_events[s].append(self.x_d[s, t])
+                self.u_d_spike_events[s].append(self.u_d[s, t])
+
+                # In case of appending a spike event externally
+                if t not in self.time_spike_events[s]:
+                    self.time_spike_events[s].append(t)
+                else:
+                    break
+
+            if len(self.time_spike_events[s]) > 1:
+                spike_range = (self.time_spike_events[s][-2], self.time_spike_events[s][-1])
+                self.compute_output_spike_event(spike_range, s, output)
+
+    def compute_output_spike_event(self, spike_range, s, output):
+        # print("TM, append_spike_event(), spike range ", spike_range, " in time ", spike_range[0])
+        assert isinstance(spike_range, tuple), "Param 'spike_range' must be a tuple"
+        assert len(spike_range) == 2, "Param 'spike_range' must be a tuple of 2 values"
+        assert isinstance(spike_range[0], int), "first element of param 'spike_range' must be integer"
+        assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
+        assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
+        assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
+        assert len(output.shape) == 3, "Param 'output' must be a 2D-array, current size is " + str(output.shape)
+        assert output.shape[2] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+                                                   "the length of param 'output'")
+        if spike_range[1] == spike_range[0]:
+            # phasic component of spiking responses
+            self.output_spike_events[s].append(output[:, s, spike_range[0]])
+            # tonic component of spiking responses
+            self.output_spike_events_tonic[s].appen(output[:, s, 0])
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
+            self.ind_spike_events[s].append(spike_range[0])
+
+        else:
+            # Tonic component of the spiking response
+            self.output_spike_events_tonic[s].append(output[:, s,  spike_range[0] - 1])
+
+            # EPSP
+            if np.sum(output) > 0:
+                self.output_spike_events[s].append(np.max(output[:, s, spike_range[0]: spike_range[1]], axis=1))
+                a = np.argmax(output[:, s, spike_range[0]: spike_range[1]], axis=1)
+            # EPSC
+            else:
+                self.output_spike_events[s].append(np.min(output[:, s, spike_range[0]: spike_range[1]], axis=1))
+                a = np.argmin(output[:, s, spike_range[0]: spike_range[1]], axis=1)
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
+            self.ind_spike_events[s].append(a + spike_range[0])

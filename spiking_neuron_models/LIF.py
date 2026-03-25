@@ -88,6 +88,9 @@ class LIF_model:
         self.ind_spike_events_tonic = [[] for _ in range(self.n_neurons)]
         self.time_spike_events = [[] for _ in range(self.n_neurons)]
 
+    def max_syn_cont(self):
+        return [self.params['g_L']]
+
     def update_state(self, it, seed=None, use_noise=False, *args):
         """
         Update neuron state using explicit Euler.
