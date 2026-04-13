@@ -47,8 +47,8 @@ threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
 total_realizations = 104    # Number of stochastic realisations if activated
 num_realizations = 8        # Number of parallel realisations
-folder_vars = "../gain_control/variables/synaptic_entropy_high_freq/"   # Folder to save results
-folder_plots = '../gain_control/plots/'                                 # Folder to save plots
+folder_vars = "../gain_control/variables/"   # Folder to save results
+folder_plots = '../gain_control/plots/'      # Folder to save plots
 # **********************************************************************************************************************
 # Time conditions
 max_t = 6                               # Time of simulation (in seconds)
