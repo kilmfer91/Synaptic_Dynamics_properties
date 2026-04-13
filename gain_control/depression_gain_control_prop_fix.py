@@ -2,13 +2,13 @@ from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
 
-gain_v = [0.1, 0.5, 1.0]    # Vector of gains
+gain_v = [0.5]              # Vector of gains
 s_model = 'TM'              # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
 n_model = "LIF"             # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
 ind = 8                     # Index to recover params of a given synaptic and neuron model (See table below)
 sfreq = 6e3                 # Sampling frequency of the simulation
 max_freq = 1501             # Maximum baseline rate of the experiment
-tau_m_lif = 1               # If LIF neuron is used, this specifies the time constant (in milliseconds)
+tau_m_lif = 30              # If LIF neuron is used, this specifies the time constant (in milliseconds)
 
 # ******************************************************************************************************************
 # COMBINATION OF SYNAPTIC AND NEURON MODELS (INDICES)
@@ -31,7 +31,7 @@ tau_m_lif = 1               # If LIF neuron is used, this specifies the time con
 # GLOBAL VARIABLES
 save_vars = True            # Save results in folders
 force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
-stoch_input = False         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
+stoch_input = True         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 
 plot_ind_memPot = False     # Plot temporal dynamics
 save_figs = False           # Save temporal dynamics in folders
@@ -68,9 +68,9 @@ neuron_params = get_neuron_params(n_model=n_model, tau_m=tau_m_lif, ind=ind, y_l
 dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_params': syn_params, 'num_syn': num_syn,
                'neuron_model': n_model, 'neuron_params': neuron_params, 'sim_params': sim_params, 'gain_vector': gain_v,
                'folder_vars': folder_vars, 'folder_plots': folder_plots, 'save_vars': save_vars, 'save_figs': save_figs,
-               'force_experiment': force_experiment, 'imputations': imputations, 'stoch_input': stoch_input,
-               'lif_output': lif_output, 'dynamic_synapse': dyn_synapse, 'description': description,
-               'num_realizations': num_realizations, 'total_realizations': total_realizations, 'neuron_noise': n_noise}
+               'force_experiment': force_experiment, 'stoch_input': stoch_input, 'dynamic_synapse': dyn_synapse,
+               'description': description, 'num_realizations': num_realizations,
+               'total_realizations': total_realizations, 'neuron_noise': n_noise}
 
 # Instance of Gain-Control class
 initial_frequencies = np.array([10, 100, 600]) if force_experiment else None
