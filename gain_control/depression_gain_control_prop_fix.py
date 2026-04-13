@@ -1,10 +1,13 @@
 from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
-gain_v = [0.1]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-s_model = 'DoornSTD'
-n_model = "HH"
-ind = 2
+gain_v = [0.1, 0.5, 1.0]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+s_model = 'MSSM'
+n_model = "LIF"
+ind = 4
+sfreq = 6e3
+max_freq = 1501
+tau_m_lif = 1  # ms
 
 # ******************************************************************************************************************
 # Global variables
@@ -22,9 +25,9 @@ ind = 2
 # (Experiment 6) freq. response decay around 10Hz (depression)
 # (Experiment 7) freq. response facilitation
 
-# s_model = 'DoornSTD'
-# n_model = "HH"
-# ind = 1
+# s_model = 'MSSM'
+# n_model = "LIF"
+# ind = 4
 save_vars = True
 force_experiment = False
 stoch_input = True
@@ -43,16 +46,16 @@ filtering_tr = False
 cutoff_filt = 5
 threshold_per = 1e-3
 
-tau_m_lif = 1  # ms
+# tau_m_lif = 1  # ms
 total_realizations = 104  # 100  # 104
 num_realizations = 8  # 8
-# gain_v = [.15]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-max_freq = 601
-folder_vars = "../gain_control/variables/"
+# gain_v = [0.1, 0.5, 1.0]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+# max_freq = 1501
+folder_vars = "../gain_control/variables/synaptic_entropy_high_freq/"
 folder_plots = '../gain_control/plots/'
 # **********************************************************************************************************************
 # Time conditions
-sfreq = 10e3
+# sfreq = 6e3
 max_t = 6
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)

@@ -198,14 +198,15 @@ class MSSM_model(SynDynModel):
                 spike_range = (self.time_spike_events[s][-2], self.time_spike_events[s][-1])
                 self.compute_output_spike_event(spike_range, s, output)
 
+    """
     def append_spike_event(self, t, output):
-        """
+        '''
         Storing spike events for each state variable given a t-time
         Parameters
         ----------
         t
         output
-        """
+        '''
         self.C_spike_events.append(self.C[:, t])
         self.V_spike_events.append(self.V[:, t])
         self.N_spike_events.append(self.N[:, t])
@@ -218,3 +219,4 @@ class MSSM_model(SynDynModel):
         if len(self.time_spike_events) > 1:
             spike_range = (self.time_spike_events[-2], self.time_spike_events[-1])
             self.compute_output_spike_event(spike_range, output)
+    # """

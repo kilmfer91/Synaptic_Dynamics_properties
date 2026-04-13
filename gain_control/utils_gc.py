@@ -404,7 +404,7 @@ def binned_entropy(values, n_bins=20):
     hist, edges = np.histogram(values, bins=n_bins, density=False)
     p = hist / hist.sum()
     p = p[p > 0]
-    return -np.sum(p * np.log2(p))
+    return -np.sum(p * np.log2(p)), hist, edges
 
 
 def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=False, lif_n=None, I_ext=0,
@@ -1601,6 +1601,25 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
         np.array(max_tr_pi), np.array(max_tr_pm), np.array(max_tr_pe),
         np.array(min_tr_pi), np.array(min_tr_pm), np.array(min_tr_pe)]  # 50
     ), th_tr_a, tr_timeSeries, piw, pmw, pew, th_tr_a_filt
+
+
+def norm_array(np_array, compute_norm=True, min_n=None, max_n=None):
+    """
+    Min max normalization of np_array if compute_norm is True. If min_n and max_n are specified, then use
+    them as the source range to normalize to [0, 1]
+    :param np_array:
+    :param compute_norm:
+    :param min_n:
+    :param max_n:
+    :return:
+    either normalized array or np_array in case compute_norm is False
+    """
+    min_n = np.min(np_array) if min_n is None else min_n
+    max_n = np.max(np_array) if max_n is None else max_n
+    if compute_norm:
+        return np.copy((np_array - min_n) / (max_n - min_n))
+    else:
+        return np_array
 
 
 def stat_tr_slid(signals, win_r, win_l):

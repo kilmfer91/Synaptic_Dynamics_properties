@@ -95,7 +95,8 @@ class SynDynModel:
         if np.sum(self.edge_detection) > 0:
             self.append_spike_event(t, self.edge_detection, output)
 
-    def append_spike_event(self, t, active_synapses, output):
+    def append_spike_event(self, t, active_synapses, output, append_time=True):
+        """Store spike events for analysis (override parent)."""
         """
         Storing spike events for each state variable given a t-time
         Parameters
@@ -103,8 +104,22 @@ class SynDynModel:
         t
         active_synapses
         output
+        append_time
         """
         pass
+
+    """ 
+    def append_spike_event(self, t, active_synapses, output):
+        '''
+        Storing spike events for each state variable given a t-time
+        Parameters
+        ----------
+        t
+        active_synapses
+        output
+        '''
+         pass
+    # """
 
     def compute_output_spike_event(self, spike_range, s, output):
         # print("TM, append_spike_event(), spike range ", spike_range, " in time ", spike_range[0])

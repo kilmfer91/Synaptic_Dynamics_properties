@@ -13,10 +13,10 @@ tau_m = 30
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = True
 dyn_synapse = True
-gaincontrol_sinusoidal = False
+gaincontrol_sinusoidal = True
 
 # Hyperparameters for frequency analysis and poisson input spike
-freq_analysis = True
+freq_analysis = False
 Poisson = False
 num_syn = 200
 
@@ -68,9 +68,9 @@ lif.set_simulation_params(sim_params)
 mean_rates, max_oscils, fix_rates = [], [], []
 
 if gaincontrol_sinusoidal:
-    mean_rates = [[10, 10, 10], [20, 10, 20], [50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]
-    max_oscils = [[5, 5,  5],  [10, 5,  5],   [25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]
-    fix_rates = [[10, 10, 10], [10, 20, 10],  [10, 50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]
+    mean_rates = [[100, 10, 100]] # [[10, 10, 10], [20, 10, 20], [50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]
+    max_oscils = [[50,  5,  5]]  # [[5, 5,  5],  [10, 5,  5],   [25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]
+    fix_rates = [[10, 100, 10]]  # [[10, 10, 10], [10, 20, 10],  [10, 50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]
 
 # Results variable
 res_per_reali = np.zeros((10, 3, len(mean_rates)))  # statistical descriptors, num. scenarios, num. ref rate
@@ -151,8 +151,8 @@ while ind_exp < len(mean_rates):  # len(mean_rates): # for ind_exp in range(len(
                                         modulated_signal1, modulated_signal2)
             fig3.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
             if mean_rate[0] == 100 and i == 0:
-                plot_gc_sin_input_example(time_vector, dt, ind_exp, modulation_signal1, modulation_signal2,
-                                          modulated_signal1[0, :], modulated_signal2[0, :])
+                fig_essan3 = plot_gc_sin_input_example(time_vector, dt, ind_exp, modulation_signal1, modulation_signal2,
+                                                       modulated_signal1[0, :], modulated_signal2[0, :])
 
     if plots_net:
         # plot_gc_sin_mp_high_rates_esann(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann,
@@ -164,6 +164,8 @@ while ind_exp < len(mean_rates):  # len(mean_rates): # for ind_exp in range(len(
         fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
         fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
         fig_esann.savefig(path_save, format='png')
+        path_save = r'../gain_control/plots/gain_control_sin_' + model + '_ind_' + str(ind) + '_input_example.png'
+        # fig_essan3.savefig(path_save, format='png')
 
     time_desc = (f'[%dsin(0.2pit) + %d, %d], [%d, %dsin(0.2pit) + %d], [%dsin(0.2pit) + %d, %d]' %
                  (max_oscil[0], mean_rate[0], fix_rate[0], fix_rate[1], max_oscil[1], mean_rate[1],

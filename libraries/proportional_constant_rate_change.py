@@ -94,11 +94,22 @@ class GC_prop_cons:
             if max_freq > aux_max_freq:
                 max_freq = aux_max_freq
         # so max. ini freq sfreq/12 | 16kHz:2501, 5kHz:801, 6KHz: 951
-        range_f = [i for i in range(10, 100, 5)]
-        range_f2 = [i for i in range(100, 500, 10)] if 500 < max_freq else [i for i in range(100, max_freq, 10)]
-        range_f3 = [i for i in range(500, max_freq, 50)] if 500 < max_freq else []
+        range_f, range_f2, range_f3, range_f4 = [], [], [], []
+        if 100 < max_freq:
+            range_f = [i for i in range(10, 100, 5)]
+            if 500 < max_freq:
+                range_f2 = [i for i in range(100, 500, 10)]
+                if 1000 < max_freq:
+                    range_f3 = [i for i in range(500, 1000, 50)]
+                    range_f4 = [i for i in range(1000, max_freq, 100)]
+                else:
+                    range_f3 = [i for i in range(500, max_freq, 50)]
+            else:
+                range_f2 = [i for i in range(100, max_freq, 10)]
+        else:
+            range_f = [i for i in range(10, max_freq, 5)]
 
-        self.f_vector = np.array(range_f + range_f2 + range_f3) if f_vec is None else f_vec
+        self.f_vector = np.array(range_f + range_f2 + range_f3 + range_f4) if f_vec is None else f_vec
 
         # Setting gain vector
         self.gain_vector = gain_vector
@@ -349,8 +360,9 @@ class GC_prop_cons:
                     aux_i = aux_cond[0][0]
                     t_tra_mid_win = np.max(t_tra[aux_i])
                 # Clipping signals to avoid suprathreshold maxima
-                signal_prop = np.clip(signal_prop, None, 0.0)
-                signal_fix = np.clip(signal_fix, None, 0.0)
+                if not plot_ind_figs:
+                    signal_prop = np.clip(signal_prop, None, 0.0)
+                    signal_fix = np.clip(signal_fix, None, 0.0)
                 # Computing statistics of each window, for the whole window and for the transition- and steady-states
                 a, b, c, d, e, f, h = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
                                                    sim_params, [None, t_tra_mid_win, None], 1 / sfreq,
@@ -440,7 +452,7 @@ class GC_prop_cons:
                         assert a.shape[1] == res_per_reali.shape[2], "not same shape"
                     res_per_reali_syn_b[:, i, :], t_tr_syn_b, tr_time_series_i,  = a, b, c
                     piw, pmw, pew, t_tr_filt = d, e, f, h
-                    t_tra_syn_b[i].append(t_tr_syn)
+                    t_tra_syn_b[i].append(t_tr_syn_b)
                 # Updating array of time_transitions
                 """
                 t_tra[i].append(t_tr_)
@@ -636,8 +648,6 @@ class GC_prop_cons:
                             min_ = np.min(PSR_aux_syn)
                             if min_ < min_syn: min_syn = min_
 
-                        # Updating min-max of synaptic contributions
-
             # Getting information theory analysis
             H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr = [], [], []
             H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st = [], [], []
@@ -649,126 +659,129 @@ class GC_prop_cons:
             H_PSR_syn_iw_st, H_PSR_syn_mw_st, H_PSR_syn_ew_st = [], [], []
             H_PSR_syn_b_iw_tr, H_PSR_syn_b_mw_tr, H_PSR_syn_b_ew_tr = [], [], []
             H_PSR_syn_b_iw_st, H_PSR_syn_b_mw_st, H_PSR_syn_b_ew_st = [], [], []
-            # Getting information theory analysis
-            H_ISI_iw_tr_100bins, H_ISI_mw_tr_100bins, H_ISI_ew_tr_100bins = [], [], []
-            H_ISI_iw_st_100bins, H_ISI_mw_st_100bins, H_ISI_ew_st_100bins = [], [], []
-            # Entropy for neuronal output
-            H_PSR_iw_tr_100bins, H_PSR_mw_tr_100bins, H_PSR_ew_tr_100bins = [], [], []
-            H_PSR_iw_st_100bins, H_PSR_mw_st_100bins, H_PSR_ew_st_100bins = [], [], []
-            # Entropy for synaptic output(s)
-            H_PSR_syn_iw_tr_100bins, H_PSR_syn_mw_tr_100bins, H_PSR_syn_ew_tr_100bins = [], [], []
-            H_PSR_syn_iw_st_100bins, H_PSR_syn_mw_st_100bins, H_PSR_syn_ew_st_100bins = [], [], []
-            H_PSR_syn_b_iw_tr_100bins, H_PSR_syn_b_mw_tr_100bins, H_PSR_syn_b_ew_tr_100bins = [], [], []
-            H_PSR_syn_b_iw_st_100bins, H_PSR_syn_b_mw_st_100bins, H_PSR_syn_b_ew_st_100bins = [], [], []
+            # Histograms Input
+            bin_ISI_iw_tr, bin_ISI_mw_tr, bin_ISI_ew_tr = [], [], []
+            bin_ISI_iw_st, bin_ISI_mw_st, bin_ISI_ew_st = [], [], []
+            edge_ISI_iw_tr, edge_ISI_mw_tr, edge_ISI_ew_tr = [], [], []
+            edge_ISI_iw_st, edge_ISI_mw_st, edge_ISI_ew_st = [], [], []
+            # Histograms for neuronal output
+            bin_PSR_iw_tr, bin_PSR_mw_tr, bin_PSR_ew_tr = [], [], []
+            bin_PSR_iw_st, bin_PSR_mw_st, bin_PSR_ew_st = [], [], []
+            edge_PSR_iw_tr, edge_PSR_mw_tr, edge_PSR_ew_tr = [], [], []
+            edge_PSR_iw_st, edge_PSR_mw_st, edge_PSR_ew_st = [], [], []
+            # Histograms for synaptic output(s)
+            bin_PSR_syn_iw_tr, bin_PSR_syn_mw_tr, bin_PSR_syn_ew_tr = [], [], []
+            bin_PSR_syn_iw_st, bin_PSR_syn_mw_st, bin_PSR_syn_ew_st = [], [], []
+            bin_PSR_syn_b_iw_tr, bin_PSR_syn_b_mw_tr, bin_PSR_syn_b_ew_tr = [], [], []
+            bin_PSR_syn_b_iw_st, bin_PSR_syn_b_mw_st, bin_PSR_syn_b_ew_st = [], [], []
+            edge_PSR_syn_iw_tr, edge_PSR_syn_mw_tr, edge_PSR_syn_ew_tr = [], [], []
+            edge_PSR_syn_iw_st, edge_PSR_syn_mw_st, edge_PSR_syn_ew_st = [], [], []
+            edge_PSR_syn_b_iw_tr, edge_PSR_syn_b_mw_tr, edge_PSR_syn_b_ew_tr = [], [], []
+            edge_PSR_syn_b_iw_st, edge_PSR_syn_b_mw_st, edge_PSR_syn_b_ew_st = [], [], []
 
             # conductance of synaptic contributions to neuron model
             max_syn_contr = self.neuron_prop.max_syn_cont()
             bin_size_syn, bin_size_syn_b = max_syn - min_syn, max_syn_b - min_syn_b
-            # if len(max_syn_contr) == 2:
-            #     bin_size_syn = max_syn_contr[0][0]
-            #     bin_size_syn_b = max_syn_contr[1][0]
-            # else:
-            #     bin_size_syn = max_syn_contr[0][0]
 
             for i in range(num_freq_exp):
-                # ******************************************************************************************************
-                # ENTROPY COMPUTATION USING FIXED NUMBER OF BINS
-                # Entropy calculations for input
-                H_ISI_iw_tr_100bins.append(binned_entropy(ISI_per_freq_iw_tr[i], n_bins=100))
-                H_ISI_iw_st_100bins.append(binned_entropy(ISI_per_freq_iw_st[i], n_bins=100))
-                H_ISI_mw_tr_100bins.append(binned_entropy(ISI_per_freq_mw_tr[i], n_bins=100))
-                H_ISI_mw_st_100bins.append(binned_entropy(ISI_per_freq_mw_st[i], n_bins=100))
-                H_ISI_ew_tr_100bins.append(binned_entropy(ISI_per_freq_ew_tr[i], n_bins=100))
-                H_ISI_ew_st_100bins.append(binned_entropy(ISI_per_freq_ew_st[i], n_bins=100))
-                # Entropy calculations for neuronal responses
-                H_PSR_iw_tr_100bins.append(binned_entropy(PSR_per_freq_iw_tr[i], n_bins=100))
-                H_PSR_iw_st_100bins.append(binned_entropy(PSR_per_freq_iw_st[i], n_bins=100))
-                H_PSR_mw_tr_100bins.append(binned_entropy(PSR_per_freq_mw_tr[i], n_bins=100))
-                H_PSR_mw_st_100bins.append(binned_entropy(PSR_per_freq_mw_st[i], n_bins=100))
-                H_PSR_ew_tr_100bins.append(binned_entropy(PSR_per_freq_ew_tr[i], n_bins=100))
-                H_PSR_ew_st_100bins.append(binned_entropy(PSR_per_freq_ew_st[i], n_bins=100))
-                # Entropy calculations for synaptic response
-                H_PSR_syn_iw_tr_100bins.append(binned_entropy(PSR_syn_per_freq_iw_tr[i], n_bins=100))
-                H_PSR_syn_iw_st_100bins.append(binned_entropy(PSR_syn_per_freq_iw_st[i], n_bins=100))
-                H_PSR_syn_mw_tr_100bins.append(binned_entropy(PSR_syn_per_freq_mw_tr[i], n_bins=100))
-                H_PSR_syn_mw_st_100bins.append(binned_entropy(PSR_syn_per_freq_mw_st[i], n_bins=100))
-                H_PSR_syn_ew_tr_100bins.append(binned_entropy(PSR_syn_per_freq_ew_tr[i], n_bins=100))
-                H_PSR_syn_ew_st_100bins.append(binned_entropy(PSR_syn_per_freq_ew_st[i], n_bins=100))
-                if PSR_syn_iw_tr.ndim == 2:
-                    # Entropy calculations for second synaptic response
-                    H_PSR_syn_b_iw_tr_100bins.append(binned_entropy(PSR_syn_b_per_freq_iw_tr[i], n_bins=100))
-                    H_PSR_syn_b_iw_st_100bins.append(binned_entropy(PSR_syn_b_per_freq_iw_st[i], n_bins=100))
-                    H_PSR_syn_b_mw_tr_100bins.append(binned_entropy(PSR_syn_b_per_freq_mw_tr[i], n_bins=100))
-                    H_PSR_syn_b_mw_st_100bins.append(binned_entropy(PSR_syn_b_per_freq_mw_st[i], n_bins=100))
-                    H_PSR_syn_b_ew_tr_100bins.append(binned_entropy(PSR_syn_b_per_freq_ew_tr[i], n_bins=100))
-                    H_PSR_syn_b_ew_st_100bins.append(binned_entropy(PSR_syn_b_per_freq_ew_st[i], n_bins=100))
                 # ******************************************************************************************************
                 # ENTROPY COMPUTATION USING FIXED BIN SIZE
                 # Entropy calculation for input
                 bin_size = 0.1 / f_vector[i]  # 10% of T
-                H_ISI_iw_tr.append(H_entropy_dyn_bins(ISI_per_freq_iw_tr[i], bin_size=bin_size))
-                H_ISI_iw_st.append(H_entropy_dyn_bins(ISI_per_freq_iw_st[i], bin_size=bin_size))
-                H_ISI_ew_tr.append(H_entropy_dyn_bins(ISI_per_freq_ew_tr[i], bin_size=bin_size))
-                H_ISI_ew_st.append(H_entropy_dyn_bins(ISI_per_freq_ew_st[i], bin_size=bin_size))
+                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_iw_tr[i], bin_size=bin_size)
+                H_ISI_iw_tr.append(H_), bin_ISI_iw_tr.append(bins), edge_ISI_iw_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_iw_st[i], bin_size=bin_size)
+                H_ISI_iw_st.append(H_), bin_ISI_iw_st.append(bins), edge_ISI_iw_st.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_ew_tr[i], bin_size=bin_size)
+                H_ISI_ew_tr.append(H_), bin_ISI_ew_tr.append(bins), edge_ISI_ew_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_ew_st[i], bin_size=bin_size)
+                H_ISI_ew_st.append(H_), bin_ISI_ew_st.append(bins), edge_ISI_ew_st.append(edges)
                 bin_size = 0.1 / proportional_changes[i]  # 10% of T
-                H_ISI_mw_tr.append(H_entropy_dyn_bins(ISI_per_freq_mw_tr[i], bin_size=bin_size))
-                H_ISI_mw_st.append(H_entropy_dyn_bins(ISI_per_freq_mw_st[i], bin_size=bin_size))
+                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_mw_tr[i], bin_size=bin_size)
+                H_ISI_mw_tr.append(H_), bin_ISI_mw_tr.append(bins), edge_ISI_mw_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_mw_st[i], bin_size=bin_size)
+                H_ISI_mw_st.append(H_), bin_ISI_mw_st.append(bins), edge_ISI_mw_st.append(edges)
                 # Entropy calculations for neuronal responses
                 bin_size = 0.1e-3  # 0.1mV
-                H_PSR_iw_tr.append(H_entropy_dyn_bins(PSR_per_freq_iw_tr[i], bin_size=bin_size))
-                H_PSR_iw_st.append(H_entropy_dyn_bins(PSR_per_freq_iw_st[i], bin_size=bin_size))
-                H_PSR_mw_tr.append(H_entropy_dyn_bins(PSR_per_freq_mw_tr[i], bin_size=bin_size))
-                H_PSR_mw_st.append(H_entropy_dyn_bins(PSR_per_freq_mw_st[i], bin_size=bin_size))
-                H_PSR_ew_tr.append(H_entropy_dyn_bins(PSR_per_freq_ew_tr[i], bin_size=bin_size))
-                H_PSR_ew_st.append(H_entropy_dyn_bins(PSR_per_freq_ew_st[i], bin_size=bin_size))
+                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_iw_tr[i], bin_size=bin_size)
+                H_PSR_iw_tr.append(H_), bin_PSR_iw_tr.append(bins), edge_PSR_iw_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_iw_st[i], bin_size=bin_size)
+                H_PSR_iw_st.append(H_), bin_PSR_iw_st.append(bins), edge_PSR_iw_st.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_mw_tr[i], bin_size=bin_size)
+                H_PSR_mw_tr.append(H_), bin_PSR_mw_tr.append(bins), edge_PSR_mw_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_mw_st[i], bin_size=bin_size)
+                H_PSR_mw_st.append(H_), bin_PSR_mw_st.append(bins), edge_PSR_mw_st.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_ew_tr[i], bin_size=bin_size)
+                H_PSR_ew_tr.append(H_), bin_PSR_ew_tr.append(bins), edge_PSR_ew_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_ew_st[i], bin_size=bin_size)
+                H_PSR_ew_st.append(H_), bin_PSR_ew_st.append(bins), edge_PSR_ew_st.append(edges)
                 # Entropy calculations for synaptic response
                 bin_size = 0.01 * bin_size_syn  # 1% of max. synaptic contribution
-                H_PSR_syn_iw_tr.append(H_entropy_dyn_bins(PSR_syn_per_freq_iw_tr[i], bin_size=bin_size))
-                H_PSR_syn_iw_st.append(H_entropy_dyn_bins(PSR_syn_per_freq_iw_st[i], bin_size=bin_size))
-                H_PSR_syn_mw_tr.append(H_entropy_dyn_bins(PSR_syn_per_freq_mw_tr[i], bin_size=bin_size))
-                H_PSR_syn_mw_st.append(H_entropy_dyn_bins(PSR_syn_per_freq_mw_st[i], bin_size=bin_size))
-                H_PSR_syn_ew_tr.append(H_entropy_dyn_bins(PSR_syn_per_freq_ew_tr[i], bin_size=bin_size))
-                H_PSR_syn_ew_st.append(H_entropy_dyn_bins(PSR_syn_per_freq_ew_st[i], bin_size=bin_size))
+                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_iw_tr[i], bin_size=bin_size)
+                H_PSR_syn_iw_tr.append(H_), bin_PSR_syn_iw_tr.append(bins), edge_PSR_syn_iw_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_iw_st[i], bin_size=bin_size)
+                H_PSR_syn_iw_st.append(H_), bin_PSR_syn_iw_st.append(bins), edge_PSR_syn_iw_st.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_mw_tr[i], bin_size=bin_size)
+                H_PSR_syn_mw_tr.append(H_), bin_PSR_syn_mw_tr.append(bins), edge_PSR_syn_mw_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_mw_st[i], bin_size=bin_size)
+                H_PSR_syn_mw_st.append(H_), bin_PSR_syn_mw_st.append(bins), edge_PSR_syn_mw_st.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_ew_tr[i], bin_size=bin_size)
+                H_PSR_syn_ew_tr.append(H_), bin_PSR_syn_ew_tr.append(bins), edge_PSR_syn_ew_tr.append(edges)
+                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_ew_st[i], bin_size=bin_size)
+                H_PSR_syn_ew_st.append(H_), bin_PSR_syn_ew_st.append(bins), edge_PSR_syn_ew_st.append(edges)
                 if PSR_syn_iw_tr.ndim == 2:
                     # Entropy calculations for second synaptic response
                     bin_size = 0.01 * bin_size_syn_b  # 1% of max. synaptic contribution
-                    H_PSR_syn_b_iw_tr.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_tr[i], bin_size=bin_size))
-                    H_PSR_syn_b_iw_st.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_st[i], bin_size=bin_size))
-                    H_PSR_syn_b_mw_tr.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_tr[i], bin_size=bin_size))
-                    H_PSR_syn_b_mw_st.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_st[i], bin_size=bin_size))
-                    H_PSR_syn_b_ew_tr.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_tr[i], bin_size=bin_size))
-                    H_PSR_syn_b_ew_st.append(H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_st[i], bin_size=bin_size))
+                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_tr[i], bin_size=bin_size)
+                    H_PSR_syn_b_iw_tr.append(H_), bin_PSR_syn_b_iw_tr.append(bins), edge_PSR_syn_b_iw_tr.append(edges)
+                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_st[i], bin_size=bin_size)
+                    H_PSR_syn_b_iw_st.append(H_), bin_PSR_syn_b_iw_st.append(bins), edge_PSR_syn_b_iw_st.append(edges)
+                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_tr[i], bin_size=bin_size)
+                    H_PSR_syn_b_mw_tr.append(H_), bin_PSR_syn_b_mw_tr.append(bins), edge_PSR_syn_b_mw_tr.append(edges)
+                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_st[i], bin_size=bin_size)
+                    H_PSR_syn_b_mw_st.append(H_), bin_PSR_syn_b_mw_st.append(bins), edge_PSR_syn_b_mw_st.append(edges)
+                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_tr[i], bin_size=bin_size)
+                    H_PSR_syn_b_ew_tr.append(H_), bin_PSR_syn_b_ew_tr.append(bins), edge_PSR_syn_b_ew_tr.append(edges)
+                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_st[i], bin_size=bin_size)
+                    H_PSR_syn_b_ew_st.append(H_), bin_PSR_syn_b_ew_st.append(bins), edge_PSR_syn_b_ew_st.append(edges)
 
             # ******************************************************************************************************
-            # ENTROPY COMPUTATION USING FIXED NUMBER OF BINS
-            dr['H_ISI_tr_100'] = np.array([H_ISI_iw_tr_100bins, H_ISI_mw_tr_100bins, H_ISI_ew_tr_100bins])
-            dr['H_ISI_st_100'] = np.array([H_ISI_iw_st_100bins, H_ISI_mw_st_100bins, H_ISI_ew_st_100bins])
-            dr['H_PSR_tr_100'] = np.array([H_PSR_iw_tr_100bins, H_PSR_mw_tr_100bins, H_PSR_ew_tr_100bins])
-            dr['H_PSR_st_100'] = np.array([H_PSR_iw_st_100bins, H_PSR_mw_st_100bins, H_PSR_ew_st_100bins])
-            dr['H_PSR_syn_tr_100'] = np.array([H_PSR_syn_iw_tr_100bins, H_PSR_syn_mw_tr_100bins,
-                                               H_PSR_syn_ew_tr_100bins])
-            dr['H_PSR_syn_st_100'] = np.array([H_PSR_syn_iw_st_100bins, H_PSR_syn_mw_st_100bins,
-                                               H_PSR_syn_ew_st_100bins])
-            if PSR_syn_iw_tr.ndim == 2:
-                dr['H_PSR_syn_b_tr_100'] = np.array([H_PSR_syn_b_iw_tr_100bins, H_PSR_syn_b_mw_tr_100bins,
-                                                     H_PSR_syn_b_ew_tr_100bins])
-                dr['H_PSR_syn_b_st_100'] = np.array([H_PSR_syn_b_iw_st_100bins, H_PSR_syn_b_mw_st_100bins,
-                                                     H_PSR_syn_b_ew_st_100bins])
-            # ******************************************************************************************************
             # ENTROPY COMPUTATION USING FIXED BIN SIZE
+            # Entropies
             dr['H_ISI_tr'] = np.array([H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr])
             dr['H_ISI_st'] = np.array([H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st])
             dr['H_PSR_tr'] = np.array([H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr])
             dr['H_PSR_st'] = np.array([H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st])
             dr['H_PSR_syn_tr'] = np.array([H_PSR_syn_iw_tr, H_PSR_syn_mw_tr, H_PSR_syn_ew_tr])
             dr['H_PSR_syn_st'] = np.array([H_PSR_syn_iw_st, H_PSR_syn_mw_st, H_PSR_syn_ew_st])
+            # Bins
+            dr['bin_ISI_tr'] = np.array([bin_ISI_iw_tr, bin_ISI_mw_tr, bin_ISI_ew_tr])
+            dr['bin_ISI_st'] = np.array([bin_ISI_iw_st, bin_ISI_mw_st, bin_ISI_ew_st])
+            dr['bin_PSR_tr'] = np.array([bin_PSR_iw_tr, bin_PSR_mw_tr, bin_PSR_ew_tr])
+            dr['bin_PSR_st'] = np.array([bin_PSR_iw_st, bin_PSR_mw_st, bin_PSR_ew_st])
+            dr['bin_PSR_syn_tr'] = np.array([bin_PSR_syn_iw_tr, bin_PSR_syn_mw_tr, bin_PSR_syn_ew_tr])
+            dr['bin_PSR_syn_st'] = np.array([bin_PSR_syn_iw_st, bin_PSR_syn_mw_st, bin_PSR_syn_ew_st])
+            # Edges
+            dr['edge_ISI_tr'] = np.array([edge_ISI_iw_tr, edge_ISI_mw_tr, edge_ISI_ew_tr])
+            dr['edge_ISI_st'] = np.array([edge_ISI_iw_st, edge_ISI_mw_st, edge_ISI_ew_st])
+            dr['edge_PSR_tr'] = np.array([edge_PSR_iw_tr, edge_PSR_mw_tr, edge_PSR_ew_tr])
+            dr['edge_PSR_st'] = np.array([edge_PSR_iw_st, edge_PSR_mw_st, edge_PSR_ew_st])
+            dr['edge_PSR_syn_tr'] = np.array([edge_PSR_syn_iw_tr, edge_PSR_syn_mw_tr, edge_PSR_syn_ew_tr])
+            dr['edge_PSR_syn_st'] = np.array([edge_PSR_syn_iw_st, edge_PSR_syn_mw_st, edge_PSR_syn_ew_st])
             if PSR_syn_iw_tr.ndim == 2:
+                # Entropies
                 dr['H_PSR_syn_b_tr'] = np.array([H_PSR_syn_b_iw_tr, H_PSR_syn_b_mw_tr, H_PSR_syn_b_ew_tr])
                 dr['H_PSR_syn_b_st'] = np.array([H_PSR_syn_b_iw_st, H_PSR_syn_b_mw_st, H_PSR_syn_b_ew_st])
+                # Bins
+                dr['bin_PSR_syn_b_tr'] = np.array([bin_PSR_syn_b_iw_tr, bin_PSR_syn_b_mw_tr, bin_PSR_syn_b_ew_tr])
+                dr['bin_PSR_syn_b_st'] = np.array([bin_PSR_syn_b_iw_st, bin_PSR_syn_b_mw_st, bin_PSR_syn_b_ew_st])
+                # Edges
+                dr['edge_PSR_syn_b_tr'] = np.array([edge_PSR_syn_b_iw_tr, edge_PSR_syn_b_mw_tr, edge_PSR_syn_b_ew_tr])
+                dr['edge_PSR_syn_b_st'] = np.array([edge_PSR_syn_b_iw_st, edge_PSR_syn_b_mw_st, edge_PSR_syn_b_ew_st])
 
             # Saving bin_size computation min-max limits
             dr['H_PSR_syn_max_contr'] = [[min_syn, max_syn]]
-            if PSR_syn_iw_tr.ndim == 2: dr['H_PSR_syn_max_contr'].append([min_syn_b, max_syn_b])
+            if PSR_syn_iw_tr.ndim == 2: dr['H_PSR_syn_b_max_contr'].append([min_syn_b, max_syn_b])
 
             # """
             # ##########################################################################################################
