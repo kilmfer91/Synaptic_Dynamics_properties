@@ -2,9 +2,9 @@ from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
 gain_v = [0.1, 0.5, 1.0]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-s_model = 'MSSM'
+s_model = 'TM'
 n_model = "LIF"
-ind = 4
+ind = 8
 sfreq = 6e3
 max_freq = 1501
 tau_m_lif = 1  # ms
@@ -30,7 +30,7 @@ tau_m_lif = 1  # ms
 # ind = 4
 save_vars = True
 force_experiment = False
-stoch_input = True
+stoch_input = False
 
 plot_ind_memPot = False
 save_figs = False

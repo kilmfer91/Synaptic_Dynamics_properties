@@ -14,7 +14,7 @@ from gain_control.utils_gc import *
 # (Experiment 6) freq. response decay around 10Hz
 s_model = 'DoornSTD'
 n_model = "HH"
-ind = 6
+ind = 3
 # save_vars = True
 run_experiment = False
 save_figs = True
@@ -24,7 +24,7 @@ n_noise = True
 num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 10e3
+sfreq = 6e3
 tau_lif = 1  # ms
 total_realizations = 1  # 100
 num_realizations = 1  # 8 for server, 4 for macbook air

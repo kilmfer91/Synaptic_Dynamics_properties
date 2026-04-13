@@ -383,8 +383,8 @@ def H_entropy_dyn_bins(data, bin_size=0.01, range_d=None, plot=False):
     else:
         data_min, data_max = range_d
 
-    if data_max == data_min:
-        return 0.0  # constant signal → H=0
+    # if data_max == data_min:
+    #     return 0.0  # constant signal → H=0
 
     # Dynamic number of bins based on bin_size
     num_bins = int(np.ceil((data_max - data_min) / bin_size))
