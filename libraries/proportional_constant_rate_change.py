@@ -755,29 +755,29 @@ class GC_prop_cons:
             dr['H_PSR_syn_tr'] = np.array([H_PSR_syn_iw_tr, H_PSR_syn_mw_tr, H_PSR_syn_ew_tr])
             dr['H_PSR_syn_st'] = np.array([H_PSR_syn_iw_st, H_PSR_syn_mw_st, H_PSR_syn_ew_st])
             # Bins
-            dr['bin_ISI_tr'] = np.array([bin_ISI_iw_tr, bin_ISI_mw_tr, bin_ISI_ew_tr])
-            dr['bin_ISI_st'] = np.array([bin_ISI_iw_st, bin_ISI_mw_st, bin_ISI_ew_st])
-            dr['bin_PSR_tr'] = np.array([bin_PSR_iw_tr, bin_PSR_mw_tr, bin_PSR_ew_tr])
-            dr['bin_PSR_st'] = np.array([bin_PSR_iw_st, bin_PSR_mw_st, bin_PSR_ew_st])
-            dr['bin_PSR_syn_tr'] = np.array([bin_PSR_syn_iw_tr, bin_PSR_syn_mw_tr, bin_PSR_syn_ew_tr])
-            dr['bin_PSR_syn_st'] = np.array([bin_PSR_syn_iw_st, bin_PSR_syn_mw_st, bin_PSR_syn_ew_st])
+            dr['bin_ISI_tr'] = [bin_ISI_iw_tr, bin_ISI_mw_tr, bin_ISI_ew_tr]
+            dr['bin_ISI_st'] = [bin_ISI_iw_st, bin_ISI_mw_st, bin_ISI_ew_st]
+            dr['bin_PSR_tr'] = [bin_PSR_iw_tr, bin_PSR_mw_tr, bin_PSR_ew_tr]
+            dr['bin_PSR_st'] = [bin_PSR_iw_st, bin_PSR_mw_st, bin_PSR_ew_st]
+            dr['bin_PSR_syn_tr'] = [bin_PSR_syn_iw_tr, bin_PSR_syn_mw_tr, bin_PSR_syn_ew_tr]
+            dr['bin_PSR_syn_st'] = [bin_PSR_syn_iw_st, bin_PSR_syn_mw_st, bin_PSR_syn_ew_st]
             # Edges
-            dr['edge_ISI_tr'] = np.array([edge_ISI_iw_tr, edge_ISI_mw_tr, edge_ISI_ew_tr])
-            dr['edge_ISI_st'] = np.array([edge_ISI_iw_st, edge_ISI_mw_st, edge_ISI_ew_st])
-            dr['edge_PSR_tr'] = np.array([edge_PSR_iw_tr, edge_PSR_mw_tr, edge_PSR_ew_tr])
-            dr['edge_PSR_st'] = np.array([edge_PSR_iw_st, edge_PSR_mw_st, edge_PSR_ew_st])
-            dr['edge_PSR_syn_tr'] = np.array([edge_PSR_syn_iw_tr, edge_PSR_syn_mw_tr, edge_PSR_syn_ew_tr])
-            dr['edge_PSR_syn_st'] = np.array([edge_PSR_syn_iw_st, edge_PSR_syn_mw_st, edge_PSR_syn_ew_st])
+            dr['edge_ISI_tr'] = [edge_ISI_iw_tr, edge_ISI_mw_tr, edge_ISI_ew_tr]
+            dr['edge_ISI_st'] = [edge_ISI_iw_st, edge_ISI_mw_st, edge_ISI_ew_st]
+            dr['edge_PSR_tr'] = [edge_PSR_iw_tr, edge_PSR_mw_tr, edge_PSR_ew_tr]
+            dr['edge_PSR_st'] = [edge_PSR_iw_st, edge_PSR_mw_st, edge_PSR_ew_st]
+            dr['edge_PSR_syn_tr'] = [edge_PSR_syn_iw_tr, edge_PSR_syn_mw_tr, edge_PSR_syn_ew_tr]
+            dr['edge_PSR_syn_st'] = [edge_PSR_syn_iw_st, edge_PSR_syn_mw_st, edge_PSR_syn_ew_st]
             if PSR_syn_iw_tr.ndim == 2:
                 # Entropies
                 dr['H_PSR_syn_b_tr'] = np.array([H_PSR_syn_b_iw_tr, H_PSR_syn_b_mw_tr, H_PSR_syn_b_ew_tr])
                 dr['H_PSR_syn_b_st'] = np.array([H_PSR_syn_b_iw_st, H_PSR_syn_b_mw_st, H_PSR_syn_b_ew_st])
                 # Bins
-                dr['bin_PSR_syn_b_tr'] = np.array([bin_PSR_syn_b_iw_tr, bin_PSR_syn_b_mw_tr, bin_PSR_syn_b_ew_tr])
-                dr['bin_PSR_syn_b_st'] = np.array([bin_PSR_syn_b_iw_st, bin_PSR_syn_b_mw_st, bin_PSR_syn_b_ew_st])
+                dr['bin_PSR_syn_b_tr'] = [bin_PSR_syn_b_iw_tr, bin_PSR_syn_b_mw_tr, bin_PSR_syn_b_ew_tr]
+                dr['bin_PSR_syn_b_st'] = [bin_PSR_syn_b_iw_st, bin_PSR_syn_b_mw_st, bin_PSR_syn_b_ew_st]
                 # Edges
-                dr['edge_PSR_syn_b_tr'] = np.array([edge_PSR_syn_b_iw_tr, edge_PSR_syn_b_mw_tr, edge_PSR_syn_b_ew_tr])
-                dr['edge_PSR_syn_b_st'] = np.array([edge_PSR_syn_b_iw_st, edge_PSR_syn_b_mw_st, edge_PSR_syn_b_ew_st])
+                dr['edge_PSR_syn_b_tr'] = [edge_PSR_syn_b_iw_tr, edge_PSR_syn_b_mw_tr, edge_PSR_syn_b_ew_tr]
+                dr['edge_PSR_syn_b_st'] = [edge_PSR_syn_b_iw_st, edge_PSR_syn_b_mw_st, edge_PSR_syn_b_ew_st]
 
             # Saving bin_size computation min-max limits
             dr['H_PSR_syn_max_contr'] = [[min_syn, max_syn]]
