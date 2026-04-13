@@ -1,65 +1,60 @@
 from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
-gain_v = [0.1, 0.5, 1.0]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-s_model = 'TM'
-n_model = "LIF"
-ind = 8
-sfreq = 6e3
-max_freq = 1501
-tau_m_lif = 1  # ms
+
+gain_v = [0.1, 0.5, 1.0]    # Vector of gains
+s_model = 'TM'              # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
+n_model = "LIF"             # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
+ind = 8                     # Index to recover params of a given synaptic and neuron model (See table below)
+sfreq = 6e3                 # Sampling frequency of the simulation
+max_freq = 1501             # Maximum baseline rate of the experiment
+tau_m_lif = 1               # If LIF neuron is used, this specifies the time constant (in milliseconds)
 
 # ******************************************************************************************************************
-# Global variables
+# COMBINATION OF SYNAPTIC AND NEURON MODELS (INDICES)
 # DoornSTD + HH
-# (Experiment 1) DoornSTD control
-# (Experiment 2 and 3) DoornSTD strong STD (a and b)
-# (Experiment 4 and 5) DoornSTD + Asynchronous release (low and high)
-# (Experiment 6) DoornSTD + strong NMDA current
-# (Experiment 7) DoornSTF
-# LIF + MSSM/TM
-# (Experiment 2) freq. response decay around 100Hz (depression)
-# (Experiment 3) freq. response decay around 10Hz (depression)
-# (Experiment 4) freq. response from Gain Control paper (depression)
-# (Experiment 5) freq. response decay around 100Hz (depression)
-# (Experiment 6) freq. response decay around 10Hz (depression)
-# (Experiment 7) freq. response facilitation
+# (Ind 1) DoornSTD control
+# (Ind 2 and 3) DoornSTD strong STD (a and b)
+# (Ind 4 and 5) DoornSTD + Asynchronous release (low and high)
+# (Ind 6) DoornSTD + strong NMDA current
+# (Ind 7) DoornSTF
+# MSSM or TM + LIF
+# (Ind 2) freq. response decay around 100Hz (depression)
+# (Ind 3) freq. response decay around 10Hz (depression)
+# (Ind 4) freq. response from Gain Control paper (depression)
+# (Ind 5) freq. response decay around 100Hz (depression)
+# (Ind 6) freq. response decay around 10Hz (depression)
+# (Ind 7) freq. response (facilitation) ONLY FOR MSSM
+# (Ind 8) freq. response (facilitation) ONLY FOR TM
 
-# s_model = 'MSSM'
-# n_model = "LIF"
-# ind = 4
-save_vars = True
-force_experiment = False
-stoch_input = False
+# ******************************************************************************************************************
+# GLOBAL VARIABLES
+save_vars = True            # Save results in folders
+force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
+stoch_input = False         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 
-plot_ind_memPot = False
-save_figs = False
+plot_ind_memPot = False     # Plot temporal dynamics
+save_figs = False           # Save temporal dynamics in folders
 
-imputations = True
-lif_output = True
-dyn_synapse = True
-n_noise = True  # Neuron noise
+dyn_synapse = True          # Use Synaptic Dynamics or a simple static synapse (a weight)
+n_noise = True              # Activate noise in neuron model if available
 
 # tr_st_time variables
 # # th_percentage=1e-3 for not filtering (Doorn 1, 2, 3, 6, 7)
-filtering_tr = False
-cutoff_filt = 5
-threshold_per = 1e-3
+filtering_tr = False        # Use filtering to detect time of steady-state
+cutoff_filt = 5             # Cut-off frequency of the filter if used
+threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
-# tau_m_lif = 1  # ms
-total_realizations = 104  # 100  # 104
-num_realizations = 8  # 8
-# gain_v = [0.1, 0.5, 1.0]  # [1.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-# max_freq = 1501
-folder_vars = "../gain_control/variables/synaptic_entropy_high_freq/"
-folder_plots = '../gain_control/plots/'
+total_realizations = 104    # Number of stochastic realisations if activated
+num_realizations = 8        # Number of parallel realisations
+folder_vars = "../gain_control/variables/synaptic_entropy_high_freq/"   # Folder to save results
+folder_plots = '../gain_control/plots/'                                 # Folder to save plots
 # **********************************************************************************************************************
 # Time conditions
-# sfreq = 6e3
-max_t = 6
-dt = 1 / sfreq
-time_vector = np.arange(0, max_t, dt)
-L = time_vector.shape[0]
+max_t = 6                               # Time of simulation (in seconds)
+dt = 1 / sfreq                          # Time step
+time_vector = np.arange(0, max_t, dt)   # Time vector
+L = time_vector.shape[0]                # Length of time vector
 sim_params = {'sfreq': sfreq, 'max_t': max_t, 'L': L, 'time_vector': time_vector}
 
 # **********************************************************************************************************************

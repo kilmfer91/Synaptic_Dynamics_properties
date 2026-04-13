@@ -22,9 +22,9 @@ class GC_prop_cons:
         self.save_vars = dict_params['save_vars']
         self.force_experiment = dict_params['force_experiment']
         self.save_figs = dict_params['save_figs']
-        self.imputations = dict_params['imputations']
+        self.imputations = True  # dict_params['imputations']
         self.stoch_input = dict_params['stoch_input']
-        self.lif_output = dict_params['lif_output']
+        self.lif_output = True  # dict_params['lif_output']
         self.dynamic_synapse = dict_params['dynamic_synapse']
         self.neuron_noise = dict_params['neuron_noise']
 
