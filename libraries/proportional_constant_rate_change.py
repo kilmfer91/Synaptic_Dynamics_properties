@@ -687,9 +687,6 @@ class GC_prop_cons:
                 # ******************************************************************************************************
                 # ENTROPY COMPUTATION USING FIXED BIN SIZE
                 # Entropy calculation for input
-                print("Freq ", str(i))
-                if i == 66:
-                    print("Debug!")
                 bin_size = 0.1 / f_vector[i]  # 10% of T
                 H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_iw_tr[i], bin_size=bin_size)
                 H_ISI_iw_tr.append(H_), bin_ISI_iw_tr.append(bins), edge_ISI_iw_tr.append(edges)
