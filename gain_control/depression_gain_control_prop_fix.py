@@ -2,13 +2,13 @@ from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
 
-gain_v = [0.5]              # Vector of gains
-s_model = 'TM'              # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
-n_model = "LIF"             # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
+gain_v = [1.0]              # Vector of gains
+s_model = 'DoornSTD'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
+n_model = "HH"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
 ind = 8                     # Index to recover params of a given synaptic and neuron model (See table below)
-sfreq = 6e3                 # Sampling frequency of the simulation
+sfreq = 10e3                # Sampling frequency of the simulation
 max_freq = 1501             # Maximum baseline rate of the experiment
-tau_m_lif = 30              # If LIF neuron is used, this specifies the time constant (in milliseconds)
+tau_m_lif = 1               # If LIF neuron is used, this specifies the time constant (in milliseconds)
 
 # ******************************************************************************************************************
 # COMBINATION OF SYNAPTIC AND NEURON MODELS (INDICES)
@@ -29,11 +29,11 @@ tau_m_lif = 30              # If LIF neuron is used, this specifies the time con
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = True            # Save results in folders
-force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
-stoch_input = True         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
+save_vars = False            # Save results in folders
+force_experiment = True    # Run pipeline even if file with results is saved (For refining the code)
+stoch_input = False         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 
-plot_ind_memPot = False     # Plot temporal dynamics
+plot_ind_memPot = True     # Plot temporal dynamics
 save_figs = False           # Save temporal dynamics in folders
 
 dyn_synapse = True          # Use Synaptic Dynamics or a simple static synapse (a weight)
@@ -45,9 +45,9 @@ filtering_tr = False        # Use filtering to detect time of steady-state
 cutoff_filt = 5             # Cut-off frequency of the filter if used
 threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
-total_realizations = 104    # Number of stochastic realisations if activated
-num_realizations = 8        # Number of parallel realisations
-folder_vars = "../gain_control/variables/"   # Folder to save results
+total_realizations = 1      # Number of stochastic realisations if activated  104
+num_realizations = 1        # Number of parallel realisations                 8
+folder_vars = "../gain_control/variables/synaptic_entropy_high_freq/"  # Folder to save results
 folder_plots = '../gain_control/plots/'      # Folder to save plots
 # **********************************************************************************************************************
 # Time conditions

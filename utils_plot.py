@@ -689,11 +689,12 @@ def plot_features_windows_prop_fix(f_vector, dr, lbl, st_lbl, cols, suptitle_=""
 
 
 def plot_features_tr_st_3windows(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, title_graph, path_save, save_figs,
-                                    y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None):
+                                    y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None, y_lbl=None):
     ls = ['-' for _ in range(len(st_lbl))] if ls is None else ls
     fig_st2 = plt.figure(figsize=(10, 3.2))
     plt.suptitle(title_graph)
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
     ax_st2 = None
     for i in range(len(lbl)):
         ax_st2 = fig_st2.add_subplot(int(len(lbl) / 3), 3, i + 1)
@@ -721,9 +722,10 @@ def plot_features_tr_st_3windows(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, titl
                                     color=cols[j], alpha=0.3)
         ax_st2.set_title(t_[i], color='gray')
         ax_st2.set_xlabel("Rate (Hz)")
-        ax_st2.set_ylabel("mem. pot. (mV)")
+        ax_st2.set_ylabel(y_label)
         ax_st2.grid()
         ax_st2.set_xscale('log')
+        if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
 
     ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
     # fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
@@ -800,7 +802,7 @@ def plot_diff_windows(f_vector, dr, lbl, lbl2, st_lbl, cols_, t_, title_graph=""
 
 def plot_diff_windows_tr_st(f_vector, dr, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st_lbl, cols_, t_, title_graph="",
                             name_save="", save_figs=False, ax=None, y_lims_ind_plot=None, ls=None, lbls=None,
-                            fillBetween=True, normalise=None, min_n=None, max_n=None):
+                            fillBetween=True, normalise=None, min_n=None, max_n=None, y_lbl=None):
     ls = ['-' for _ in range(len(st_lbl))] if ls is None else ls
     ext_ax = False
     if ax is not None: ext_ax = True
@@ -809,6 +811,7 @@ def plot_diff_windows_tr_st(f_vector, dr, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st
     plt.suptitle(title_graph)
     alpha = 0.1
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
     for i in range(len(mid_st_lbl)):
         if not ext_ax: ax = fig2.add_subplot(1, len(mid_st_lbl), i + 1)
         i_leg = 0
@@ -840,7 +843,7 @@ def plot_diff_windows_tr_st(f_vector, dr, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st
                                     color='black', alpha=alpha)
             i_leg += 1
         ax.set_xlabel("Rate (Hz)")
-        ax.set_ylabel("mem. pot. (mV)")
+        ax.set_ylabel(y_label)
         ax.set_title(t_[i], c="gray")
         ax.grid()
         ax.set_xscale('log')

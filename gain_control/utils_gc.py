@@ -107,6 +107,15 @@ def get_neuron_params(n_model, tau_m, ind, y_lim_ind_plot=False, num_syn=1, num_
         if ind == 7:
             pass
             # n_params['sigma'] = np.array([5.5e-3 for _ in range(n)])
+        if ind == 8:
+            n_params['Cm'] = np.array([3e-12 for _ in range(n)])        # For Cm = 1uF*cm-2
+            n_params['g_na'] = np.array([150e-9 for _ in range(n)])     # For g_na = 50mS*cm-2
+            n_params['g_kd'] = np.array([15e-9 for _ in range(n)])      # For g_kd = 5mS*cm-2
+            # n_params['sigma'] = np.array([4.1e-3 for _ in range(n)])  # For sigma = 4.1mV
+            n_params['g_AHP'] = np.array([10.0e-9 for _ in range(n)])   # For g_AHP = 10nS
+            n_params['tau_Ca'] = np.array([6.0e-3 for _ in range(n)])   # For tau_AHP = 6ms (Originally 6 Seconds)
+            n_params['g_ampa'] = np.array([0.2808e-9 for _ in range(n)])   # For g_ampa = 0.2808nS
+            n_params['g_nmda'] = np.array([0.0981e-9 for _ in range(n)])   # For g_nmda = 0.0981nS
     assert n_params is not None, 'parameters for neuron model %s and index %d not found' % (n_model, ind)
     return n_params
 
@@ -188,20 +197,27 @@ def get_params_stp(name_model, ind):
         syn_params = [0.03, 530e-3, 130e-3, 1540 * 2.9090352375e-04, 2.5e-3]  # For having Ase = 0.075
     # params_s_dep = {'tau_g': 2e-3, 'tau_alpha': 300e-3, 'g0': 0.075, 'f': 0.75}
 
+    # Control
+    if name_model == "DoornSTD" and ind == 0:
+        description = "DoornSTD " + str(ind) + ", Control net, (Breaking the burst)"
+        name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d',
+                       'U',
+                       'S']
+        syn_params = [0.0e-3,   # mV
+                      0.0e-3,   # mV
+                      2e-3,     # s
+                      2e-3,     # s
+                      100e-3,   # s
+                      0.5,      # Hz (0.5kHz)
+                      813e-3,   # s - STD recovery
+                      15e-3,    # unitless - STD release probability
+                      1.65      # unitless - overall strength
+                      ]
     if name_model == "DoornSTD" and ind == 1:
         description = "DoornSTD " + str(ind) + ", Control net, (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
                        'S']
-        syn_params = [0.0e-3,  # mV
-                      0.0e-3,  # mV
-                      2e-3,  # 0.002,  # s (2 ms)
-                      2e-3,  # s (2 ms)
-                      100e-3,  # s (100 ms)
-                      0.5,  # Hz (0.5 kHz)
-                      200e-3,  # s (200 ms) - STD recovery
-                      0.2,  # unitless - STD release probability
-                      0.4  # unitless - overall strength
-                      ]
+        syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 200e-3, 0.2, 0.4]
     if name_model == "DoornSTD" and ind == 2:
         description = "DoornSTD " + str(ind) + ", Strong STD (a), (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
@@ -236,7 +252,6 @@ def get_params_stp(name_model, ind):
         description = "DoornSTF " + str(ind) + ", STF, (Breaking the burst)"
         name_params = ['tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'tau_f', 'U', 'S']
         syn_params = [2e-3, 2e-3, 100e-3, 0.5, 1000e-3, 1000e-3, 0.005, 13]
-
     assert syn_params is not None, "Not parameters for model %s and index %d" % (name_model, ind)
 
     return syn_params, description, name_params

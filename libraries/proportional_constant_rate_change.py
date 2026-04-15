@@ -781,7 +781,7 @@ class GC_prop_cons:
 
             # Saving bin_size computation min-max limits
             dr['H_PSR_syn_max_contr'] = [[min_syn, max_syn]]
-            if PSR_syn_iw_tr.ndim == 2: dr['H_PSR_syn_b_max_contr'].append([min_syn_b, max_syn_b])
+            if PSR_syn_iw_tr.ndim == 2: dr['H_PSR_syn_max_contr'].append([min_syn_b, max_syn_b])
 
             # """
             # ##########################################################################################################

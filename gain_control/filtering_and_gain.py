@@ -12,10 +12,9 @@ from gain_control.utils_gc import *
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-s_model = 'DoornSTD'
+s_model = 'DoornAsyn'
 n_model = "HH"
-ind = 3
-# save_vars = True
+ind = 5
 run_experiment = False
 save_figs = True
 imputations = True
@@ -24,7 +23,7 @@ n_noise = True
 num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 6e3
+sfreq = 10e3
 tau_lif = 1  # ms
 total_realizations = 1  # 100
 num_realizations = 1  # 8 for server, 4 for macbook air
@@ -37,23 +36,27 @@ folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
 
 # Normalization
-norm_neuron = True
-min_n, max_n = -0.05, 0.0
+norm_neuron = False
+min_n, max_n = None, None
+if n_model == "HH":
+    norm_neuron = True
+    min_n, max_n = -0.05, 0.0
+if n_model == "LIF":
+    norm_neuron = True
+    min_n, max_n = -70, -55
 # **********************************************************************************************************************
 # MULTIPLE GAINS
 # **********************************************************************************************************************
-gain_v = [1.0]  # [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+gain_v = [0.1, 0.5, 1.0]  # [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 filt_dict_loaded = False
 
 # Titles graphs
 title = "Model " + s_model + ', ind ' + str(ind)
-titleH = "Model " + s_model + ', ind ' + str(ind)
+if n_model == 'LIF': title += r', $\tau_{lif}$ ' + str(tau_lif) + "ms"
 if len(gain_v) == 1:
     title += ', gain ' + str(int(gain_v[0] * 100)) + '%'
-    titleH += ', gain ' + str(int(gain_v[0] * 100)) + '%'
 else:
     title += ', multiple gains'
-    titleH += ', multiple gains'
 
 # ""
 # Plot
@@ -81,9 +84,6 @@ cols_ = ['tab:red', 'tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:olive'
 c_g = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
        'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
 
-if n_model == 'LIF':
-    title = ("Steady-state of model " + s_model + r', $\tau_{lif}$ ' + str(tau_lif) + "ms, multiple gains")
-
 # Synaptic filtering vs. Gain-Control for Neuron
 plt.rcParams['figure.constrained_layout.use'] = True
 figNeuron = plt.figure(figsize=(15, 8))  # 6.5, 5
@@ -95,32 +95,35 @@ figSynapse = plt.figure(figsize=(15, 8))  # 6.5, 5
 plt.suptitle(title + ". Synapse")
 ax_s = [figSynapse.add_subplot(2, 4, j + 1) for j in range(len(st_lbl))]
 # figEntropyInput = plt.figure(figsize=(15, 4))
-# plt.suptitle(titleH + ". Information Theory (Input)")
+# plt.suptitle(title + ". Information Theory (Input)")
 # ax_hI = [figEntropyInput.add_subplot(1, 3, j + 1) for j in range(3)]
 
 # Synaptic entropy in frequency for Input
 figEntropyInput = plt.figure(figsize=(15, 4))
-plt.suptitle(titleH + ". Information Theory (Input)")
+plt.suptitle(title + ". Information Theory (Input)")
 ax_hI = [figEntropyInput.add_subplot(1, 3, j + 1) for j in range(3)]
 
 # Synaptic entropy in frequency for Neuron
 figEntropy = plt.figure(figsize=(15, 4))
-plt.suptitle(titleH + ". Information Theory (Neuron)")
+plt.suptitle(title + ". Information Theory (Neuron)")
 ax_h = [figEntropy.add_subplot(1, 3, j + 1) for j in range(3)]
 
 # Synaptic entropy in frequency for Synapse(s)
 figEntropySyn = plt.figure(figsize=(15, 8))
-plt.suptitle(titleH + ". Information Theory (Synapses) ")
+plt.suptitle(title + ". Information Theory (Synapses) ")
 
 # Plots of computational properties vs rates
 st_lbl_b = ['H - filtering', 'H - Gain-control', 'Transition time', 'Synaptic Filtering', 'GC - max', 'GC - min',
             'GC - var', 'GC - med']
 # Neuron
 figCompPropNeuron = plt.figure(figsize=(25, 3.6))  # 15, 8
-plt.suptitle(title + ". Mem. pot.", fontsize=23)
+plt.suptitle(title + ". Neuron v(t)", fontsize=23)
 axb_ = [figCompPropNeuron.add_subplot(1, 8, j + 1) for j in range(8)]  # [0, 1, 4, 5, 6, 7, 8, 9]]
 figCompPropSyn = plt.figure(figsize=(25, 3.6))  # 15, 8
-plt.suptitle(title + ". AMPA synapse", fontsize=23)
+aux_t = ""
+if n_model == "HH": aux_t = ". AMPA synapse"
+if n_model == "LIF": aux_t = ". Synapse"
+plt.suptitle(title + aux_t, fontsize=23)
 axb_s = [figCompPropSyn.add_subplot(1, 8, j + 1) for j in range(8)]  # [0, 1, 4, 5, 6, 7, 8, 9]]
 
 fig_syn_b = False
@@ -236,7 +239,7 @@ for gain in gain_v:
                      'st_ini_prop_min', 'mtr_ini_prop_min', 'st_mid_prop_med', 'st_ini_prop_med']
     # Plotting properties
     axb_ = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, axb_, dr_['time_transition'], min_n=min_n,
-                                   max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=True)
+                                   max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
 
     # For Synaptic analysis
     lbl_prop_freq = ['syn_st_mid_prop_max', 'syn_mtr_mid_prop_max', 'syn_st_ini_prop_max', 'syn_mtr_ini_prop_max',
@@ -431,39 +434,112 @@ xlims_s = [[-69.9, -69.9, -69.95, -70.01, -70.01, -70.01, -70.01, -70.01],
 ylims_s = [[-0.02, -0.02, -0.02, -0.02, -0.02, -0.02, -0.02, -0.02],
            [0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015]]
 
+# H-filt, H-GC, tr_st_time, Filt, GC-max, GC-min, GC-var, GC-med
+if n_model == "HH":
+    xl_neu = {1: [[-0.05, -0.65, -0.01, 0.2,   -0.06,  -5e-3,  -0.01,  -3e-3,  0.20, -0.02],
+                  [8.0,   0.2,   1.6,   0.5,   0.06,   0.02,   0.015,  8e-3,   0.35, 0.01]],
+              2: [[-0.05, -0.25, -0.01, -0.01, -0.5,   -0.3,   -0.04,  -0.01,  0.05, -0.25],
+                  [8.0,   0.75,  1.6,   1.1,   0.6,    0.3,    0.04,   0.06,   1.02, 0.55]],
+              3: [[-0.05, -1.25, -0.01, -0.01, -0.02,  -1e-3,  -0.028, -1e-3,  0.2,  -0.02],
+                  [8.0,   0.65,  1.6,   1.05,  0.04,   0.03,   0.05,   0.022,  0.4,  0.031]],
+              4: [[None for _ in range(10)],
+                  [None for _ in range(10)]],
+              5: [[-0.05, -0.22, -0.01, 0.05,  -5e-3,  -2e-3,  -1e-5,  -1e-3,  0.23, -4e-3],
+                  [8.0,   0.45,  1.6,   1.05,  9e-3,   9e-3,   5e-4,   8e-3,   0.27, 9e-3]],
+              6: [[-0.05, -0.7,  -0.01, -0.01, -0.075, -5e-3,  -15e-3, -3e-3,  0.2,  -0.05],
+                  [8.0,   0.15,  1.6,   1.05,  0.05,   0.013,  0.02,   4e-3,   0.5,  0.02]],
+              7: [[-0.05, -1.3,  -0.01, -0.01, -0.1,   -15e-3, -0.04,  -12e-3, 0.05, -0.06],
+                  [8.0,   0.4,   1.6,   1.1,   0.2,    12e-3,  65e-3,  0.02,   0.47, 0.08]],
+              0: [[-0.05, -1.3, -0.01, -0.01, -0.5,   -0.3,   -0.04,  -0.01,  0.05, -0.25],
+                  [8.0,   0.75,  1.6,   1.1,   0.6,    0.3,    0.05,   0.06,   1.02, 0.51]]}
+
+    xl_syn = {1: [[-0.05, -0.8, -0.01, -0.01, -0.2,  -1e-3, -0.01,  -1e-3, -0.01, -0.07],
+                  [8.0,   0.2,  1.6,   0.8,   0.15,  0.012, 0.027,  75e-4, 0.4,   0.025]],
+              2: [[-0.05, -1.0, -0.01, -0.05, -0.2,  -0.02, -0.1,   -0.01, -0.01, -0.12],
+                  [8.0,   1.2,  1.6,   1.3,   0.4,   0.12,  0.1,    0.08,  0.7,   0.15]],
+              3: [[-0.05, -1.0, -0.01, 0.08,  -0.06, -1e-3, -0.027, -1e-3, -0.01, -0.06],
+                  [8.0,   0.5,  1.6,   1.05,  0.08,  0.03,  0.04,   0.02,  0.4,   0.07]],
+              4: [[None for _ in range(10)],
+                  [None for _ in range(10)]],
+              5: [[-0.05, -1.0, -0.01, -0.01, -8e-3, -1e-3, -2e-4,  -1e-3, 5e-3,  -75e-4],
+                  [8.0,   1.0,  1.6,   2.0,   8e-3,  0.01,  8e-4,   6e-3,  0.05,  0.01]],
+              6: [[-0.05, -1.0, -0.01, -0.05, -0.2,  -1e-4, -12e-3, -1e-4, -0.05, -0.19],
+                  [8.0,   0.3,  1.6,   2.6,   0.1,   0.01,  26e-3,  7e-3,  0.8,   0.03]],
+              7: [[-0.05, -1.4, -0.01, -0.05, -0.4,  -5e-4, -0.04,  -2e-3, -0.05, -0.15],
+                  [8.0,   1.4,  1.6,   2.5,   0.7,   5e-3,  65e-3,  6e-3,  0.8,   0.25]],
+              0: [[-0.05, -1.4, -0.01, -0.05, -0.4,  -0.02, -0.1,   -0.01, -0.05, -0.19],
+                  [8.0,   1.4,  1.6,   2.6,   0.7,   0.12,  0.1,    0.08,  0.8,   0.25]]}
+    if fig_syn_b:
+        xl_syb = {1: [[-0.05, -1.5, -0.01, -0.01, -0.07, -0.07, -0.09,  -0.04,  -0.01, -0.04],
+                      [8.0,   0.27, 1.6,   0.25,  0.03,  0.07,  0.05,   0.04,   0.25,  0.04]],
+                  2: [[-0.05, -1.2, -0.01, -0.05, -0.05, -0.05, -0.08,  -0.05,  -0.01, -0.045],
+                      [8.0,   1.0,  1.6,   0.25,  0.05,  0.1,   0.04,   0.08,   0.25,  0.06]],
+                  3: [[-0.05, -1.2, -0.01, -0.05, -0.04, -0.03, -0.05,  -0.04,  -0.01, -0.04],
+                      [8.0,   0.5,  1.6,   0.22,  0.02,  0.04,  0.01,   0.05,   0.22,  0.048]],
+                  4: [[None for _ in range(10)],
+                      [None for _ in range(10)]],
+                  5: [[-0.05, -0.7, -0.01, -0.01, -5e-3, -3e-4, -12e-4, -11e-4, 0.0,   -5e-3],
+                      [8.0,   0.6,  1.6,   0.6,   1e-3,  4e-4,  5e-4,   1e-4,   0.018, 1e-3]],
+                  6: [[-0.05, -1.2, -0.01, -0.01, -0.11, -0.05, -0.13,  -0.05,  -0.01, -0.11],
+                      [8.0,   0.21, 1.6,   0.81,  0.04,  0.04,  0.01,   0.01,   0.5,   0.05]],
+                  7: [[-0.05, -1.7, -0.01, -0.05, -0.15, -0.15, -0.2,   -0.1,   -0.01, -0.12],
+                      [8.0,   0.25, 1.6,   0.6,   0.22,  0.12,  0.1,    0.2,    0.43,  0.1]],
+                  0: [[-0.05, -1.7, -0.01, -0.05, -0.15, -0.15, -0.2,   -0.1,   -0.01, -0.12],
+                      [8.0,   1.0,  1.6,   0.81,  0.22,  0.12,  0.1,    0.2,    0.5,   0.1]]}
+elif n_model == "LIF":
+    if s_model == "MSSM":
+        xl_neu = {4: [[-0.05, -2.5, -0.01, -0.01, -0.05, -5e-4, -0.01, -1e-4, -0.01, -0.035],
+                      [13.0,  1.05, 1.6,   0.3,   0.025, 8e-3,  0.025, 7e-3,  0.17,  0.02]]}
+        xl_syn = {4: [[-0.05, -1.2, -0.01, -0.01, -0.02, -1e-4, -4e-3, -1e-4, -0.01, -0.017],
+                      [13.0,  0.2,  1.6,   0.14,  0.01,  3e-3,  8e-3,  25e-4, 0.08,  0.008]]}
+    if s_model == "TM":
+        xl_neu = {4: [[-0.05, -3.0,  -0.01, -0.01, -0.05,  -5e-4, -7e-3, -1e-4, -0.01, -0.04],
+                      [13.0,  1.25,  1.6,   0.3,   0.025,  55e-4, 0.015, 4e-3,  0.15,  0.017]],
+                  8: [[-0.05, -2.6,  -0.01, -0.01, -0.1,   -5e-4, -0.02, -5e-4, -0.01, -0.05],
+                      [13.0,  3.0,   1.6,   0.35,  0.15,   0.015, 0.05,  45e-3, 0.22,  0.06]]}
+        xl_syn = {4: [[-0.05, -1.5,  -0.01, -0.01, -0.025, -5e-4, -3e-3, -1e-4, -0.01, -0.02],
+                      [13.0,  1.0,   1.6,   0.175, 0.025,  2e-3,  6e-3,  13e-4, 0.09,  5e-3]],
+                  8: [[-0.05, -1.67, -0.01, -0.01, -0.05,  -5e-4, -7e-3, -5e-4, -0.01, -0.035],
+                      [13.0,  1.05,  1.6,   0.175, 0.05,   5e-3,  0.015, 4e-3,  0.15,  0.035]]}
+
 path_save = (folder_plots + s_model + '_ind_' + str(ind) + '_' + str(len(gain_v)) + '_gains_sf_' +
              str(int(sfreq * 1e-3)) + 'k_tauLIF_' + str(tau_lif) + 'ms' + '_phase_portrait')
 
 # For plot neuron b
+ind = 0
 sizeF = 20
 for j in range(8):
-    # For Computational properties in rate
+    # For Computational properties vs. rate
     # axb_[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
     # axb_s[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
-    if fig_syn_b: axb_sb[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
     if j < 2:
-        axb_[j].set_ylabel("(bits)", color='gray', fontsize=sizeF)
-        axb_s[j].set_ylabel("(bits)", color='gray', fontsize=sizeF)
+        axb_[j].set_ylabel("Entropy (bits)", color='gray', fontsize=sizeF)
+        axb_s[j].set_ylabel("Entropy (bits)", color='gray', fontsize=sizeF)
         if fig_syn_b: axb_sb[j].set_ylabel("Entropy (bits)", color='gray', fontsize=sizeF)
     elif j == 2:
         axb_[j].set_ylabel("Time (s)", color='gray', fontsize=sizeF)
         axb_s[j].set_ylabel("Time (s)", color='gray', fontsize=sizeF)
         if fig_syn_b: axb_sb[j].set_ylabel("Time (s)", color='gray', fontsize=sizeF)
     else:
-        axb_[j].set_ylabel("(mV)", color='gray', fontsize=sizeF)
-        axb_s[j].set_ylabel("(mV)", color='gray', fontsize=sizeF)
-        if fig_syn_b: axb_sb[j].set_ylabel("(mV)", color='gray', fontsize=sizeF)
+        axb_[j].set_ylabel("Mem. pot. (mV)", color='gray', fontsize=sizeF)
+        axb_s[j].set_ylabel("Syn. strength", color='gray', fontsize=sizeF)
+        if fig_syn_b: axb_sb[j].set_ylabel("Syn. strength", color='gray', fontsize=sizeF)
     axb_[j].set_title(st_lbl_b[j], c="gray", fontsize=sizeF)
     axb_[j].grid()
     axb_[j].set_xscale('log')
+    axb_[j].set_ylim(xl_neu[ind][0][j], xl_neu[ind][1][j])
     # axb_s[j].set_title(st_lbl_b[j], c="gray", fontsize=sizeF)
     axb_s[j].grid()
     axb_s[j].set_xscale('log')
+    axb_s[j].set_ylim(xl_syn[ind][0][j], xl_syn[ind][1][j])
     if fig_syn_b:
         # axb_sb[j].set_title(st_lbl_b[j], c="gray", fontsize=sizeF)
         axb_sb[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
         axb_sb[j].grid()
         axb_sb[j].set_xscale('log')
+        if n_model == "HH": axb_sb[j].set_ylim(xl_syb[ind][0][j], xl_syb[ind][1][j])
+    else:
+        axb_s[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
 
 for j in range(len(st_lbl)):
     # Synaptic filtering vs. Gain-Control for Neuron
@@ -605,30 +681,39 @@ st_lbl = ['_mean', '_med', '_max', '_min', '_q10', '_q90']
 ls = ['-', '-', '-', '--', '--', '-']
 cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green']
 t_ = ['ini-window', 'mid-window', 'end-window']
+y_lims = [xl_neu[ind][0][8], xl_neu[ind][1][8]]
+y_label = "mem. pot. (mV)"
 title = ("Transitory and stationary, " + description.split(",")[0] + ", gain " + str(int(gain * 100)) +
-         "%. Neuronal response")
+         "%. Neuron response")
 path_save = folder_plots + dr_gain_control_file + '_windows_tr_st.png'
 plot_features_tr_st_3windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols, t_, title, path_save, save_figs, ls=ls,
-                             normalise=norm_neuron, min_n=min_n, max_n=max_n)
+                             normalise=norm_neuron, min_n=min_n, max_n=max_n, y_lims_ind_plot=y_lims, y_lbl=y_label)
 
 # FOR SYNAPSES
 # First synapse
 lbl = ['syn_mtr_ini_prop', 'syn_mtr_mid_prop', 'syn_mtr_end_prop']
 lbl2 = ['syn_st_ini_prop', 'syn_st_mid_prop', 'syn_st_end_prop']
 t_ = ['ini-window', 'mid-window', 'end-window']
+y_lims = [xl_syn[ind][0][8], xl_syn[ind][1][8]]
+y_label = "Syn. strength"
 path_save = folder_plots + dr_gain_control_file + '_windows_syn_tr_st.png'
-title = ("Transitory and stationary, " + description.split(",")[0] + ", gain " + str(int(gain * 100)) +
-         "%. AMPA Synaptic response")
-plot_features_tr_st_3windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols, t_, title, path_save, save_figs, ls=ls)
+title = "Transitory and stationary, " + description.split(",")[0] + ", gain " + str(int(gain * 100))
+if n_model == "HH": title += "%. AMPA synaptic response"
+if n_model == "LIF": title += "%. Synaptic response"
+plot_features_tr_st_3windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols, t_, title, path_save, save_figs, ls=ls,
+                             y_lims_ind_plot=y_lims, y_lbl=y_label)
 
 # Second synapse
 lbl = ['syn_b_mtr_ini_prop', 'syn_b_mtr_mid_prop', 'syn_b_mtr_end_prop']
 lbl2 = ['syn_b_st_ini_prop', 'syn_b_st_mid_prop', 'syn_b_st_end_prop']
 t_ = ['ini-window', 'mid-window', 'end-window']
+y_lims = [xl_syb[ind][0][8], xl_syb[ind][1][8]] if n_model == "HH" else None
+y_label = "Syn. strength"
 path_save = folder_plots + dr_gain_control_file + '_windows_syn_b_tr_st.png'
 title = ("Transitory and stationary, " + description.split(",")[0] + ", gain " + str(int(gain * 100)) +
          "%. NMDA Synaptic response")
-plot_features_tr_st_3windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols, t_, title, path_save, save_figs, ls=ls)
+plot_features_tr_st_3windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols, t_, title, path_save, save_figs, ls=ls,
+                             y_lims_ind_plot=y_lims, y_lbl=y_label)
 # """
 
 # PLOT CHARACTERISTICS OF MID AND INI WINDOWS IN THE SAME PLOT, FOR PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
@@ -654,11 +739,11 @@ st_lbl = ['_max', '_min', '_q10', '_q90', '_mean', '_med']
 ls = ['-', '--', '--', '-', '-', '-']
 cols_ = ['tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:orange', 'tab:blue']
 t_ = [r"$mid_{tr} - ini_{st}$", r"$mid_{st} - ini_{st}$", r"$end_{st} - ini_{st}$"]
+y_lims = [xl_neu[ind][0][9], xl_neu[ind][1][9]]
+y_label = "mem. pot. (mV)"
 name_save = folder_plots + dr_gain_control_file + '_' + 'diff_tr_st_log.png'
-title = (description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif * 1e3) + "ms, gain " +
+title = (description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif) + "ms, gain " +
          str(int(gain * 100)) + "%. Neuron response")
-# plot_diff_windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols_, t_, title_graph=title, name_save=name_save, ls=ls,
-#                   save_figs=save_figs)
 mid_st_lbl = ['st_mid_prop']
 mid_tr_lbl = ['mtr_mid_prop']
 ini_st_lbl = ['st_ini_prop']
@@ -666,34 +751,42 @@ lbls = [r'$m_{st}$ - $i_{st}$(', r'$m_{tr}$ - $i_{st}$(', r'$m_{st}$ - $i_{st}$(
         r'$m_{st}$ - $i_{st}$(', '', r'$m_{st}$ - $i_{st}$(', '', r'$m_{st}$ - $i_{st}$(', '', r'$m_{st}$ - $i_{st}$(', '']
 plot_diff_windows_tr_st(f_vec, dr_gain, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st_lbl, cols_, t_, title_graph=title,
                         name_save=name_save, ls=ls, save_figs=save_figs, lbls=lbls, fillBetween=False,
-                        normalise=norm_neuron, min_n=min_n, max_n=max_n)
+                        normalise=norm_neuron, min_n=min_n, max_n=max_n, y_lims_ind_plot=y_lims, y_lbl=y_label)
 
 # For synapse A
 lbl = ['syn_mtr_mid_prop', 'syn_st_mid_prop', 'syn_st_end_prop']
 lbl2 = ['syn_st_ini_prop', 'syn_st_ini_prop', 'syn_st_ini_prop']
 name_save = folder_plots + dr_gain_control_file + '_' + 'diff_syn_tr_st_log.png'
-title = (description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif * 1e3) + "ms, gain " +
-         str(int(gain * 100)) + "%. AMPA synaptic response")
+title = (description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif) + "ms, gain " +
+         str(int(gain * 100)))
+if n_model == "HH": title += "%. AMPA synaptic response"
+if n_model == "LIF": title += "%. Synaptic response"
+y_lims = [xl_syn[ind][0][9], xl_syn[ind][1][9]]
+y_label = "Syn. strength"
 # plot_diff_windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols_, t_, title_graph=title, name_save=name_save, ls=ls,
 #                   save_figs=save_figs)
 mid_st_lbl = ['syn_st_mid_prop']
 mid_tr_lbl = ['syn_mtr_mid_prop']
 ini_st_lbl = ['syn_st_ini_prop']
 plot_diff_windows_tr_st(f_vec, dr_gain, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st_lbl, cols_, t_, title_graph=title,
-                        name_save=name_save, ls=ls, save_figs=save_figs, lbls=lbls, fillBetween=False)
+                        name_save=name_save, ls=ls, save_figs=save_figs, lbls=lbls, fillBetween=False,
+                        y_lims_ind_plot=y_lims, y_lbl=y_label)
 # For synapse B
 lbl = ['syn_b_mtr_mid_prop', 'syn_b_st_mid_prop', 'syn_b_st_end_prop']
 lbl2 = ['syn_b_st_ini_prop', 'syn_b_st_ini_prop', 'syn_b_st_ini_prop']
 name_save = folder_plots + dr_gain_control_file + '_' + 'diff_syn_b_tr_st_log.png'
-title = (description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif * 1e3) + "ms, gain " +
+title = (description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif) + "ms, gain " +
          str(int(gain * 100)) + "%. NMDA synaptic response")
+y_lims = [xl_syb[ind][0][9], xl_syb[ind][1][9]] if n_model == "HH" else None
+y_label = "Syn. strength"
 # plot_diff_windows(f_vec, dr_gain, lbl, lbl2, st_lbl, cols_, t_, title_graph=title, name_save=name_save, ls=ls,
 #                   save_figs=save_figs)
 mid_st_lbl = ['syn_b_st_mid_prop']
 mid_tr_lbl = ['syn_b_mtr_mid_prop']
 ini_st_lbl = ['syn_b_st_ini_prop']
 plot_diff_windows_tr_st(f_vec, dr_gain, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st_lbl, cols_, t_, title_graph=title,
-                        name_save=name_save, ls=ls, save_figs=save_figs, lbls=lbls, fillBetween=False)
+                        name_save=name_save, ls=ls, save_figs=save_figs, lbls=lbls, fillBetween=False,
+                        y_lims_ind_plot=y_lims, y_lbl=y_label)
 # """
 
 # **********************************************************************************************************************
