@@ -5,9 +5,9 @@ from libraries.proportional_constant_rate_change import GC_prop_cons
 gain_v = [1.0]              # Vector of gains
 s_model = 'DoornSTD'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
 n_model = "HH"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
-ind = 8                     # Index to recover params of a given synaptic and neuron model (See table below)
-sfreq = 10e3                # Sampling frequency of the simulation
-max_freq = 1501             # Maximum baseline rate of the experiment
+ind = 1                     # Index to recover params of a given synaptic and neuron model (See table below)
+sfreq = 30e3                # Sampling frequency of the simulation
+max_freq = 5001             # Maximum baseline rate of the experiment
 tau_m_lif = 1               # If LIF neuron is used, this specifies the time constant (in milliseconds)
 
 # ******************************************************************************************************************
@@ -73,7 +73,7 @@ dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_
                'total_realizations': total_realizations, 'neuron_noise': n_noise}
 
 # Instance of Gain-Control class
-initial_frequencies = np.array([10, 100, 600]) if force_experiment else None
+initial_frequencies = np.array([20, 50, 100, 300, 500, 600]) if force_experiment else None
 gc_prop_cons = GC_prop_cons(dict_params)
 _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=max_freq)
 

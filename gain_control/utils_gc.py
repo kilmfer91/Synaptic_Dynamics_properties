@@ -391,7 +391,7 @@ def H_entropy_dyn_bins(data, bin_size=0.01, range_d=None, plot=False):
     data = data[~np.isnan(data)]  # remove NaNs
 
     if len(data) == 0:
-        return np.nan
+        return np.nan, [], []
 
     if range_d is None:
         data_min, data_max = data.min(), data.max()
@@ -1615,6 +1615,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
         # For transition-state
         np.array(max_tr_pi), np.array(max_tr_pm), np.array(max_tr_pe),
         np.array(min_tr_pi), np.array(min_tr_pm), np.array(min_tr_pe)]  # 50
+
     ), th_tr_a, tr_timeSeries, piw, pmw, pew, th_tr_a_filt
 
 
