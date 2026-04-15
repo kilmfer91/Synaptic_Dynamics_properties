@@ -29,11 +29,11 @@ tau_m_lif = 1               # If LIF neuron is used, this specifies the time con
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = False            # Save results in folders
-force_experiment = True    # Run pipeline even if file with results is saved (For refining the code)
+save_vars = True            # Save results in folders
+force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
 stoch_input = False         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 
-plot_ind_memPot = True     # Plot temporal dynamics
+plot_ind_memPot = False     # Plot temporal dynamics
 save_figs = False           # Save temporal dynamics in folders
 
 dyn_synapse = True          # Use Synaptic Dynamics or a simple static synapse (a weight)
