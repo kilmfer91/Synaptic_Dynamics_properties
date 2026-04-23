@@ -345,18 +345,76 @@ def plot_gc_sin_three_scenarios(fig, i, time_vector, mean_rate, max_oscil, lif, 
         ax8.set_xlabel("time (s)")
 
 
-def plot_gc_sin_input_example(time_vector, dt, ind_exp, sin_high_rate, sin_low_rate, high_rate_spikes, low_rate_spikes):
-    fonts = 12
+def plot_gc_prop_input_example(time_vector, dt, ind_exp, sin_high_rate, high_rate_spikes):
+    fonts = 8  # 12  12
+    c1 = "tab:orange"  # "#AFAFAF"  # "#0192C8"
+    c2 = "tab:blue"  # "#000000"  # "#71BE56"
     fig_esann3 = plt.figure(figsize=(8, 3))
     ax1s3 = fig_esann3.add_subplot(211)
-    ax1s3.plot(time_vector, sin_high_rate, label="high-firing rates", c="#000000")  # , c="#71BE56"
+    ax1s3.plot(time_vector, sin_high_rate, c=c2)
+    if ind_exp == 0: ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts)
+    ax1s3.set_ylim(80, 170)
+    ax1s3.set_title(r'Proportional change schema ($\delta = 50\%$)', fontsize=fonts + 6, c="gray")
+    # ax1s3.set_title('Sinusoidal pattern for proportional change of firing rate at baseline rate 100Hz',
+    #                 fontsize=fonts + 6, c="gray")
+    # ax1s3.grid()
+    ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts - 1)
+    ax1s3.yaxis.set_tick_params(labelsize=fonts)
+    ax1s3.set_xlabel("Time  (s)", fontsize=fonts)
+    ax1s3.xaxis.set_tick_params(labelsize=fonts)
+    ax1s3.legend(framealpha=0.3)
+
+    t0, t1, t2, t3 = 0, 2, 4, 6
+
+    # Separating bars
+    for x in [t1, t2]:
+        ax1s3.axvline(x, color="gray", linestyle="--", linewidth=1)
+    # Labels centered in each window
+    ymin, ymax = ax1s3.get_ylim()
+    ypos = ymax - 0.05 * (ymax - ymin)
+    ax1s3.text(1, ypos, "ini-window", ha="center", va="top", color='gray')
+    ax1s3.text(3, ypos, "mid-window", ha="center", va="top", color='gray')
+    ax1s3.text(5, ypos, "end-window", ha="center", va="top", color='gray')
+
+    ax2s3 = fig_esann3.add_subplot(234)
+    ax2s3.plot(time_vector[int(1 / dt):int(1.5 / dt)], high_rate_spikes[int(1.0 / dt):int(1.5 / dt)], c=c2)
+    ax2s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax2s3.xaxis.set_tick_params(labelsize=fonts)
+    # ax2s3.grid()
+    ax2s3.get_yaxis().set_visible(False)
+    ax2s3.set_title("ini-window (100Hz)", c="gray", fontsize=fonts + 4)
+    ax3s3 = fig_esann3.add_subplot(235)
+    ax3s3.plot(time_vector[int(3 / dt):int(3.5 / dt)], high_rate_spikes[int(3 / dt):int(3.5 / dt)], c=c2)
+    ax3s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax3s3.xaxis.set_tick_params(labelsize=fonts)
+    # ax3s3.grid()
+    ax3s3.get_yaxis().set_visible(False)
+    ax3s3.set_title("mid-window (150Hz)", c="gray", fontsize=fonts + 4)
+    ax4s3 = fig_esann3.add_subplot(236)
+    ax4s3.plot(time_vector[int(5 / dt):int(5.5 / dt)], high_rate_spikes[int(5 / dt):int(5.5 / dt)], c=c2)
+    ax4s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax4s3.xaxis.set_tick_params(labelsize=fonts)
+    # ax4s3.grid()
+    ax4s3.get_yaxis().set_visible(False)
+    ax4s3.set_title("end-window (100Hz)", c="gray", fontsize=fonts + 4)
+    fig_esann3.tight_layout(pad=0.5, w_pad=1.0, h_pad=0.1)
+    return fig_esann3
+
+
+def plot_gc_sin_input_example(time_vector, dt, ind_exp, sin_high_rate, sin_low_rate, high_rate_spikes, low_rate_spikes):
+    fonts = 8  # 12  12
+    c1 = "tab:blue"  # "#AFAFAF"  # "#0192C8"
+    c2 = "tab:orange"  # "#000000"  # "#71BE56"
+    fig_esann3 = plt.figure(figsize=(8, 3))
+    ax1s3 = fig_esann3.add_subplot(211)
+    ax1s3.plot(time_vector, sin_high_rate, label="high-firing rates", c=c2)
     if ind_exp == 0: ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts)
     ax1s3.set_ylim(0, 160)
     ax1s3.set_title('Sinusoidal pattern for high firing rates',
                     fontsize=fonts + 6, c="gray")
     # ax1s3.set_title('Sinusoidal pattern for proportional change of firing rate at baseline rate 100Hz',
     #                 fontsize=fonts + 6, c="gray")
-    ax1s3.plot(time_vector, sin_low_rate, label="low-firing rates", c="#AFAFAF")  # , c="#0192C8"
+    ax1s3.plot(time_vector, sin_low_rate, label="low-firing rates", c=c1)
     # ax1s3.grid()
     ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts - 1)
     ax1s3.yaxis.set_tick_params(labelsize=fonts)
@@ -364,28 +422,24 @@ def plot_gc_sin_input_example(time_vector, dt, ind_exp, sin_high_rate, sin_low_r
     ax1s3.xaxis.set_tick_params(labelsize=fonts)
     ax1s3.legend(framealpha=0.3)
     ax2s3 = fig_esann3.add_subplot(234)
-    ax2s3.plot(time_vector[:int(0.5 / dt)], high_rate_spikes[:int(0.5 / dt)] + 1.1, c="#000000")  # , c="#71BE56")
-    ax2s3.plot(time_vector[:int(0.5 / dt)], low_rate_spikes[:int(0.5 / dt)], c="#AFAFAF")  # , c="#0192C8")
+    ax2s3.plot(time_vector[:int(0.5 / dt)], high_rate_spikes[:int(0.5 / dt)] + 1.1, c=c2)
+    ax2s3.plot(time_vector[:int(0.5 / dt)], low_rate_spikes[:int(0.5 / dt)], c=c1)
     ax2s3.set_xlabel("Time (s)", fontsize=fonts)
     ax2s3.xaxis.set_tick_params(labelsize=fonts)
     # ax2s3.grid()
     ax2s3.get_yaxis().set_visible(False)
     ax2s3.set_title("Firing rates (100Hz)", c="gray", fontsize=fonts + 4)
     ax3s3 = fig_esann3.add_subplot(235)
-    ax3s3.plot(time_vector[int(7 / dt):int(7.5 / dt)], high_rate_spikes[int(7 / dt):int(7.5 / dt)] + 1.1,
-               c="#000000")  # , c="#71BE56")
-    ax3s3.plot(time_vector[int(7 / dt):int(7.5 / dt)], low_rate_spikes[int(7 / dt):int(7.5 / dt)],
-               c="#AFAFAF")  # , c="#0192C8")
+    ax3s3.plot(time_vector[int(7 / dt):int(7.5 / dt)], high_rate_spikes[int(7 / dt):int(7.5 / dt)] + 1.1, c=c2)
+    ax3s3.plot(time_vector[int(7 / dt):int(7.5 / dt)], low_rate_spikes[int(7 / dt):int(7.5 / dt)], c=c1)
     ax3s3.set_xlabel("Time (s)", fontsize=fonts)
     ax3s3.xaxis.set_tick_params(labelsize=fonts)
     # ax3s3.grid()
     ax3s3.get_yaxis().set_visible(False)
     ax3s3.set_title("Firing rates (50Hz)", c="gray", fontsize=fonts + 4)
     ax4s3 = fig_esann3.add_subplot(236)
-    ax4s3.plot(time_vector[int(12 / dt):int(12.5 / dt)], high_rate_spikes[int(12 / dt):int(12.5 / dt)] + 1.1,
-               c="#000000")  # , c="#71BE56")
-    ax4s3.plot(time_vector[int(12 / dt):int(12.5 / dt)], low_rate_spikes[int(12 / dt):int(12.5 / dt)],
-               c="#AFAFAF")  # , c="#0192C8")
+    ax4s3.plot(time_vector[int(12 / dt):int(12.5 / dt)], high_rate_spikes[int(12 / dt):int(12.5 / dt)] + 1.1, c=c2)
+    ax4s3.plot(time_vector[int(12 / dt):int(12.5 / dt)], low_rate_spikes[int(12 / dt):int(12.5 / dt)], c=c1)
     ax4s3.set_xlabel("Time (s)", fontsize=fonts)
     ax4s3.xaxis.set_tick_params(labelsize=fonts)
     # ax4s3.grid()
@@ -548,9 +602,63 @@ def plot_gc_sin_statistics(res_per_reali, mean_rates):
 
 
 def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, max_t, path_save="", save_figs=False,
-                                   y_lims_ind_plot=None, plot_stats=False, plt_grid=False):
+                                   y_lims_ind_plot=None, plot_stats=False, plt_grid=False, th_percentage=1e-3):
     # t_tr = t_tr_[0]
     a, b, c = int(max_t / 3), int(2 * max_t / 3), max_t
+
+    # ******************************************************************************************************************
+    # Figure for PhD thesis: methodology-Experimental setup-Stimuli schema-proportional change of rate
+    """
+    fig_tr_st = plt.figure(figsize=(8, 5))
+    plt.suptitle("Example of system response to three window schema", color="black", alpha=0.7)
+    axa = fig_tr_st.add_subplot(2, 1, 1)
+    axa.set_ylabel('Mem. pot. (mV)', color="gray")
+    axa.plot(time_vector, s1[0, :], c="black", alpha=0.5)
+    # axa.grid()
+    t0, t1, t2, t3 = 0, 2, 4, 6
+    # Window shading
+    axa.axvspan(t0, t1, color="tab:blue", alpha=0.12)
+    axa.axvspan(t1, t2, color="tab:orange", alpha=0.12)
+    axa.axvspan(t2, t3, color="tab:green", alpha=0.12)
+    # Separating bars
+    for x in [t1, t2]:
+        axa.axvline(x, color="k", linestyle="--", linewidth=1)
+    # Labels centered in each window
+    ymin, ymax = axa.get_ylim()
+    ypos = ymax - 0.08 * (ymax - ymin)
+    axa.text(1, ypos, "ini-window", ha="center", va="top")
+    axa.text(3, ypos, "mid-window", ha="center", va="top")
+    axa.text(5, ypos, "end-window", ha="center", va="top")
+
+    axb = fig_tr_st.add_subplot(2, 1, 2)
+    axb.set_xlabel("Time (s)", color="gray")
+    axb.set_ylabel('Mem. pot. (mV)', color="gray")
+    L = s1.shape[1]
+    ini_minus_end_windows = np.abs(s1[0, int(2 * L / 3):L - 10] - s1[0, :int(L / 3) - 10])
+    # Find the 0.1% of the maximum
+    thresholds = np.max(ini_minus_end_windows) * th_percentage
+    # find indices where the difference is bigger than 0.1% of maximum
+    # ind_tr = np.where(ini_minus_end_windows < thresholds)[0][0]
+    ind_tr = np.where(ini_minus_end_windows > thresholds)
+    val_unique, ind_unique = np.unique(ind_tr[0], return_index=True)
+    ind_tr = ind_tr[0][list(np.array(ind_unique) - 1)][0]
+
+    # Plotting
+    axb.plot(time_vector[:int(2 * ind_tr)], s1[0, :int(2 * ind_tr)], c="tab:blue", label=r'ini-window')
+    axb.plot(time_vector[:int(2 * ind_tr)], s1[0, int(2 * L / 3):int(2 * L / 3) + 2 * ind_tr], c="tab:green", label=r'end-window')
+    axb.axvline(time_vector[ind_tr], color="k", linestyle="--", linewidth=1)
+    # Labels centered in each window
+    ymin, ymax = axb.get_ylim()
+    ypos = ymax - 0.1 * (ymax - ymin)
+    axb.text(time_vector[int(ind_tr * 1.01)], ypos, r'$t_{tr/st} = %.1f$ms' % (time_vector[ind_tr] * 1e3), ha="left", va="top")
+    # axb.grid()
+    axb.set_title("Time to reach steady-state from difference between ini- and end windows", color="black", alpha=0.7)
+    axb.legend(loc="best")
+    plt.tight_layout()
+    if save_figs: fig_tr_st.savefig(path_save, format='png')
+    # """
+    # ******************************************************************************************************************
+
     figc = plt.figure(figsize=(8, 3))  # (10, 3))
     plt.suptitle(title)
     # tm=30/syn=100 [-65.7,-52.5], tm=1/syn=100[-70,-35], tm=1/syn=1 [-70.05,-67.4]
@@ -585,25 +693,37 @@ def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, 
         ax1.plot([0 + t_tr, a], [statis[6, i, 0], statis[6, i, 0]], c="tab:red", alpha=0.8, label='min')  # min ini win
         ax1.plot([a + t_tr, b], [statis[14, i, 0], statis[14, i, 0]], c="tab:red", alpha=0.8)  # min mid window
         ax1.plot([b + t_tr, c], [statis[22, i, 0], statis[22, i, 0]], c="tab:red", alpha=0.8)  # min end window
+        ax1.plot([0, 0 + t_tr], [statis[52, i, 0], statis[52, i, 0]], c="tab:red", alpha=0.8)  # tr min ini window
+        ax1.plot([a, a + t_tr], [statis[57, i, 0], statis[57, i, 0]], c="tab:red", alpha=0.8)  # tr min mid window
+        ax1.plot([b, b + t_tr], [statis[62, i, 0], statis[62, i, 0]], c="tab:red", alpha=0.8)  # tr min end window
 
         ax1.plot([0 + t_tr, a], [statis[7, i, 0], statis[7, i, 0]], c="tab:red", alpha=0.8, label='max')  # max ini win
         ax1.plot([a + t_tr, b], [statis[15, i, 0], statis[15, i, 0]], c="tab:red", alpha=0.8)  # max mid window
         ax1.plot([b + t_tr, c], [statis[23, i, 0], statis[23, i, 0]], c="tab:red", alpha=0.8)  # max end window
-        ax1.plot([0, 0 + t_tr], [statis[48, i, 0], statis[48, i, 0]], c="tab:red", alpha=0.8)  # tr max ini window
-        ax1.plot([a, a + t_tr], [statis[49, i, 0], statis[49, i, 0]], c="tab:red", alpha=0.8)  # tr max mid window
-        ax1.plot([b, b + t_tr], [statis[50, i, 0], statis[50, i, 0]], c="tab:red", alpha=0.8)  # tr max end window
+        ax1.plot([0, 0 + t_tr], [statis[51, i, 0], statis[51, i, 0]], c="tab:red", alpha=0.8)  # tr max ini window
+        ax1.plot([a, a + t_tr], [statis[56, i, 0], statis[56, i, 0]], c="tab:red", alpha=0.8)  # tr max mid window
+        ax1.plot([b, b + t_tr], [statis[61, i, 0], statis[61, i, 0]], c="tab:red", alpha=0.8)  # tr max end window
 
         ax1.plot([0 + t_tr, a], [statis[3, i, 0], statis[3, i, 0]], c="tab:green", label='q10%')  # q10 ini window
         ax1.plot([a + t_tr, b], [statis[11, i, 0], statis[11, i, 0]], c="tab:green")  # q10 mid window
         ax1.plot([b + t_tr, c], [statis[19, i, 0], statis[19, i, 0]], c="tab:green")  # q10 end window
+        ax1.plot([0, 0 + t_tr], [statis[50, i, 0], statis[50, i, 0]], c="tab:green", alpha=0.8)  # tr q10 ini window
+        ax1.plot([a, a + t_tr], [statis[55, i, 0], statis[55, i, 0]], c="tab:green", alpha=0.8)  # tr q10 mid window
+        ax1.plot([b, b + t_tr], [statis[60, i, 0], statis[60, i, 0]], c="tab:green", alpha=0.8)  # tr q10 end window
 
         ax1.plot([0 + t_tr, a], [statis[4, i, 0], statis[4, i, 0]], c="tab:green", label='q90%')  # q90 ini window
         ax1.plot([a + t_tr, b], [statis[12, i, 0], statis[12, i, 0]], c="tab:green")  # q90 mid window
         ax1.plot([b + t_tr, c], [statis[20, i, 0], statis[20, i, 0]], c="tab:green")  # q90 end window
+        ax1.plot([0, 0 + t_tr], [statis[49, i, 0], statis[49, i, 0]], c="tab:green", alpha=0.8)  # tr q90 ini window
+        ax1.plot([a, a + t_tr], [statis[54, i, 0], statis[54, i, 0]], c="tab:green", alpha=0.8)  # tr q90 mid window
+        ax1.plot([b, b + t_tr], [statis[59, i, 0], statis[59, i, 0]], c="tab:green", alpha=0.8)  # tr q90 end window
 
         ax1.plot([0 + t_tr, a], [statis[1, i, 0], statis[1, i, 0]], c="tab:blue", label='median')  # median ini window
         ax1.plot([a + t_tr, b], [statis[9, i, 0], statis[9, i, 0]], c="tab:blue")  # median mid window
         ax1.plot([b + t_tr, c], [statis[17, i, 0], statis[17, i, 0]], c="tab:blue")  # median end window
+        ax1.plot([0, 0 + t_tr], [statis[48, i, 0], statis[48, i, 0]], c="tab:blue", alpha=0.8)  # tr median ini window
+        ax1.plot([a, a + t_tr], [statis[53, i, 0], statis[53, i, 0]], c="tab:blue", alpha=0.8)  # tr median mid window
+        ax1.plot([b, b + t_tr], [statis[58, i, 0], statis[58, i, 0]], c="tab:blue", alpha=0.8)  # tr median end window
         # ax1.grid()
         # ax1.legend(loc="upper right")
         ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)

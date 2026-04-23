@@ -87,7 +87,8 @@ class GC_prop_cons:
 
         # Input modulations
         # Max prop freq. must be less than sfreq/4, therefore the max_freq is sfreq/6 minus a small value
-        aux_max_freq = int(sfreq / 6) - 10
+        max_gain = max(gain_vector)
+        aux_max_freq = int(((sfreq / 4) - 10) / (1 + max_gain))  # int(sfreq / 6) - 10
         if max_freq is None:
             max_freq = aux_max_freq
         else:
@@ -108,7 +109,8 @@ class GC_prop_cons:
                 range_f2 = [i for i in range(100, max_freq, 10)]
         else:
             range_f = [i for i in range(10, max_freq, 5)]
-
+        # range_f = [10, 20, 500]
+        # range_f2, range_f3, range_f4 = [], [] , []
         self.f_vector = np.array(range_f + range_f2 + range_f3 + range_f4) if f_vec is None else f_vec
 
         # Setting gain vector
@@ -257,7 +259,7 @@ class GC_prop_cons:
         num_loop_realizations = int(total_realizations / num_realizations)
 
         # Auxiliar variables for statistics
-        shape_stat = 54
+        shape_stat = 63
         res_per_reali = np.zeros((shape_stat, num_freq_exp, num_realizations))
         res_per_reali_syn = np.zeros((shape_stat, num_freq_exp, num_realizations))
         res_per_reali_syn_b = np.zeros((shape_stat, num_freq_exp, num_realizations))
@@ -319,6 +321,17 @@ class GC_prop_cons:
                 cons_input = np.concatenate((ref_signals, cons_aux, ref_signals), axis=1)
                 fix_input = np.concatenate((ref_signals, fix_aux, ref_signals), axis=1)
 
+                # ******************************************************************************************************
+                """
+                # Plotting example of input patter
+                rate_schema = np.concatenate((np.ones(int(L / 3)) * f_vector[i], np.ones(int(L / 3)) *
+                                              proportional_changes[i], np.ones(int(L / 3)) * f_vector[i]))
+                fig_gc_input = plot_gc_prop_input_example(time_vector, 1 / self.sfreq, 0, rate_schema, cons_input[0, :])
+                path_save = self.folder_plots + file_name + '_input_sample_prop.png'
+                fig_gc_input.savefig(path_save, format='png')
+                # """
+                # ******************************************************************************************************
+
                 # Avoiding spikes in t==0
                 cons_input[:, 0], fix_input[:, 0] = 0, 0
                 if not stoch_input: cons_input[:, 1], fix_input[:, 1] = 1, 1
@@ -379,7 +392,8 @@ class GC_prop_cons:
                     path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
                     plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali,
                                                    title_graph_, max_t, path_save=path_save, save_figs=self.save_figs,
-                                                   y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
+                                                   y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False,
+                                                   th_percentage=th_percentage)
 
                     """
                     fig = plt.figure(figsize=(8, 3))

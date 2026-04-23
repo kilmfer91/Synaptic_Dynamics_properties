@@ -30,8 +30,9 @@ stat_list = ['st_ini_prop_mean', 'st_ini_prop_med', 'st_ini_prop_q5', 'st_ini_pr
              'st_mid_fix_q90', 'st_mid_fix_q95', 'st_mid_fix_min', 'st_mid_fix_max',
              'st_end_fix_mean', 'st_end_fix_med', 'st_end_fix_q5', 'st_end_fix_q10',
              'st_end_fix_q90', 'st_end_fix_q95', 'st_end_fix_min', 'st_end_fix_max',
-             'mtr_ini_prop_max', 'mtr_mid_prop_max', 'mtr_end_prop_max',
-             'mtr_ini_prop_min', 'mtr_mid_prop_min', 'mtr_end_prop_min',
+             'mtr_ini_prop_med', 'mtr_ini_prop_q90', 'mtr_ini_prop_q10', 'mtr_ini_prop_max', 'mtr_ini_prop_min',
+             'mtr_mid_prop_med', 'mtr_mid_prop_q90', 'mtr_mid_prop_q10', 'mtr_mid_prop_max', 'mtr_mid_prop_min',
+             'mtr_end_prop_med', 'mtr_end_prop_q90', 'mtr_end_prop_q10', 'mtr_end_prop_max', 'mtr_end_prop_min',
              'initial_frequencies', 'stp_model', 'name_params', 'dyn_synapse', 'num_synapses', 'syn_params',
              'sim_params', 'lif_params', 'lif_params2', 'prop_rate_change_a', 'fix_rate_change_a', 'num_changes_rate',
              'description', 'seeds', 'realizations', 't_realizations', 'time_transition']
@@ -1600,7 +1601,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     tr_timeSeries = [list(piw), list(pmw), list(pew), list(ciw), list(cmw), list(cew)]
 
     return np.array([  # For steady-state
-        np.array(mean_st_pi), np.array(median_st_pi), np.array(q5_st_pi), np.array(q10_st_pi),
+        np.array(mean_st_pi), np.array(median_st_pi), np.array(q5_st_pi), np.array(q10_st_pi),  # 3
         np.array(q90_st_pi), np.array(q95_st_pi), np.array(min_st_pi), np.array(max_st_pi),  # 7
         np.array(mean_st_pm), np.array(median_st_pm), np.array(q5_st_pm), np.array(q10_st_pm),
         np.array(q90_st_pm), np.array(q95_st_pm), np.array(min_st_pm), np.array(max_st_pm),  # 15
@@ -1613,8 +1614,12 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
         np.array(mean_st_ce), np.array(median_st_ce), np.array(q5_st_ce), np.array(q10_st_ce),
         np.array(q90_st_ce), np.array(q95_st_ce), np.array(min_st_ce), np.array(max_st_ce),  # 47
         # For transition-state
-        np.array(max_tr_pi), np.array(max_tr_pm), np.array(max_tr_pe),
-        np.array(min_tr_pi), np.array(min_tr_pm), np.array(min_tr_pe)]  # 50
+        np.array(median_tr_pi), np.array(q90_tr_pi), np.array(q10_tr_pi), np.array(max_tr_pi),  # 51
+        np.array(min_tr_pi),  # 52
+        np.array(median_tr_pm), np.array(q90_tr_pm), np.array(q10_tr_pm), np.array(max_tr_pm),  # 56
+        np.array(min_tr_pm),  # 57
+        np.array(median_tr_pe), np.array(q90_tr_pe), np.array(q10_tr_pe), np.array(max_tr_pe),  # 61
+        np.array(min_tr_pe)]  # 62
 
     ), th_tr_a, tr_timeSeries, piw, pmw, pew, th_tr_a_filt
 
