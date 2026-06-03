@@ -14,11 +14,13 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 # ******************************************************************************************************************
 # COMBINATION OF SYNAPTIC AND NEURON MODELS (INDICES)
 # DoornSTD + HH
-# (Ind 1) DoornSTD control
-# (Ind 2 and 3) DoornSTD strong STD (a and b)
-# (Ind 4 and 5) DoornSTD + Asynchronous release (low and high)
-# (Ind 6) DoornSTD + strong NMDA current
-# (Ind 7) DoornSTF
+# (Ind 0) DoornSTD - healthy patient (Doorn 2023)
+# (Ind 1) DoornSTD a  (Doorn 2024)
+# (Ind 2 and 3) DoornSTD strong STD (b and c)  (Doorn 2024)
+# (Ind 4 and 5) DoornSTD + Asynchronous release (low and high) (Doorn 2024)
+# (Ind 6) DoornSTD + strong NMDA current (Doorn 2024)
+# (Ind 7) DoornSTF (Doorn 2024)
+# (Ind 8) DoornSTD - DS patient (Doorn 2023)
 # MSSM or TM + LIF
 # (Ind 2) freq. response decay around 100Hz (depression)
 # (Ind 3) freq. response decay around 10Hz (depression)
