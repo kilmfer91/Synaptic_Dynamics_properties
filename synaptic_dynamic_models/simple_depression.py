@@ -78,6 +78,10 @@ class Simple_Depression(SynDynModel):
             assert len(spike_range) == 2, "'Input' must have 2-dimensions"
             self.Input = Input
 
+    def get_state_variables(self):
+        """Get all state variables."""
+        return {'alpha': self.alpha, 'g': self.g}
+
     def evaluate_model_euler(self, I_t, t):
         """
         Compute the time functions of the simple depression model by solving the ODE using the euler method

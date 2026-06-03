@@ -346,21 +346,21 @@ def plot_gc_sin_three_scenarios(fig, i, time_vector, mean_rate, max_oscil, lif, 
 
 
 def plot_gc_prop_input_example(time_vector, dt, ind_exp, sin_high_rate, high_rate_spikes):
-    fonts = 8  # 12  12
+    fonts = 10  # 12  12
     c1 = "tab:orange"  # "#AFAFAF"  # "#0192C8"
     c2 = "tab:blue"  # "#000000"  # "#71BE56"
-    fig_esann3 = plt.figure(figsize=(8, 3))
-    ax1s3 = fig_esann3.add_subplot(211)
+    fig_ = plt.figure(figsize=(8, 3))
+    ax1s3 = fig_.add_subplot(211)
     ax1s3.plot(time_vector, sin_high_rate, c=c2)
-    if ind_exp == 0: ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts)
+    if ind_exp == 0: ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts, color="gray")
     ax1s3.set_ylim(80, 170)
-    ax1s3.set_title(r'Proportional change schema ($\delta = 50\%$)', fontsize=fonts + 6, c="gray")
+    ax1s3.set_title(r'Proportional change schema ($\delta = 50\%$)', fontsize=fonts + 2, color="black", alpha=0.7)
     # ax1s3.set_title('Sinusoidal pattern for proportional change of firing rate at baseline rate 100Hz',
     #                 fontsize=fonts + 6, c="gray")
     # ax1s3.grid()
-    ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts - 1)
+    ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts - 1, color="gray")
     ax1s3.yaxis.set_tick_params(labelsize=fonts)
-    ax1s3.set_xlabel("Time  (s)", fontsize=fonts)
+    ax1s3.set_xlabel("Time  (s)", fontsize=fonts, color="gray")
     ax1s3.xaxis.set_tick_params(labelsize=fonts)
     ax1s3.legend(framealpha=0.3)
 
@@ -372,37 +372,37 @@ def plot_gc_prop_input_example(time_vector, dt, ind_exp, sin_high_rate, high_rat
     # Labels centered in each window
     ymin, ymax = ax1s3.get_ylim()
     ypos = ymax - 0.05 * (ymax - ymin)
-    ax1s3.text(1, ypos, "ini-window", ha="center", va="top", color='gray')
-    ax1s3.text(3, ypos, "mid-window", ha="center", va="top", color='gray')
-    ax1s3.text(5, ypos, "end-window", ha="center", va="top", color='gray')
+    ax1s3.text(1, ypos, "ini-window", ha="center", va="top")
+    ax1s3.text(3, ypos, "mid-window", ha="center", va="top")
+    ax1s3.text(5, ypos, "end-window", ha="center", va="top")
 
-    ax2s3 = fig_esann3.add_subplot(234)
+    ax2s3 = fig_.add_subplot(234)
     ax2s3.plot(time_vector[int(1 / dt):int(1.5 / dt)], high_rate_spikes[int(1.0 / dt):int(1.5 / dt)], c=c2)
-    ax2s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax2s3.set_xlabel("Time (s)", fontsize=fonts, color="gray")
     ax2s3.xaxis.set_tick_params(labelsize=fonts)
     # ax2s3.grid()
     ax2s3.get_yaxis().set_visible(False)
-    ax2s3.set_title("ini-window (100Hz)", c="gray", fontsize=fonts + 4)
-    ax3s3 = fig_esann3.add_subplot(235)
+    ax2s3.set_title("ini-window (100Hz)", fontsize=fonts + 1, color="black", alpha=0.7)
+    ax3s3 = fig_.add_subplot(235)
     ax3s3.plot(time_vector[int(3 / dt):int(3.5 / dt)], high_rate_spikes[int(3 / dt):int(3.5 / dt)], c=c2)
-    ax3s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax3s3.set_xlabel("Time (s)", fontsize=fonts, color="gray")
     ax3s3.xaxis.set_tick_params(labelsize=fonts)
     # ax3s3.grid()
     ax3s3.get_yaxis().set_visible(False)
-    ax3s3.set_title("mid-window (150Hz)", c="gray", fontsize=fonts + 4)
-    ax4s3 = fig_esann3.add_subplot(236)
+    ax3s3.set_title("mid-window (150Hz)", fontsize=fonts + 1, color="black", alpha=0.7)
+    ax4s3 = fig_.add_subplot(236)
     ax4s3.plot(time_vector[int(5 / dt):int(5.5 / dt)], high_rate_spikes[int(5 / dt):int(5.5 / dt)], c=c2)
-    ax4s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax4s3.set_xlabel("Time (s)", fontsize=fonts, color="gray")
     ax4s3.xaxis.set_tick_params(labelsize=fonts)
     # ax4s3.grid()
     ax4s3.get_yaxis().set_visible(False)
-    ax4s3.set_title("end-window (100Hz)", c="gray", fontsize=fonts + 4)
-    fig_esann3.tight_layout(pad=0.5, w_pad=1.0, h_pad=0.1)
-    return fig_esann3
+    ax4s3.set_title("end-window (100Hz)", fontsize=fonts + 1, color="black", alpha=0.7)
+    fig_.tight_layout(pad=0.5, w_pad=1.0, h_pad=0.1)
+    return fig_
 
 
 def plot_gc_sin_input_example(time_vector, dt, ind_exp, sin_high_rate, sin_low_rate, high_rate_spikes, low_rate_spikes):
-    fonts = 8  # 12  12
+    fonts = 10  # 12  12
     c1 = "tab:blue"  # "#AFAFAF"  # "#0192C8"
     c2 = "tab:orange"  # "#000000"  # "#71BE56"
     fig_esann3 = plt.figure(figsize=(8, 3))
@@ -410,41 +410,40 @@ def plot_gc_sin_input_example(time_vector, dt, ind_exp, sin_high_rate, sin_low_r
     ax1s3.plot(time_vector, sin_high_rate, label="high-firing rates", c=c2)
     if ind_exp == 0: ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts)
     ax1s3.set_ylim(0, 160)
-    ax1s3.set_title('Sinusoidal pattern for high firing rates',
-                    fontsize=fonts + 6, c="gray")
+    ax1s3.set_title('Sinusoidal pattern for high firing rates', fontsize=fonts + 2, color="black", alpha=0.7)
     # ax1s3.set_title('Sinusoidal pattern for proportional change of firing rate at baseline rate 100Hz',
     #                 fontsize=fonts + 6, c="gray")
     ax1s3.plot(time_vector, sin_low_rate, label="low-firing rates", c=c1)
     # ax1s3.grid()
-    ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts - 1)
+    ax1s3.set_ylabel("Rate (Hz)", fontsize=fonts - 1, color="gray")
     ax1s3.yaxis.set_tick_params(labelsize=fonts)
-    ax1s3.set_xlabel("Time  (s)", fontsize=fonts)
+    ax1s3.set_xlabel("Time  (s)", fontsize=fonts, color="gray")
     ax1s3.xaxis.set_tick_params(labelsize=fonts)
     ax1s3.legend(framealpha=0.3)
     ax2s3 = fig_esann3.add_subplot(234)
     ax2s3.plot(time_vector[:int(0.5 / dt)], high_rate_spikes[:int(0.5 / dt)] + 1.1, c=c2)
     ax2s3.plot(time_vector[:int(0.5 / dt)], low_rate_spikes[:int(0.5 / dt)], c=c1)
-    ax2s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax2s3.set_xlabel("Time (s)", fontsize=fonts, color="gray")
     ax2s3.xaxis.set_tick_params(labelsize=fonts)
     # ax2s3.grid()
     ax2s3.get_yaxis().set_visible(False)
-    ax2s3.set_title("Firing rates (100Hz)", c="gray", fontsize=fonts + 4)
+    ax2s3.set_title("Firing rates (100Hz)", fontsize=fonts + 1, color="black", alpha=0.7)
     ax3s3 = fig_esann3.add_subplot(235)
     ax3s3.plot(time_vector[int(7 / dt):int(7.5 / dt)], high_rate_spikes[int(7 / dt):int(7.5 / dt)] + 1.1, c=c2)
     ax3s3.plot(time_vector[int(7 / dt):int(7.5 / dt)], low_rate_spikes[int(7 / dt):int(7.5 / dt)], c=c1)
-    ax3s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax3s3.set_xlabel("Time (s)", fontsize=fonts, color="gray")
     ax3s3.xaxis.set_tick_params(labelsize=fonts)
     # ax3s3.grid()
     ax3s3.get_yaxis().set_visible(False)
-    ax3s3.set_title("Firing rates (50Hz)", c="gray", fontsize=fonts + 4)
+    ax3s3.set_title("Firing rates (50Hz)", fontsize=fonts + 1, color="black", alpha=0.7)
     ax4s3 = fig_esann3.add_subplot(236)
     ax4s3.plot(time_vector[int(12 / dt):int(12.5 / dt)], high_rate_spikes[int(12 / dt):int(12.5 / dt)] + 1.1, c=c2)
     ax4s3.plot(time_vector[int(12 / dt):int(12.5 / dt)], low_rate_spikes[int(12 / dt):int(12.5 / dt)], c=c1)
-    ax4s3.set_xlabel("Time (s)", fontsize=fonts)
+    ax4s3.set_xlabel("Time (s)", fontsize=fonts, color="gray")
     ax4s3.xaxis.set_tick_params(labelsize=fonts)
     # ax4s3.grid()
     ax4s3.get_yaxis().set_visible(False)
-    ax4s3.set_title("Firing rates (150Hz)", c="gray", fontsize=fonts + 4)
+    ax4s3.set_title("Firing rates (150Hz)", fontsize=fonts + 1, color="black", alpha=0.7)
     fig_esann3.tight_layout(pad=0.5, w_pad=1.0, h_pad=0.1)
     return fig_esann3
 
@@ -491,13 +490,13 @@ def plot_gc_sin_mp_high_rates(fig, ind, ind_exp, time_vector, mean_rate, output_
     if savefig and pathsave is not None: fig.savefig(pathsave, format='png')
 
 
-def plot_gc_sin_freq_response_efficacy(loop_frequencies, fa, title):
+def plot_gc_sin_freq_response_efficacy(loop_frequencies, fa, title, freqst=False, savefig=False, path="", log_sc=False):
     fig_esann2 = plt.figure(figsize=(5, 2))
     fonts = 12
     ax1s2 = fig_esann2.add_subplot(1, 1, 1)
     ax1s2.plot(loop_frequencies, fa.efficacy[0, :], color="black")
-    # ax1s2.set_xscale('log')
-    # ax1s2.grid()
+    if log_sc: ax1s2.set_xscale('log')
+    if not freqst: ax1s2.grid()
     ax1s2.set_xlabel("Frequency (Hz)", fontsize=fonts)
     ax1s2.xaxis.set_tick_params(labelsize=fonts)
     ax1s2.set_ylabel("Current (pA)", fontsize=fonts)
@@ -506,10 +505,12 @@ def plot_gc_sin_freq_response_efficacy(loop_frequencies, fa, title):
     range_eff = np.max(fa.efficacy[0]) - np.min(fa.efficacy[0])
     ind_eff = np.where(fa.efficacy[0] < (0.01 * range_eff) + np.min(fa.efficacy[0]))
     freq_st = loop_frequencies[ind_eff[0][0]]
-    ax1s2.plot([freq_st, freq_st], [np.min(fa.efficacy[0]), np.max(fa.efficacy[0])], color="#AFAFAF")
-    empty_patch = mpatches.Patch(color='none', label=r'$freq_{st}=$%dHz' % freq_st)
-    ax1s2.legend(handles=[empty_patch], loc='upper right', fontsize=fonts)
-    fig_esann2.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
+    if freqst:
+        ax1s2.plot([freq_st, freq_st], [np.min(fa.efficacy[0]), np.max(fa.efficacy[0])], color="#AFAFAF")
+        empty_patch = mpatches.Patch(color='none', label=r'$freq_{st}=$%dHz' % freq_st)
+        ax1s2.legend(handles=[empty_patch], loc='upper right', fontsize=fonts)
+    fig_esann2.tight_layout()  # pad=0.5, w_pad=1.0, h_pad=1.0)
+    if savefig: fig_esann2.savefig(path, format='png')
 
 
 def plot_gc_sin_statistics(res_per_reali, mean_rates):
@@ -602,62 +603,10 @@ def plot_gc_sin_statistics(res_per_reali, mean_rates):
 
 
 def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, max_t, path_save="", save_figs=False,
-                                   y_lims_ind_plot=None, plot_stats=False, plt_grid=False, th_percentage=1e-3):
+                                   y_lims_ind_plot=None, plot_stats=False, plt_grid=False,
+                                   ref_rate=None, dt=None):
     # t_tr = t_tr_[0]
     a, b, c = int(max_t / 3), int(2 * max_t / 3), max_t
-
-    # ******************************************************************************************************************
-    # Figure for PhD thesis: methodology-Experimental setup-Stimuli schema-proportional change of rate
-    """
-    fig_tr_st = plt.figure(figsize=(8, 5))
-    plt.suptitle("Example of system response to three window schema", color="black", alpha=0.7)
-    axa = fig_tr_st.add_subplot(2, 1, 1)
-    axa.set_ylabel('Mem. pot. (mV)', color="gray")
-    axa.plot(time_vector, s1[0, :], c="black", alpha=0.5)
-    # axa.grid()
-    t0, t1, t2, t3 = 0, 2, 4, 6
-    # Window shading
-    axa.axvspan(t0, t1, color="tab:blue", alpha=0.12)
-    axa.axvspan(t1, t2, color="tab:orange", alpha=0.12)
-    axa.axvspan(t2, t3, color="tab:green", alpha=0.12)
-    # Separating bars
-    for x in [t1, t2]:
-        axa.axvline(x, color="k", linestyle="--", linewidth=1)
-    # Labels centered in each window
-    ymin, ymax = axa.get_ylim()
-    ypos = ymax - 0.08 * (ymax - ymin)
-    axa.text(1, ypos, "ini-window", ha="center", va="top")
-    axa.text(3, ypos, "mid-window", ha="center", va="top")
-    axa.text(5, ypos, "end-window", ha="center", va="top")
-
-    axb = fig_tr_st.add_subplot(2, 1, 2)
-    axb.set_xlabel("Time (s)", color="gray")
-    axb.set_ylabel('Mem. pot. (mV)', color="gray")
-    L = s1.shape[1]
-    ini_minus_end_windows = np.abs(s1[0, int(2 * L / 3):L - 10] - s1[0, :int(L / 3) - 10])
-    # Find the 0.1% of the maximum
-    thresholds = np.max(ini_minus_end_windows) * th_percentage
-    # find indices where the difference is bigger than 0.1% of maximum
-    # ind_tr = np.where(ini_minus_end_windows < thresholds)[0][0]
-    ind_tr = np.where(ini_minus_end_windows > thresholds)
-    val_unique, ind_unique = np.unique(ind_tr[0], return_index=True)
-    ind_tr = ind_tr[0][list(np.array(ind_unique) - 1)][0]
-
-    # Plotting
-    axb.plot(time_vector[:int(2 * ind_tr)], s1[0, :int(2 * ind_tr)], c="tab:blue", label=r'ini-window')
-    axb.plot(time_vector[:int(2 * ind_tr)], s1[0, int(2 * L / 3):int(2 * L / 3) + 2 * ind_tr], c="tab:green", label=r'end-window')
-    axb.axvline(time_vector[ind_tr], color="k", linestyle="--", linewidth=1)
-    # Labels centered in each window
-    ymin, ymax = axb.get_ylim()
-    ypos = ymax - 0.1 * (ymax - ymin)
-    axb.text(time_vector[int(ind_tr * 1.01)], ypos, r'$t_{tr/st} = %.1f$ms' % (time_vector[ind_tr] * 1e3), ha="left", va="top")
-    # axb.grid()
-    axb.set_title("Time to reach steady-state from difference between ini- and end windows", color="black", alpha=0.7)
-    axb.legend(loc="best")
-    plt.tight_layout()
-    if save_figs: fig_tr_st.savefig(path_save, format='png')
-    # """
-    # ******************************************************************************************************************
 
     figc = plt.figure(figsize=(8, 3))  # (10, 3))
     plt.suptitle(title)
@@ -727,11 +676,110 @@ def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, 
         # ax1.grid()
         # ax1.legend(loc="upper right")
         ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    ax1.set_title("Proportional changes", color="gray")
-    ax1.set_ylim(ylims)
+    ax1.set_title("Proportional changes", color="black", alpha=0.7)
+    # ax1.set_ylim(ylims)
     if plt_grid: ax1.grid()
     figc.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
     if save_figs: figc.savefig(path_save, format='png')
+
+
+def plot_gc_stoch_input(time_vector, i, s1, s2, t_tr, statis, title, max_t, path_save="", save_figs=False,
+                                   y_lims_ind_plot=None, ref_rate=None, dt=None, ax=None, th_percentage=1e-3):
+    # t_tr = t_tr_[0]
+    # ******************************************************************************************************************
+    # Figure for PhD thesis: methodology-Experimental setup-Stimuli schema-proportional change of rate
+    a, b, c = int(max_t / 3), int(2 * max_t / 3), max_t
+
+    # """
+    fig_tr_st = plt.figure(figsize=(8, 5))
+    # plt.suptitle("Example of system response to three window schema", color="black")
+    axa = fig_tr_st.add_subplot(2, 1, 1)
+    axa.set_title("Example of system response to three window schema", color="black", alpha=0.7)
+    axa.set_ylabel('Mem. pot. (mV)', color="gray")
+    axa.plot(time_vector, s1[0, :], c="gray")
+    # axa.grid()
+    t0, t1, t2, t3 = 0, 2, 4, 6
+    # Window shading
+    axa.axvspan(t0, t1, color="tab:blue", alpha=0.12)
+    axa.axvspan(t1, t2, color="tab:orange", alpha=0.12)
+    axa.axvspan(t2, t3, color="tab:green", alpha=0.12)
+    # Separating bars
+    for x in [t1, t2]:
+        axa.axvline(x, color="k", linestyle="--", linewidth=1)
+    # Labels centered in each window
+    ymin, ymax = axa.get_ylim()
+    ypos = ymax - 0.08 * (ymax - ymin)
+    axa.text(1, ypos, "ini-window", ha="center", va="top")
+    axa.text(3, ypos, "mid-window", ha="center", va="top")
+    axa.text(5, ypos, "end-window", ha="center", va="top")
+
+    axb = fig_tr_st.add_subplot(2, 1, 2)
+    axb.set_xlabel("Time (s)", color="gray")
+    axb.set_ylabel('Mem. pot. (mV)', color="gray")
+    L = s1.shape[1]
+    ini_minus_end_windows = np.abs(s1[0, int(2 * L / 3):L - 10] - s1[0, :int(L / 3) - 10])
+    # Find the 0.1% of the maximum
+    thresholds = np.max(ini_minus_end_windows) * th_percentage
+    # find indices where the difference is bigger than 0.1% of maximum
+    # ind_tr = np.where(ini_minus_end_windows < thresholds)[0][0]
+    ind_tr = np.where(ini_minus_end_windows > thresholds)
+    val_unique, ind_unique = np.unique(ind_tr[0], return_index=True)
+    ind_tr = np.min([ind_tr[0][list(np.array(ind_unique) - 1)][0], int(3.5 / dt)])
+
+    # Plotting
+    axb.plot(time_vector[:int(2 * ind_tr)], s1[0, :int(2 * ind_tr)], c="tab:blue", label=r'ini-window')
+    axb.plot(time_vector[:int(np.min([2 * ind_tr, L / 3]))], s1[0, int(2 * L / 3):int(2 * L / 3 + np.min([2 * ind_tr, L / 3]))], c="tab:green",
+             label=r'end-window')
+    axb.axvline(time_vector[ind_tr], color="k", linestyle="--", linewidth=1)
+    # Labels centered in each window
+    ymin, ymax = axb.get_ylim()
+    ypos = ymax - 0.1 * (ymax - ymin)
+    axb.text(time_vector[int(ind_tr * 1.01)], ypos, r'$t_{tr/st} = %.1f$ms' % (time_vector[ind_tr] * 1e3), ha="left",
+             va="top")
+    # axb.grid()
+    axb.set_title("Time to reach steady-state from difference between ini- and end windows", color="black", alpha=0.7)
+    axb.legend(loc="best")
+    plt.tight_layout()
+    if save_figs: fig_tr_st.savefig(path_save, format='png')
+    # """
+    # ******************************************************************************************************************
+    # Figure for PhD thesis: methodology - Measurements - Temporal filtering - Inputs
+    if ax is None:
+        fig_syn_filt = plt.figure(figsize=(8, 3))
+        axc = fig_syn_filt.add_subplot(1, 1, 1)
+    # plt.suptitle("Temporal response - Property of temporal filtering", color="black")
+    else:
+        axc = ax
+
+    axc.set_title("Input at rate %dHz" % ref_rate, color="gray", fontsize=16)
+    axc.set_ylabel("Mem. pot. (mV)", color="gray", fontsize=14)
+    axc.axvline(time_vector[ind_tr], color="k", linestyle="--", linewidth=1)
+    # Labels centered in each window
+    ymin, ymax = axc.get_ylim()
+    ypos = ymax - 0.11 * (ymax - ymin)
+    axc.text(time_vector[int(ind_tr * 1.01)], 0.14, r'$t_{tr/st} = %.1f$ms' % (time_vector[ind_tr] * 1e3), ha="left",
+             va="top")
+    d = int(dt * L/3)
+    axc.plot(time_vector[:int(L/3)], s1[0, :int(L/3)], c="gray")
+    axc.plot([0 + t_tr, d], [statis[6, i, 0], statis[6, i, 0]], c="tab:red", alpha=0.6, label='min')  # min ini win
+    axc.plot([0, 0 + t_tr], [statis[52, i, 0], statis[52, i, 0]], c="tab:red", alpha=0.6)  # tr min ini window
+    axc.plot([0 + t_tr, d], [statis[0, i, 0], statis[0, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
+    axc.plot([0 + t_tr, d], [statis[7, i, 0], statis[7, i, 0]], c="tab:red", alpha=0.6, label='max')  # max ini win
+    axc.plot([0, 0 + t_tr], [statis[51, i, 0], statis[51, i, 0]], c="tab:red", alpha=0.6)  # tr max ini window
+    axc.plot([0 + t_tr, d], [statis[3, i, 0], statis[3, i, 0]], c="tab:green", label='q10%')  # q10 ini window
+    axc.plot([0, 0 + t_tr], [statis[50, i, 0], statis[50, i, 0]], c="tab:green", alpha=0.6)  # tr q10 ini window
+    axc.plot([0 + t_tr, d], [statis[4, i, 0], statis[4, i, 0]], c="tab:green", label='q90%')  # q90 ini window
+    axc.plot([0, 0 + t_tr], [statis[49, i, 0], statis[49, i, 0]], c="tab:green", alpha=0.6)  # tr q90 ini window
+    axc.plot([0 + t_tr, d], [statis[1, i, 0], statis[1, i, 0]], c="tab:blue", label='median')  # median ini window
+    axc.plot([0, 0 + t_tr], [statis[48, i, 0], statis[48, i, 0]], c="tab:blue", alpha=0.6)  # tr median ini window
+    # axc.grid()
+    ylims = [-0.005, 0.15]  # y_lims_ind_plot if y_lims_ind_plot is not None else [-71, -43]
+    axc.set_ylim(ylims)
+    # axc.set_xscale('log')
+    # axc.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+    plt.tight_layout()
+    # if save_figs: fig_syn_filt.savefig(path_save, format='png')
+    # """
 
 
 def aux_plot_features_win_prop_fix(dr, lbl, st_lbl, normalise=False, min_n=None, max_n=None):
@@ -808,47 +856,173 @@ def plot_features_windows_prop_fix(f_vector, dr, lbl, st_lbl, cols, suptitle_=""
     if save_figs: fig_st.savefig(path_save, format='png')
 
 
-def plot_features_tr_st_3windows(f_vector, dr, lbl, lbl2, st_lbl, cols, t_, title_graph, path_save, save_figs,
+def plot_features_tr_st_3windows(f_vector, dr, lbl, lbl2, st_lbl, legends, cols, t_, title_graph, path_save, save_figs,
                                     y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None, y_lbl=None):
     ls = ['-' for _ in range(len(st_lbl))] if ls is None else ls
-    fig_st2 = plt.figure(figsize=(10, 3.2))
-    plt.suptitle(title_graph)
+    fig_st2 = plt.figure(figsize=(10, 3.6))  # (10, 3.2)
+    plt.suptitle(title_graph, color='black')
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
     y_label = y_lbl if y_lbl is not None else None
     ax_st2 = None
+    c_le = 0
     for i in range(len(lbl)):
         ax_st2 = fig_st2.add_subplot(int(len(lbl) / 3), 3, i + 1)
         for j in range(len(st_lbl)):
             plot_sign, sign = aux_plot_features_win_prop_fix(dr, lbl[i], st_lbl[j],
                                                              normalise=normalise, min_n=min_n, max_n=max_n)
+            # sign = sign * f_vector
             if plot_sign:
                 if i == 2:
-                    ax_st2.plot(f_vector, np.median(sign, axis=0), c='gray', label=lbl[i][:3] + st_lbl[j],
+                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, label=legends[c_le] % 'tr',
                                 linestyle=ls[j])
+                    c_le += 1
                 else:
-                    ax_st2.plot(f_vector, np.median(sign, axis=0), c='gray', linestyle=ls[j])
+                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, linestyle=ls[j])
                 ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
                                     color='gray', alpha=0.3)
         for j in range(len(st_lbl)):
             plot_sign, sign = aux_plot_features_win_prop_fix(dr, lbl2[i], st_lbl[j],
                                                              normalise=normalise, min_n=min_n, max_n=max_n)
+            # sign = sign * f_vector
             if plot_sign:
                 if i == 2:
-                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=lbl2[i][:3] + st_lbl[j],
+                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=legends[c_le] % 'st',
                                 linestyle=ls[j])
+                    c_le += 1
                 else:
                     ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], linestyle=ls[j])
                 ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
                                     color=cols[j], alpha=0.3)
-        ax_st2.set_title(t_[i], color='gray')
-        ax_st2.set_xlabel("Rate (Hz)")
-        ax_st2.set_ylabel(y_label)
+        ax_st2.set_title(t_[i], color='black', alpha=0.7)
+        ax_st2.set_xlabel("Rate (Hz)", color='gray')
+        ax_st2.set_ylabel(y_label, color='gray')
         ax_st2.grid()
         ax_st2.set_xscale('log')
         if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
 
     ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    # fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    fig_st2.tight_layout()  # pad=0.5, w_pad=0.5, h_pad=1.0)
+    if save_figs: fig_st2.savefig(path_save, format='png')
+
+
+def plot_features_tr_st_3windows_phd(f_vector, dr, pre_, mid_, lbl, legends, cols, t_, title_graph, path_save,
+                                     save_figs, y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None,
+                                     y_lbl=None):
+    fig_st2 = plt.figure(figsize=(10, 2.5))  # (10, 3.2)
+    if legends is not None: plt.suptitle(title_graph, color='black', fontsize=16)
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
+    ax_st2 = None
+    c_le = 0
+    for i in range(3):
+        ax_st2 = fig_st2.add_subplot(int(len(lbl) / 3), 3, i + 1)
+        # Transitory state
+        sign1 = [dr['%s_%s_prop_max' % (pre_[0], mid_[i])] - dr['%s_%s_prop_min' % (pre_[0], mid_[i])],
+                 dr['%s_%s_prop_q90' % (pre_[0], mid_[i])] - dr['%s_%s_prop_q10' % (pre_[0], mid_[i])],
+                 dr['%s_%s_prop_med' % (pre_[0], mid_[i])] - dr['%s_%s_prop_min' % (pre_[0], mid_[i])]]
+        for j in range(len(sign1)):
+            sign = norm_array(sign1[j], compute_norm=normalise, min_n=min_n, max_n=max_n)
+            if i == 2:
+                label = legends[j] % 'tr' if legends is not None else None
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, label=label,
+                            linestyle='--')
+                c_le += 1
+            else:
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, linestyle='--')
+            ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                                color='gray', alpha=0.3)
+        # Stationary state
+        sign2 = [dr['%s_%s_prop_max' % (pre_[1], mid_[i])] - dr['%s_%s_prop_min' % (pre_[1], mid_[i])],
+                 dr['%s_%s_prop_q90' % (pre_[1], mid_[i])] - dr['%s_%s_prop_q10' % (pre_[1], mid_[i])],
+                 dr['%s_%s_prop_med' % (pre_[1], mid_[i])] - dr['%s_%s_prop_min' % (pre_[0], mid_[i])]]
+        for j in range(len(sign2)):
+            sign = norm_array(sign2[j], compute_norm=normalise, min_n=min_n, max_n=max_n)
+            if i == 2:
+                label = legends[j] % 'st' if legends is not None else None
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=label,
+                            linestyle='-')
+                c_le += 1
+            else:
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], linestyle='-')
+            ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                                color=cols[j], alpha=0.3)
+        ax_st2.set_title(t_[i], color='black', alpha=0.7, fontsize=12)
+        ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
+        ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
+        ax_st2.grid()
+        ax_st2.set_xscale('log')
+        if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+    if legends is not None: ax_st2.legend(bbox_to_anchor=(1.05, 1.15), loc='upper left', borderaxespad=0., fontsize=12)
+    fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    if save_figs: fig_st2.savefig(path_save, format='png')
+
+
+def plot_features_tr_st_1window(f_vector, sign1, sign2, lbl, cols, t_, title_graph, path_save, save_figs,
+                                    y_lims_ind_plot=None, normalise=False, min_n=None, max_n=None, y_lbl=None):
+    fig_st2 = plt.figure(figsize=(6, 3.2))
+    plt.suptitle(title_graph)
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
+    ax_st2 = None
+    ax_st2 = fig_st2.add_subplot(1, 1, 1)
+    for j in range(len(sign1)):
+        sign = sign1[j]
+        ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=lbl[j] % "tr", linestyle='--')
+        ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                            color=cols[j], alpha=0.2)
+    for j in range(len(sign2)):
+        sign = sign2[j]
+        ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=lbl[j] % "st", linestyle='-', alpha=0.7)
+        ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                            color=cols[j], alpha=0.3)
+    ax_st2.set_title(t_, color='black', alpha=0.7)
+    ax_st2.set_xlabel("Rate (Hz)", color='gray')
+    ax_st2.set_ylabel(y_label, color='gray')
+    ax_st2.grid()
+    ax_st2.set_xscale('log')
+    # if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+    ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+    fig_st2.tight_layout()  # pad=0.5, w_pad=0.5, h_pad=1.0)
+    if save_figs: fig_st2.savefig(path_save, format='png')
+
+
+def plot_features_tr_st_1window_phd(f_vector, sign1, sign2, lbl, cols, t_, title_graph, path_save, save_figs,
+                                    y_lims_ind_plot=None, normalise=False, min_n=None, max_n=None, y_lbl=None,
+                                    maxf=-1):
+    fig_st2 = plt.figure(figsize=(8, 4))
+    plt.suptitle(title_graph, fontsize=20, color='black')
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
+    ax_st = fig_st2.add_subplot(2, 1, 1)
+    for j in range(len(sign1)):
+        sign = sign1[j] if maxf is None else sign1[j][:, :maxf]
+        ax_st.plot(f_vector[:maxf], np.median(sign, axis=0), c=cols[j], label=lbl[j] % "tr", linestyle='--')
+        ax_st.fill_between(f_vector[:maxf], np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                            color=cols[j], alpha=0.2)
+    ax_st2 = fig_st2.add_subplot(2, 1, 2)
+    for j in range(len(sign2)):
+        sign = sign2[j] if maxf is None else sign2[j][:, :maxf]
+        ax_st2.plot(f_vector[:maxf], np.median(sign, axis=0), c=cols[j], label=lbl[j] % "st", linestyle='-', alpha=0.7)
+        ax_st2.fill_between(f_vector[:maxf], np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                            color=cols[j], alpha=0.3)
+    ax_st.set_title(t_[0], color='black', alpha=0.7, fontsize=16)
+    # ax_st.set_xlabel("Rate (Hz)", color='gray')
+    ax_st.set_ylabel(y_label, color='gray', fontsize=14)
+    ax_st.set_xscale('log')
+    ax_st.grid()
+    # ax_st.set_xscale('log')
+    ax_st2.set_title(t_[1], color='black', alpha=0.7, fontsize=16)
+    ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=14)
+    ax_st2.set_ylabel(y_label, color='gray', fontsize=14)
+    ax_st2.grid()
+    ax_st2.set_xscale('log')
+    # if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+    ax_st.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=16)
+    ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=16)
+    fig_st2.tight_layout()  # pad=0.5, w_pad=0.5, h_pad=1.0)
     if save_figs: fig_st2.savefig(path_save, format='png')
 
 
@@ -970,11 +1144,49 @@ def plot_diff_windows_tr_st(f_vector, dr, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
         ax.set_ylim(ylims)
     if not ext_ax:
-        # fig2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+        fig2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
         if save_figs: fig2.savefig(name_save, format='png')
         return None
     else:
         return ax
+
+
+def plot_diff_windows_tr_st_phd(f_vector, dr, sign1, sign2, lbl, legends, cols, t_, title_graph, path_save,
+                                     save_figs, y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None,
+                                     y_lbl=None):
+    fig_st2 = plt.figure(figsize=(10, 4))  # (10, 3.2)
+    if legends is not None: plt.suptitle(title_graph, color='black', fontsize=16)
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
+    ax_st2 = None
+
+    # Concatenating signals
+    pc_ = [sign1, sign2]
+
+    for i in range(2):
+        ax_st2 = fig_st2.add_subplot(1, 2, i + 1)
+        # Transitory state
+        for j in range(len(pc_[i])):
+            sign = norm_array(pc_[i][j], compute_norm=normalise, min_n=min_n, max_n=max_n)
+            if i == 1:
+                label = legends[j] % '[w]' if legends is not None else None
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.8, label=label,
+                            linestyle=ls[j])
+            else:
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.8, linestyle=ls[j])
+            ax_st2.fill_between(f_vector, np.quantile(sign, 0.25, axis=0), np.quantile(sign, 0.75, axis=0),
+                                color='gray' if j < 3 else cols[j], alpha=0.2)
+
+        ax_st2.set_title(t_[i], color='black', alpha=0.7, fontsize=12)
+        ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
+        ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
+        ax_st2.grid()
+        ax_st2.set_xscale('log')
+        if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+    if legends is not None: ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=11)
+    fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    if save_figs: fig_st2.savefig(path_save, format='png')
 
 
 def plot_gain_filtering(dr_gain, dr_filt, lbl, lbl2, st_lbl, cols_, title, path_save, save_figs, fig2=None):
@@ -1015,44 +1227,97 @@ def avg_f(vec):
     return np.median(vec, axis=0)
 
 
+def get_info_arrays(dr_gain, dr_filt, lbl_hI_tr, lbl_hI_st, lbl_h_tr, lbl_h_st,
+                    lbl_h_s_tr, lbl_h_s_st, lbl_h_sb_tr, lbl_h_sb_st, fig_syn_b):
+    # Information theory analysis for Inputs (ISI)
+    H_i_tr, H_m_tr, H_e_tr = dr_gain[lbl_hI_tr[0]][0, :], dr_gain[lbl_hI_tr[0]][1, :], dr_gain[lbl_hI_tr[0]][2, :]
+    H_i_st, H_m_st, H_e_st = dr_gain[lbl_hI_st[0]][0, :], dr_gain[lbl_hI_st[0]][1, :], dr_gain[lbl_hI_st[0]][2, :]
+    aux_HI = [H_i_tr, H_m_tr, H_e_tr, H_i_st, H_m_st, H_e_st]
+    # Information theory analysis for neurons - fixed bin size
+    H_iw_tr, H_mw_tr, H_ew_tr = dr_gain[lbl_h_tr[0]][0, :], dr_gain[lbl_h_tr[0]][1, :], dr_gain[lbl_h_tr[0]][2, :]
+    H_iw_st, H_mw_st, H_ew_st = dr_gain[lbl_h_st[0]][0, :], dr_gain[lbl_h_st[0]][1, :], dr_gain[lbl_h_st[0]][2, :]
+    aux_H = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
+    H_iw_tr, H_mw_tr, H_ew_tr = dr_filt[lbl_h_tr[0]][0, :], dr_filt[lbl_h_tr[0]][1, :], dr_filt[lbl_h_tr[0]][2, :]
+    H_iw_st, H_mw_st, H_ew_st = dr_filt[lbl_h_st[0]][0, :], dr_filt[lbl_h_st[0]][1, :], dr_filt[lbl_h_st[0]][2, :]
+    aux_det_H = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
+    # Information theory analysis for synapses - fixed bin size
+    H_iw_tr, H_mw_tr, H_ew_tr = (dr_gain[lbl_h_s_tr[0]][0, :], dr_gain[lbl_h_s_tr[0]][1, :],
+                                 dr_gain[lbl_h_s_tr[0]][2, :])
+    H_iw_st, H_mw_st, H_ew_st = (dr_gain[lbl_h_s_st[0]][0, :], dr_gain[lbl_h_s_st[0]][1, :],
+                                 dr_gain[lbl_h_s_st[0]][2, :])
+    aux_H_s = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
+    H_iw_tr, H_mw_tr, H_ew_tr = (dr_filt[lbl_h_s_tr[0]][0, :], dr_filt[lbl_h_s_tr[0]][1, :],
+                                 dr_filt[lbl_h_s_tr[0]][2, :])
+    H_iw_st, H_mw_st, H_ew_st = (dr_filt[lbl_h_s_st[0]][0, :], dr_filt[lbl_h_s_st[0]][1, :],
+                                 dr_filt[lbl_h_s_st[0]][2, :])
+    aux_det_H_s = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
+    if fig_syn_b:
+        H_iw_tr, H_mw_tr, H_ew_tr = (dr_gain[lbl_h_sb_tr[0]][0, :], dr_gain[lbl_h_sb_tr[0]][1, :],
+                                     dr_gain[lbl_h_sb_tr[0]][2, :])
+        H_iw_st, H_mw_st, H_ew_st = (dr_gain[lbl_h_sb_st[0]][0, :], dr_gain[lbl_h_sb_st[0]][1, :],
+                                     dr_gain[lbl_h_sb_st[0]][2, :])
+        aux_H_sb = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
+        H_iw_tr, H_mw_tr, H_ew_tr = (dr_filt[lbl_h_sb_tr[0]][0, :], dr_filt[lbl_h_sb_tr[0]][1, :],
+                                     dr_filt[lbl_h_sb_tr[0]][2, :])
+        H_iw_st, H_mw_st, H_ew_st = (dr_filt[lbl_h_sb_st[0]][0, :], dr_filt[lbl_h_sb_st[0]][1, :],
+                                     dr_filt[lbl_h_sb_st[0]][2, :])
+        aux_det_H_sb = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
+
+        return aux_HI, aux_H, aux_det_H, aux_H_s, aux_det_H_s, aux_H_sb, aux_det_H_sb
+    return aux_HI, aux_H, aux_det_H, aux_H_s, aux_det_H_s, None, None
+
+
 def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g, norm_neuron=True, min_n=None,
                             max_n=None, plot_filt=False):
+    # var_ = ['st_mid_prop_max', 'st_mid_prop_min', 'mtr_mid_prop_max', 'mtr_mid_prop_min',
+    #         'st_ini_prop_max', 'st_ini_prop_min', 'mtr_ini_prop_max', 'mtr_ini_prop_min',
+    #         'st_mid_prop_q90', 'st_mid_prop_q10', 'mtr_mid_prop_q90', 'mtr_mid_prop_q10',
+    #         'st_ini_prop_q90', 'st_ini_prop_q10', 'mtr_ini_prop_q90', 'mtr_ini_prop_q10',
+    #         'st_mid_prop_med', 'mtr_mid_prop_med', 'st_ini_prop_med', 'mtr_ini_prop_med']
+    # H_list = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
+
     min_n = None if min_n is None else min_n
     max_n = None if max_n is None else max_n
     alphas = [1.0, 0.5]
     gain = aux_l
-    n_sto_m_st_max = norm_array(dr_[var_[0]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_m_tr_max = norm_array(dr_[var_[1]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_i_st_max = norm_array(dr_[var_[2]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_i_tr_max = norm_array(dr_[var_[3]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_m_st_var = norm_array(dr_[var_[4]] - dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_i_st_var = norm_array(dr_[var_[6]] - dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_m_st_min = norm_array(dr_[var_[8]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_m_tr_min = norm_array(dr_[var_[9]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_i_st_min = norm_array(dr_[var_[10]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_i_tr_min = norm_array(dr_[var_[11]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_m_st_med = norm_array(dr_[var_[12]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-    n_sto_i_st_med = norm_array(dr_[var_[13]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_amp = norm_array(dr_[var_[0]] - dr_[var_[1]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_min = norm_array(dr_[var_[1]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_amp = norm_array(dr_[var_[2]] - dr_[var_[3]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_min = norm_array(dr_[var_[3]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_amp = norm_array(dr_[var_[4]] - dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_min = norm_array(dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_amp = norm_array(dr_[var_[6]] - dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_min = norm_array(dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_var = norm_array(dr_[var_[8]] - dr_[var_[9]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_var = norm_array(dr_[var_[10]] - dr_[var_[11]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_var = norm_array(dr_[var_[12]] - dr_[var_[13]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_var = norm_array(dr_[var_[14]] - dr_[var_[15]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_med = norm_array(dr_[var_[16]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_med = norm_array(dr_[var_[17]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_med = norm_array(dr_[var_[18]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_med = norm_array(dr_[var_[19]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+
     n_sto_tr_time = tr_time
 
-    aux_gain = [np.copy(n_sto_m_st_max - n_sto_i_st_max), np.copy(n_sto_m_st_min - n_sto_i_st_min),
-                np.copy(n_sto_m_st_var - n_sto_i_st_var), np.copy(n_sto_m_st_med - n_sto_i_st_med)]
-    aux_gain_tr = [np.copy(n_sto_m_tr_max - n_sto_i_st_max), np.copy(n_sto_m_tr_min - n_sto_i_st_min),
-                   np.zeros(n_sto_m_tr_max.shape), np.zeros(n_sto_m_tr_max.shape)]
+    aux_gain = [np.copy(n_sto_m_st_amp - n_sto_i_st_amp), np.copy(n_sto_m_st_var - n_sto_i_st_var),
+                np.copy(n_sto_m_st_med - n_sto_i_st_med)]
+    aux_gain_tr = [np.copy(n_sto_m_tr_amp - n_sto_i_st_amp), np.copy(n_sto_m_tr_var - n_sto_i_st_var),
+                   np.copy(n_sto_m_tr_med - n_sto_i_st_med)]
 
-    aux_filt = [np.copy(n_sto_i_st_max), np.copy(n_sto_i_st_min), np.copy(n_sto_i_st_med)]
-    aux_filt_tr = [np.copy(n_sto_i_tr_max), np.copy(n_sto_i_tr_min)]
+    aux_filt = [np.copy(n_sto_i_st_amp), np.copy(n_sto_i_st_med) - np.copy(n_sto_i_st_min)]
+    aux_filt_tr = [np.copy(n_sto_i_tr_amp), np.copy(n_sto_i_tr_med) - np.copy(n_sto_i_tr_min)]
     # For Information theory analysis
     aux_H_st = [H_list[3], H_list[4] - H_list[3]]
     aux_H_tr = [H_list[0], H_list[1] - H_list[3]]
     # Stochastic plots
-    # Plotting Entropy
+    # Plotting Entropy - stationary states (synaptic filtering and gain control)
     for j in range(2):
         axb_[j].plot(f_vec, aux_H_st[j], alpha=alphas[1], label="st - " + str(gain), c=c_g)
+    # Plotting Entropy - transitory states (synaptic filtering and gain control)
     for j in range(2):
         axb_[j].plot(f_vec, aux_H_tr[j], alpha=alphas[0], label="tr - " + str(gain), c=c_g)
     # Plotting Gain-Control
-    for j in range(4):
+    for j in range(3):
         # axb_[j + 2].plot(f_vec, avg_f(aux_filt[j]), alpha=alphas[1], c=c_g)
         # axb_[j].fill_between(f_vec, np.quantile(aux_filt[j], 0.1, axis=0),
         #                     np.quantile(aux_filt[j], 0.9, axis=0), color=cols_[j], alpha=0.1)
@@ -1060,7 +1325,7 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
         axb_[j + 4].plot(f_vec, avg_f(aux_gain[j]), alpha=alphas[1], c=c_g, label="st-" + str(gain))
         axb_[j + 4].fill_between(f_vec, np.quantile(aux_gain[j], 0.1, axis=0),
                                  np.quantile(aux_gain[j], 0.9, axis=0), color=c_g, alpha=0.1)
-    for j in range(4):
+    for j in range(3):
         axb_[j + 4].plot(f_vec, avg_f(aux_gain_tr[j]), alpha=alphas[0], label="tr-" + str(gain), c=c_g)
         axb_[j + 4].fill_between(f_vec, np.quantile(aux_gain_tr[j], 0.01, axis=0),
                                  np.quantile(aux_gain_tr[j], 0.99, axis=0), color=c_g, alpha=0.1)
@@ -1072,10 +1337,10 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
         axb_[a].fill_between(f_vec, np.quantile(n_sto_tr_time, 0.01, axis=0),
                              np.quantile(n_sto_tr_time, 0.99, axis=0), color='black', alpha=0.1)
         # Plotting filtering property
-        c_f = ['tab:red', 'tab:red', 'tab:blue']
-        l_f = ['Max', 'Min', 'Med']
-        ls = ['-', '--', '-']
-        for j in range(3):
+        c_f = ['tab:red', 'tab:blue']
+        l_f = ['Amp', 'Med']
+        ls = ['-', '-']
+        for j in range(2):
             axb_[b].plot(f_vec, avg_f(aux_filt[j]), alpha=alphas[1], c=c_f[j], label="st-" + l_f[j],
                          linestyle=ls[j])
             axb_[b].fill_between(f_vec, np.quantile(aux_filt[j], 0.1, axis=0),
@@ -1086,3 +1351,139 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
                                  np.quantile(aux_filt_tr[j], 0.9, axis=0), color=c_f[j], alpha=0.1)
 
     return axb_
+
+
+def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2, norm_neuron, titles, markers, alphas):
+    for n in range(len(name_state_vars)):
+        aux = ''
+        if name_state_vars[n] != 'v': aux = name_state_vars[n]
+        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron)
+        Eff_i_st, G_mi_st, G_mi_tr, Eff_det_i_st, G_det_mi_st, G_det_mi_tr = a
+        i = 0
+        for j in range(int(len(titles) / 2)):
+            # STATIONARY COMPONENT
+            aux_gain = np.copy(G_mi_st[j])
+            aux_filt = np.copy(Eff_i_st[j])
+            aux_det_gain = np.copy(G_det_mi_st[j])[0, :]
+            aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+            # if n_model == 'HH': aux_gain *= 1e3, aux_filt *= 1e3, aux_det_gain *= 1e3, aux_det_filt *= 1e3
+
+            # Deterministic plots
+            # if i_g == 0: ax_[n][j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
+            # else: ax_[n][j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
+            # ax_[n][j].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
+            # ax_[n][j].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
+
+            # Stochastic plots
+            axs[n][j].scatter(avg_f(aux_filt), avg_f(aux_gain), marker=markers[i], alpha=alphas[i])
+            axs[n][j].plot(avg_f(aux_filt), avg_f(aux_gain), alpha=alphas[i], label=gain)
+            # if i == 0: ax_[n][j].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
+            #                                np.quantile(aux_gain, 0.9, axis=0), color=cols_[j], alpha=0.1)
+            axs[n][j].scatter(avg_f(aux_filt)[0], avg_f(aux_gain)[0], c='black')
+
+            # TRANSITORY COMPONENT
+            aux_gain = np.copy(G_mi_tr[j])
+            aux_filt = np.copy(Eff_i_st[j])
+            aux_det_gain = np.copy(G_det_mi_tr[j])[0, :]
+            aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+
+            # Deterministic plots
+            # if i_g == 0: ax_[n][j + 3].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
+            # else: ax_[n][j + 3].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
+            # ax_[n][j + 3].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
+            # ax_[n][j + 3].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
+
+            # Stochastic plots
+            axs[n][j + 3].scatter(avg_f(aux_filt), avg_f(aux_gain), marker=markers[i], alpha=alphas[i])
+            axs[n][j + 3].plot(avg_f(aux_filt), avg_f(aux_gain), alpha=alphas[i], label=gain)
+            # if i == 0: ax_[n][j + 3].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
+            #                                    np.quantile(aux_gain, 0.9, axis=0), color=cols_[j], alpha=0.1)
+            axs[n][j + 3].scatter(avg_f(aux_filt)[0], avg_f(aux_gain)[0], c='black')
+
+
+def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=True, min_n=None, max_n=None):
+    min_n = None if min_n is None else min_n
+    max_n = None if max_n is None else max_n
+
+    p = prefix
+    var_ = [p + 'st_' + win2 + '_prop_max', p + 'st_' + win2 + '_prop_min',
+            p + 'mtr_' + win2 + '_prop_max', p + 'mtr_' + win2 + '_prop_min',
+            p + 'st_' + win1 + '_prop_max', p + 'st_' + win1 + '_prop_min',
+            p + 'mtr_' + win1 + '_prop_max', p + 'mtr_' + win1 + '_prop_min',
+            p + 'st_' + win2 + '_prop_q90', p + 'st_' + win2 + '_prop_q10',
+            p + 'mtr_' + win2 + '_prop_q90', p + 'mtr_' + win2 + '_prop_q10',
+            p + 'st_' + win1 + '_prop_q90', p + 'st_' + win1 + '_prop_q10',
+            p + 'mtr_' + win1 + '_prop_q90', p + 'mtr_' + win1 + '_prop_q10',
+            p + 'st_' + win2 + '_prop_med', p + 'mtr_' + win2 + '_prop_med',
+            p + 'st_' + win1 + '_prop_med', p + 'mtr_' + win1 + '_prop_med']
+
+    # For stochastic arrays
+    dr_ = dr_gain
+    n_sto_m_st_amp = norm_array(dr_[var_[0]] - dr_[var_[1]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_amp = norm_array(dr_[var_[2]] - dr_[var_[3]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_amp = norm_array(dr_[var_[4]] - dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_min = norm_array(dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_amp = norm_array(dr_[var_[6]] - dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_var = norm_array(dr_[var_[8]] - dr_[var_[9]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_var = norm_array(dr_[var_[10]] - dr_[var_[11]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_var = norm_array(dr_[var_[12]] - dr_[var_[13]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_var = norm_array(dr_[var_[14]] - dr_[var_[15]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_med = norm_array(dr_[var_[16]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_med = norm_array(dr_[var_[17]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_med = norm_array(dr_[var_[18]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_med = norm_array(dr_[var_[19]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+
+    # Sets
+    Eff_i_st_amp = n_sto_i_st_amp
+    Eff_i_st_med = n_sto_i_st_med - n_sto_i_st_min
+    Eff_i_st_var = n_sto_i_st_var
+    Eff_i_st = [Eff_i_st_amp, Eff_i_st_var, Eff_i_st_med]
+    G_mi_st_amp = n_sto_m_st_amp - n_sto_i_st_amp
+    G_mi_st_med = n_sto_m_st_med - n_sto_i_st_med
+    G_mi_st_var = n_sto_m_st_var - n_sto_i_st_var
+    G_mi_st = [G_mi_st_amp, G_mi_st_var, G_mi_st_med]
+    G_mi_tr_amp = n_sto_m_tr_amp - n_sto_i_st_amp
+    G_mi_tr_med = n_sto_m_tr_med - n_sto_i_st_med
+    G_mi_tr_var = n_sto_m_tr_var - n_sto_i_st_var
+    G_mi_tr = [G_mi_tr_amp, G_mi_tr_var, G_mi_tr_med]
+
+    # For deterministic arrays
+    dr_ = dr_filt
+    n_sto_m_st_amp = norm_array(dr_[var_[0]] - dr_[var_[1]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_amp = norm_array(dr_[var_[2]] - dr_[var_[3]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_amp = norm_array(dr_[var_[4]] - dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_min = norm_array(dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_amp = norm_array(dr_[var_[6]] - dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_var = norm_array(dr_[var_[8]] - dr_[var_[9]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_var = norm_array(dr_[var_[10]] - dr_[var_[11]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_var = norm_array(dr_[var_[12]] - dr_[var_[13]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_var = norm_array(dr_[var_[14]] - dr_[var_[15]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_st_med = norm_array(dr_[var_[16]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_m_tr_med = norm_array(dr_[var_[17]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_st_med = norm_array(dr_[var_[18]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_med = norm_array(dr_[var_[19]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+
+    # Sets
+    Eff_i_st_amp = n_sto_i_st_amp
+    Eff_i_st_med = n_sto_i_st_med - n_sto_i_st_min
+    Eff_i_st_var = n_sto_i_st_var
+    Eff_det_i_st = [Eff_i_st_amp, Eff_i_st_var, Eff_i_st_med]
+    G_mi_st_amp = n_sto_m_st_amp - n_sto_i_st_amp
+    G_mi_st_med = n_sto_m_st_med - n_sto_i_st_med
+    G_mi_st_var = n_sto_m_st_var - n_sto_i_st_var
+    G_det_mi_st = [G_mi_st_amp, G_mi_st_var, G_mi_st_med]
+    G_mi_tr_amp = n_sto_m_tr_amp - n_sto_i_st_amp
+    G_mi_tr_med = n_sto_m_tr_med - n_sto_i_st_med
+    G_mi_tr_var = n_sto_m_tr_var - n_sto_i_st_var
+    G_det_mi_tr = [G_mi_tr_amp, G_mi_tr_var, G_mi_tr_med]
+
+    return Eff_i_st, G_mi_st, G_mi_tr, Eff_det_i_st, G_det_mi_st, G_det_mi_tr
+
+
+def organise_keys_dr_gc(sufix):
+    v = [sufix + 'st_mid_prop_max', sufix + 'st_mid_prop_min', sufix + 'mtr_mid_prop_max', sufix + 'mtr_mid_prop_min',
+         sufix + 'st_ini_prop_max', sufix + 'st_ini_prop_min', sufix + 'mtr_ini_prop_max', sufix + 'mtr_ini_prop_min',
+         sufix + 'st_mid_prop_q90', sufix + 'st_mid_prop_q10', sufix + 'mtr_mid_prop_q90', sufix + 'mtr_mid_prop_q10',
+         sufix + 'st_ini_prop_q90', sufix + 'st_ini_prop_q10', sufix + 'mtr_ini_prop_q90', sufix + 'mtr_ini_prop_q10',
+         sufix + 'st_mid_prop_med', sufix + 'mtr_mid_prop_med', sufix + 'st_ini_prop_med', sufix + 'mtr_ini_prop_med']
+    return v

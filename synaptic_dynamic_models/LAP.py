@@ -138,6 +138,11 @@ class LAP_model(SynDynModel):
 
         self.set_initial_conditions()
 
+    def get_state_variables(self):
+        """Get all state variables."""
+        return {'c': self.Cai, 'p': self.Prel, 'v': self.Rrel, 'n': self.FluxGlu, 'epsc': self.EPSC,
+                'krecov': self.Krecov}
+
     def evaluate_model_euler(self, ICa_it, it):
         self.Input[:, it] = ICa_it
         self.calcium_concentration(ICa_it, it)

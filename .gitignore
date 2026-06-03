@@ -8,13 +8,14 @@
 /outputs/fitting_freq_response/
 /outputs/fitting_Hallermann/
 /gain_control/variables/
+/gain_control/plots/
 /gain_control/plots/test.png
 performance_in_pc.txt
 
 # OS generated files #
 ######################
-.DS_Store
-.DS_Store?
+*.DS_Store
+
 
 # PYCHARM #
 ######################
@@ -32,3 +33,5 @@ synaptic_dynamic_models/__pycache__/
 /spiking_neuron_models/Doorn_simple_model_example.py
 /gain_control/bibliography with perplexity.docx
 /spiking_neuron_models/Doorn_control_model.py
+realistic_model_Doorn2023.py
+realistic_model_doorn2024.py

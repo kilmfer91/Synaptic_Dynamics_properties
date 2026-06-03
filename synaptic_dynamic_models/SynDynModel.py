@@ -66,6 +66,9 @@ class SynDynModel:
     def set_model_params(self, model_params):
         pass
 
+    def get_state_variables(self):
+        pass
+
     def evaluate_model_euler(self, I_it, it):
         pass
 
@@ -215,12 +218,12 @@ class SynDynModel:
         model_output = self.get_output()
 
         # array of output spike events
-        output_events = np.array(output_spike_events)
-        output_events_tonic = np.array(output_spike_events_tonic)
+        output_events = np.array(output_spike_events).T
+        output_events_tonic = np.array(output_spike_events_tonic).T
         # getting maximum after computing abs(output_aux)
         maxi = np.max(np.abs(output_events), axis=0)
         # Setting the epsilon error
-        epsilon = 1e-10 * maxi
+        epsilon = 1e-3 * maxi  # 1e-10 * maxi
         # Initializing time to reach steady-state
         t_ss = np.zeros(num_syn, dtype=int)  # IMPORTANT, initialize with zeros
         # Matrix of conditions, to check if synapses reach the steady-state value (last 10 spike events less than error)
@@ -289,11 +292,18 @@ class SynDynModel:
         eff_3 = np.abs(model_output[:, ind_max_out].diagonal() / output_events[0, :])
 
         # Tonic component
+        # eff_tonic = np.abs((output_events_tonic[t_ss] / output_events_tonic[1, :])[0])
+        # output_steady_state_tonic = output_events_tonic[t_ss][0]
+        # abs_output_tonic = np.abs(output_events_tonic)
+        # ind_max_events_tonic = output_events_tonic.argmax(axis=0)
+        # ind_max_out_tonic = np.array(ind_events_tonic)[ind_max_events_tonic]
+        # eff_2_tonic = output_steady_state_tonic / output_events_tonic[ind_max_events_tonic, :].diagonal()
+        # eff_3_tonic = np.abs(output_events_tonic[ind_max_events_tonic, :].diagonal() / output_events_tonic[1, :])
         eff_tonic = np.abs((output_events_tonic[t_ss] / output_events_tonic[1, :])[0])
         output_steady_state_tonic = output_events_tonic[t_ss][0]
         abs_output_tonic = np.abs(output_events_tonic)
         ind_max_events_tonic = output_events_tonic.argmax(axis=0)
-        ind_max_out_tonic = np.array(ind_events_tonic)[ind_max_events_tonic]
+        ind_max_out_tonic = np.array(ind_events_tonic)[:, ind_max_events_tonic]
         eff_2_tonic = output_steady_state_tonic / output_events_tonic[ind_max_events_tonic, :].diagonal()
         eff_3_tonic = np.abs(output_events_tonic[ind_max_events_tonic, :].diagonal() / output_events_tonic[1, :])
 
@@ -368,7 +378,7 @@ class SynDynModel:
         else:
             for t in range(L):
                 if kwargs['mode'] == "ODE":
-                    self.evaluate_model_euler(Input[t], t)
+                    self.evaluate_model_euler(Input[:, t], t)
                 else:
                     assert False, "'ODE mode' must be either 'ODE' or 'odeint'"
 
@@ -383,11 +393,15 @@ class SynDynModel:
 
                 # Detecting spike events and storing model output
                 self.detect_spike_event(t, Input, output_model)
+                # Detecting spike events for synapse and neuron, storing model output
+                # n_model.detect_spike_event(flex_t, Input, n_model.membrane_potential)
+                # stp_model.detect_spike_event(flex_t, Input, stp_model.get_output())
 
             # Computing output spike event in the last ISI
             t = L
             spike_range = (self.time_spike_events[-1], t)
-            self.compute_output_spike_event(spike_range, output_model)
+            # self.compute_output_spike_event(spike_range, output_model)
+            self.append_spike_event(t, [True for _ in range(1)], output_model, append_time=False)
 
         if return_only_spike_event:
             return np.array(self.output_spike_events).T

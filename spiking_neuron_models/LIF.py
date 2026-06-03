@@ -56,6 +56,9 @@ class LIF_model:
         self.t_refractory = self.params['t_refractory']
         self.t_r_counter = np.zeros(self.n_neurons)
 
+    def get_state_variables(self):
+        return {'v': self.membrane_potential}
+
     def set_seed(self, seed):
         # Assign seed
         if seed is not None: self.seed = seed

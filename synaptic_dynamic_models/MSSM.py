@@ -128,6 +128,10 @@ class MSSM_model(SynDynModel):
             assert len(spike_range) == 2, "'Input' must have 2-dimensions"
             self.Input = Input
 
+    def get_state_variables(self):
+        """Get all state variables."""
+        return {'c': self.C, 'p': self.P, 'v': self.V, 'n': self.N, 'epsp': self.EPSP}
+
     def evaluate_model_euler(self, I_t, t):
         """
         Compute the time functions of the MSSM by solving the ODE using the euler method

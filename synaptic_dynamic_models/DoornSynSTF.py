@@ -131,6 +131,11 @@ class DoornSTF_model(SynDynModel):
             self.Input = Input
         self.edge_detection = False
 
+    def get_state_variables(self):
+        """Get all state variables."""
+        return {'s_ampa': self.s_ampa, 's_nmda': self.s_nmda, 'x_nmda': self.x_nmda, 'xd': self.x_d,
+                'ud': self.u_d}
+
     def evaluate_model_euler(self, I_it, it):
         """Update synaptic state using explicit Euler. I_it: spike events [0/1]."""
         self.Input[:, it] = I_it

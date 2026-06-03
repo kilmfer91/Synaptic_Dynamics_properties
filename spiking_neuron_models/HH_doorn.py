@@ -27,7 +27,7 @@ class HH_AHP_model:
         self.E_ampa = None  # Nernst potentials of AMPA synaptic channels
         self.E_nmda = None  # Nernst potentials of NMDA synaptic channels
         self.V_init = None
-        self.V_reset = None
+        # self.V_reset = None
         self.V_threshold = None
         self.t_refractory = None
 
@@ -91,7 +91,7 @@ class HH_AHP_model:
             'tau_Ca': 8000.0e-3,  # ms
             'alpha_Ca': 0.00035,  # per spike
             'V_init': -39.0e-3,  # mV
-            'V_reset': -39.0e-3,  # mV (no voltage reset, just refractory)
+             # 'V_reset': -39.0e-3,  # mV (no voltage reset, just refractory)
             'V_threshold': 0.0e-3,  # mV (from Brian2: V>0*mV)
             't_refractory': 2.0e-3,  # ms
         }
@@ -124,11 +124,15 @@ class HH_AHP_model:
         self.E_ampa = np.full(self.n_neurons, self.params['E_ampa'])
         self.E_nmda = np.full(self.n_neurons, self.params['E_nmda'])
         self.V_init = np.full(self.n_neurons, self.params['V_init'])
-        self.V_reset = np.full(self.n_neurons, self.params['V_reset'])
+        # self.V_reset = np.full(self.n_neurons, self.params['V_reset'])
         self.V_threshold = np.full(self.n_neurons, self.params['V_threshold'])
         self.t_refractory = np.full(self.n_neurons, self.params['t_refractory'])
         self.t_r_counter = np.zeros(self.n_neurons)
         self.initialize_state_variables()
+
+    def get_state_variables(self):
+        # return {'v': self.membrane_potential, 'm': self.m_gate, 'h': self.h_gate, 'n': self.n_gate, 'Ca': self.Ca}
+        return {'v': self.membrane_potential, 'm': self.m_gate, 'h': self.h_gate, 'n': self.n_gate}
 
     def set_seed(self, seed):
         # Assign seed

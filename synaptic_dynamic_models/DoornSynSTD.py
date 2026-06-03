@@ -68,6 +68,10 @@ class DoornSTD_model(SynDynModel):
         self.tau_nmda_decay, self.alpha_nmda = self.params['tau_nmda_decay'], self.params['alpha_nmda'] * 1e-1
         self.tau_d, self.U, self.tau_nmda_rise = self.params['tau_d'], self.params['U'], self.params['tau_nmda_rise']
 
+    def get_state_variables(self):
+        # s_ampa, s_nmda_tot, x_nmda, x_d
+        return {'s_ampa': self.s_ampa, 's_nmda': self.S * self.x_d * self.s_nmda, 'x_nmda': self.x_nmda, 'xd': self.x_d}
+
     def set_initial_conditions(self, Input=None):
         """Initialize all state variables to steady-state."""
         # Model variables

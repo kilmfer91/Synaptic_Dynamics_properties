@@ -146,6 +146,8 @@ class GC_prop_cons:
             if 'spike_events' not in dr: dr['spike_events'] = [[] for _ in range(dr['num_freq_exp'])]
             if 'PSR_events_wind' not in dr: dr['PSR_events_wind'] = [[], [], []]
             if 'spike_events_wind' not in dr: dr['spike_events'] = [[], [], []]
+            if 'name_neuron_state_variables' not in dr: dr['name_neuron_state_variables'] = None  # Later assigned
+            if 'name_syn_state_variables' not in dr: dr['name_syn_state_variables'] = None  # Assigned in (model_creati)
 
         else:
             # Creating dictionary to be saved
@@ -229,6 +231,10 @@ class GC_prop_cons:
         self.neuron_prop.set_model_params(neuron_params)
         self.neuron_fix.set_model_params(neuron_params)
 
+        # Setting names of state variables in final dictionary
+        self.dict_results['name_neuron_state_variables'] = list(self.neuron_prop.get_state_variables().keys())
+        self.dict_results['name_syn_state_variables'] = list(self.stp_prop.get_state_variables().keys())
+
     def validate_dict_params(self, dr):
         pass
 
@@ -260,11 +266,14 @@ class GC_prop_cons:
 
         # Auxiliar variables for statistics
         shape_stat = 63
-        res_per_reali = np.zeros((shape_stat, num_freq_exp, num_realizations))
-        res_per_reali_syn = np.zeros((shape_stat, num_freq_exp, num_realizations))
+        # length state variables
+        l_sv = len(self.neuron_prop.get_state_variables())
+        l_svs = len(self.stp_prop.get_state_variables())
+        res_per_reali = [np.zeros((shape_stat, num_freq_exp, num_realizations)) for _ in range(l_sv)]
+        res_per_reali_syn = [np.zeros((shape_stat, num_freq_exp, num_realizations)) for _ in range(l_svs)]
         res_per_reali_syn_b = np.zeros((shape_stat, num_freq_exp, num_realizations))
-        res_real = np.zeros((shape_stat, total_realizations, num_freq_exp))
-        res_real_syn = np.zeros((shape_stat, total_realizations, num_freq_exp))
+        res_real = [np.zeros((shape_stat, total_realizations, num_freq_exp)) for _ in range(l_sv)]
+        res_real_syn = [np.zeros((shape_stat, total_realizations, num_freq_exp)) for _ in range(l_svs)]
         res_real_syn_b = np.zeros((shape_stat, total_realizations, num_freq_exp))
 
         # Auxiliar variables for Information theory
@@ -291,6 +300,14 @@ class GC_prop_cons:
 
             # Building reference signal for constant and fixed rate changes
             i = num_freq_exp - 1
+            # ****************************************************************************************
+            # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
+            # fig_syn_filt = plt.figure(figsize=(8, 8))
+            # fig_syn_filt.suptitle("Temporal responses of Short-term facilitation", c="black", alpha=0.7, fontsize=20)
+            # c_a = 3
+            # ax = [fig_syn_filt.add_subplot(4, 1, i) for i in [1, 2, 3, 4]]
+            # ****************************************************************************************
+
             while i >= 0:  # while i < num_freq_exp:
                 loop_experiments = m_time()
 
@@ -364,118 +381,86 @@ class GC_prop_cons:
                     static_synapse(self.neuron_prop, cons_input, 9e0)  # , 0.0125e-6)
                     # static_synapse(lif_fix, fix_input, 9e0)  # , 0.0125e-6)
 
-                # MEMBRANE POTENTIAL
-                # Compute statistical descriptors
-                signal_prop, signal_fix = self.neuron_prop.membrane_potential, self.neuron_fix.membrane_potential
+                # STATE VARIABLES OF THE NEURON
                 # getting transition time for rate of proportional change if possible
                 aux_cond = np.where(proportional_changes[i] <= f_vector)
                 if len(aux_cond[0]) > 0:
                     aux_i = aux_cond[0][0]
                     t_tra_mid_win = np.max(t_tra[aux_i])
-                # Clipping signals to avoid suprathreshold maxima
-                if not plot_ind_figs:
-                    signal_prop = np.clip(signal_prop, None, 0.0)
-                    signal_fix = np.clip(signal_fix, None, 0.0)
-                # Computing statistics of each window, for the whole window and for the transition- and steady-states
-                a, b, c, d, e, f, h = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
-                                                   sim_params, [None, t_tra_mid_win, None], 1 / sfreq,
-                                                   th_percentage=th_percentage, filtering=filtering, cutoff=cutoff)
-                if a.shape[1] != res_per_reali.shape[2]:
-                    assert a.shape[1] == res_per_reali.shape[2], "not same shape"
-                res_per_reali[:, i, :], t_tr_, tr_time_series_i, piw, pmw, pew, t_tr_filt = a, b, c, d, e, f, h
-                t_tra[i].append(t_tr_)
 
-                # Plotting individual figures if indicated
-                if plot_ind_figs:
-                    title_graph_ = title_graph + ", freq. %dHz" % f_vector[i]
-                    t_tr = t_tr_[0]
-                    path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
-                    plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali,
-                                                   title_graph_, max_t, path_save=path_save, save_figs=self.save_figs,
-                                                   y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False,
-                                                   th_percentage=th_percentage)
+                sv = 0
+                for k, v in self.neuron_prop.get_state_variables().items():
+                    # Auxiliar title
+                    title_graph_ = title_graph + ", freq. %dHz" % f_vector[i] + ", " + k
+                    # Compute statistical descriptors
+                    print(k)
+                    signal_prop, signal_fix = v, self.neuron_fix.get_state_variables()[k]
+                    # Clipping signals to avoid suprathreshold maxima
+                    if k == 'v':  # if not plot_ind_figs and k == 'v':
+                        signal_prop = np.clip(signal_prop, None, self.neuron_prop.params['V_threshold'][0])  # 0.0)
+                        signal_fix = np.clip(signal_fix, None, self.neuron_prop.params['V_threshold'][0])  # 0.0)
+                    # Computing statistics of each window, for the whole win. and for the transition- and steady-states
+                    a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
+                                                 sim_params, [None, t_tra_mid_win, None], 1 / sfreq,
+                                                 th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
+                                                 title=title_graph_)
+                    if a[0].shape[1] != res_per_reali[sv].shape[2]:
+                        assert a[0].shape[1] == res_per_reali[sv].shape[2], "not same shape"
+                    res_per_reali[sv][:, i, :], t_tr_, tr_time_series_i, piw, pmw, pew, t_tr_filt = a
+                    t_tra[i].append(t_tr_)
 
-                    """
-                    fig = plt.figure(figsize=(8, 3))
-                    dt = 1 / self.sfreq
-                    time_vec = np.arange(0, int(piw.shape[1] * dt), dt)
-                    for n in range(piw.shape[0]):
-                        aux = piw[n, :] + n * 0.005
-                        plt.plot(time_vec, aux)
-                        aux = pew[n, :] + n * 0.005
-                        plt.plot(time_vec, aux)
-                        aux = np.array([np.min(piw[n, :]), np.min(piw[n, :]) + 0.01]) + (n * 0.005)
-                        plt.plot([t_tr_[n], t_tr_[n]], aux, c='black')
-                    plt.grid()
-                    plt.title(title_graph_ + ". tr_st_time " + str(t_tr_) + ". No filter")
-                    path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_ini_end_windows.png'
-                    if self.save_figs: fig.savefig(path_save, format='png')
-                    if filtering:
-                        fig = plt.figure(figsize=(8, 3))
-                        piw = lowpass(piw, cutoff, 1 / dt)
-                        pew = lowpass(pew, cutoff, 1 / dt)
-                        for n in range(piw.shape[0]):
-                            aux = piw[n, :] + n * 0.005
-                            plt.plot(time_vec, aux)
-                            aux = pew[n, :] + n * 0.005
-                            plt.plot(time_vec, aux)
-                            aux = np.array([np.min(piw[n, :]), np.min(piw[n, :]) + 0.01]) + (n * 0.005)
-                            plt.plot([t_tr_filt[n], t_tr_filt[n]], aux, c='black')
-                        plt.grid()
-                        plt.title(title_graph_ + ". tr_st_time " + str(t_tr_filt) + ". Filtered")
-                        path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_ini_end_windows_filt.png'
-                        if self.save_figs: fig.savefig(path_save, format='png')
-                    # """
+                    # Plotting individual figures if indicated
+                    if plot_ind_figs:
+                        t_tr = t_tr_[0]
+                        path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
+                        plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
+                                                       title_graph_, max_t, path_save=path_save, save_figs=self.save_figs,
+                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
+                    sv += 1
 
                 # SYNAPTIC CONTRIBUTION
-                # Compute statistical descriptors
-                signal_props, signal_fixes = self.stp_prop.get_output(), self.stp_fix.get_output()
-                signal_prop = None
-                if signal_props.ndim == 2:
-                    signal_prop, signal_fix = signal_props, signal_fixes
-                else:
-                    signal_prop, signal_fix = signal_props[0, :], signal_fixes[0, :]
                 # getting transition time for rate of proportional change if possible
                 aux_cond = np.where(proportional_changes[i] <= f_vector)
                 if len(aux_cond[0]) > 0:
                     aux_i = aux_cond[0][0]
                     t_tra_mid_win_syn = np.max(t_tra_syn[aux_i])
-                # Computing statistics of each window for transition- and steady-states
-                a, b, c, d, e, f, h = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
-                                                               sim_params, [None, t_tra_mid_win_syn, None], 1 / sfreq,
-                                                               th_percentage=th_percentage, filtering=filtering,
-                                                               cutoff=cutoff)
-                if a.shape[1] != res_per_reali.shape[2]:
-                    assert a.shape[1] == res_per_reali.shape[2], "not same shape"
-                res_per_reali_syn[:, i, :], t_tr_syn, tr_time_series_i, piw, pmw, pew, t_tr_filt = a, b, c, d, e, f, h
-                t_tra_syn[i].append(t_tr_syn)
-                # For ampa if synapse is Doorn
-                if signal_props.ndim == 3:
-                    signal_prop, signal_fix = signal_props[1, :], signal_fixes[1, :]
-                    # getting transition time for rate of proportional change if possible
-                    aux_cond = np.where(proportional_changes[i] <= f_vector)
-                    if len(aux_cond[0]) > 0:
-                        aux_i = aux_cond[0][0]
-                        t_tra_mid_win_syn = np.max(t_tra_syn[aux_i])
+
+                sv = 0
+                for k, v in self.stp_prop.get_state_variables().items():
+                    # Auxiliar title
+                    title_graph_ = title_graph + ", freq. %dHz" % f_vector[i] + ", " + k
+                    # Compute statistical descriptors
+                    signal_prop, signal_fix = v, self.stp_prop.get_state_variables()[k]
                     # Computing statistics of each window for transition- and steady-states
-                    a, b, c, d, e, f, h = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
-                                                                   sim_params, [None, t_tra_mid_win_syn, None],
-                                                                   1 / sfreq, th_percentage=th_percentage,
-                                                                   filtering=filtering, cutoff=cutoff)
-                    if a.shape[1] != res_per_reali.shape[2]:
-                        assert a.shape[1] == res_per_reali.shape[2], "not same shape"
-                    res_per_reali_syn_b[:, i, :], t_tr_syn_b, tr_time_series_i,  = a, b, c
-                    piw, pmw, pew, t_tr_filt = d, e, f, h
-                    t_tra_syn_b[i].append(t_tr_syn_b)
-                # Updating array of time_transitions
-                """
-                t_tra[i].append(t_tr_)
-                for tr_i in range(6):
-                    if len(tr_time_series[tr_i][i]) == 0:
-                        tr_time_series[tr_i][i] = tr_time_series_i[tr_i]
-                    else:
-                        tr_time_series[tr_i][i] = tr_time_series[tr_i][i] + tr_time_series_i[tr_i]
-                # """
+                    a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
+                                                 sim_params, [None, t_tra_mid_win_syn, None], 1 / sfreq,
+                                                 th_percentage=th_percentage, filtering=filtering, cutoff=cutoff, title=title_graph_)
+
+                    if a[0].shape[1] != res_per_reali_syn[sv].shape[2]:
+                        assert a[0].shape[1] == res_per_reali_syn[sv].shape[2], "not same shape"
+                    res_per_reali_syn[sv][:, i, :], t_tr_syn, tr_time_series_i, piw, pmw, pew, t_tr_filt = a
+                    t_tra_syn[i].append(t_tr_syn)
+
+                    # Plotting individual figures if indicated
+                    if plot_ind_figs:
+                        t_tr = t_tr_syn[0]
+                        path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
+                        plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali_syn[sv],
+                                                       title_graph_, max_t, path_save=path_save,
+                                                       save_figs=self.save_figs,
+                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
+
+                        # ****************************************************************************************
+                        # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
+                        # plot_gc_stoch_input(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali_syn[sv],
+                        #                     title_graph_, max_t, path_save=path_save, save_figs=self.save_figs,
+                        #                     y_lims_ind_plot=y_lims_ind_plot, ref_rate=f_vector[i], dt=1 / self.sfreq,
+                        #                     th_percentage=th_percentage, ax=ax[c_a])
+                        # if c_a == 0: ax[c_a].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+                        # if c_a == 3: ax[c_a].set_xlabel("Time (s)", color="gray", fontsize=14)
+                        # c_a -= 1
+                        # ****************************************************************************************
+                    sv += 1
 
                 # Computing Postsynaptic response (PSR) to compute H(PSR) -unconditional entropy-
                 # Neuron contribution
@@ -489,14 +474,26 @@ class GC_prop_cons:
                            ", frequency " + str(f_vector[i]))
                 i -= 1
 
+            # ****************************************************************************************
+            # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
+            # fig_syn_filt.tight_layout()  # pad=0.5, w_pad=1.0, h_pad=1.0)
+            # path_save = self.folder_plots + file_name + '_temporal_response_stoc_input.png'
+            # if self.save_figs: fig_syn_filt.savefig(path_save, format='png')
+            # ****************************************************************************************
+
             # steady-state part
-            for res_i in range(res_real.shape[0]):
+            for res_i in range(res_real[0].shape[0]):
                 r = realization
-                res_real[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali[res_i, :].T
-                res_real_syn[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[res_i, :].T
+                # Iterating through the state variables of the neuron
+                for sv in range(l_sv):
+                    res_real[sv][res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali[sv][res_i, :].T
+                # Iterating through the state variables of the synapse
+                for sv in range(l_svs):
+                    res_real_syn[sv][res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[sv][res_i, :].T
+                # res_real_syn[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[res_i, :].T
                 # For ampa if synapse is Doorn
-                if self.stp_prop.get_output().ndim == 3:
-                    res_real_syn_b[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn_b[res_i, :].T
+                # if self.stp_prop.get_output().ndim == 3:
+                #     res_real_syn_b[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn_b[res_i, :].T
 
             print_time(m_time() - loop_time, file_name + ", Realisation " + str(realization))
 
@@ -550,6 +547,7 @@ class GC_prop_cons:
                     f_ = f_vector[i]
                     # Iterating through specific realizations
                     for neuron_realization in range(num_realizations):
+                        # Input spike events
                         ta = np.array(spike_event_per_freq[i][realization][neuron_realization]) / sfreq
                         # Postsynaptic contribution on the neuron
                         PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
@@ -815,10 +813,21 @@ class GC_prop_cons:
                   'realizations': num_realizations, 't_realizations': self.total_realizations, 'time_transition': t_tra}
             # """
             # Updating final dictionary
-            for nam in range(res_real.shape[0]):
-                dr[stat_list[nam]] = res_real[nam, :]
-                dr['syn_' + stat_list[nam]] = res_real_syn[nam, :]
-                if self.stp_prop.get_output().ndim == 3: dr['syn_b_' + stat_list[nam]] = res_real_syn_b[nam, :]
+            for nam in range(res_real[0].shape[0]):
+                # Looping through state variables of neuron
+                names_sv = list(self.neuron_prop.get_state_variables().keys())
+                for sv in range(l_sv):
+                    name_sv = names_sv[sv]
+                    if name_sv == 'v': dr[stat_list[nam]] = res_real[sv][nam, :]
+                    else: dr[name_sv + '_' + stat_list[nam]] = res_real[sv][nam, :]
+
+                # For synapses
+                names_sv = list(self.stp_prop.get_state_variables().keys())
+                for sv in range(l_svs):
+                    name_sv = names_sv[sv]
+                    dr[name_sv + '_' + stat_list[nam]] = res_real_syn[sv][nam, :]
+                # dr['syn_' + stat_list[nam]] = res_real_syn[nam, :]
+                # if self.stp_prop.get_output().ndim == 3: dr['syn_b_' + stat_list[nam]] = res_real_syn_b[nam, :]
 
             if self.save_vars:
                 saveObject(dr, file_name, folder_vars)
@@ -826,8 +835,21 @@ class GC_prop_cons:
         # if experiment is forced, then update final dictionary to be returned
         if soft_stop_cond:
             # Updating final dictionary
-            for nam in range(res_real.shape[0]):
-                dr[stat_list[nam]] = res_real[nam, :]
+            for nam in range(res_real[0].shape[0]):
+                # Looping through state variables of neuron
+                names_sv = list(self.neuron_prop.get_state_variables().keys())
+                for sv in range(l_sv):
+                    name_sv = names_sv[sv]
+                    if name_sv == 'v':
+                        dr[stat_list[nam]] = res_real[sv][nam, :]
+                    else:
+                        dr[name_sv + '_' + stat_list[nam]] = res_real[sv][nam, :]
+
+                # For synapses
+                names_sv = list(self.stp_prop.get_state_variables().keys())
+                for sv in range(l_svs):
+                    name_sv = names_sv[sv]
+                    dr[name_sv + '_' + stat_list[nam]] = res_real_syn[sv][nam, :]
 
         print_time(m_time() - ini_loop_time, "Total big loop")
 

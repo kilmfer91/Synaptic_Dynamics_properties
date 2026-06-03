@@ -55,68 +55,86 @@ def get_neuron_params(n_model, tau_m, ind, y_lim_ind_plot=False, num_syn=1, num_
             if tau_m == 10 and num_syn == 1: y_lim_memPot = [-70.05, -69]
             if tau_m == 30 and num_syn == 1: y_lim_memPot = [-70.05, -69.5]
 
-        n_params = {'V_threshold': np.array([-55 for _ in range(n)]), 'V_reset': np.array([-70 for _ in range(n)]),
-                    'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]), 'g_L': np.array([2.7e-2 for _ in range(n)]),
+        n_params = {'V_threshold': np.array([-55 for _ in range(n)]), 'V_reset': np.array([-70 for _ in range(n)]),  # 'V_threshold': np.array([-55 for _ in range(n)])
+                    'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]), 'g_L': np.array([7.5e-2 for _ in range(n)]), # 'g_L': np.array([2.7e-2 for _ in range(n)])
                     'V_init': np.array([-70 for _ in range(n)]), 'V_equilibrium': np.array([-70 for _ in range(n)]),
                     't_refractory': np.array([0.01 for _ in range(n)]), 'y_lim_plot': y_lim_memPot}
     if n_model == "HH":
         y_lim_memPot = [-40e-3, 0]
-        n_params = {'Cm': np.array([6e-12 for _ in range(n)]),  # pF (from area=300 um², Cm=2 uF/cm²)
-                    'g_na': np.array([240e-9 for _ in range(n)]),  # nS -> (1.6*50 mS/cm² * 300 um²)
-                    'g_kd': np.array([19.5e-9 for _ in range(n)]),  # nS -> (1.3*5 mS/cm² * 300 um²)
+        # From paper "An in silico and in vitro human NN model" - Doorn, et al., 2023
+        n_params = {'Cm': np.array([3e-12 for _ in range(n)]),  # pF (from area=300 um², Cm=1 uF/cm²)
+                    'g_na': np.array([150e-9 for _ in range(n)]),  # nS -> (50 mS/cm² * 300 um²)
+                    'g_kd': np.array([15e-9 for _ in range(n)]),  # nS -> (5 mS/cm² * 300 um²)
                     'g_l': np.array([0.9e-9 for _ in range(n)]),  # nS (0.3 mS/cm² * 300 um²)
                     'El': np.array([-39.2e-3 for _ in range(n)]),  # -39.2,  # mV
                     'EK': np.array([-80.0e-3 for _ in range(n)]),  # mV
                     'ENa': np.array([70.0e-3 for _ in range(n)]),  # mV
                     'VT': np.array([-30.4e-3 for _ in range(n)]),  # mV
-                    'sigma': np.array([1e-4 for _ in range(n)]),  # 6.0e-3,  # mV (noise std dev)
-                    # 'sigma': np.array([8e-3 for _ in range(n)]),  # mV (noise std dev)
-                    'g_AHP': np.array([5.0e-9 for _ in range(n)]),  # nS
+                    'sigma': np.array([0 for _ in range(n)]),  # 4.1e-3,  # mV (noise std dev)
+                    'g_AHP': np.array([10.0e-9 for _ in range(n)]),  # nS
                     'E_AHP': np.array([-80.0e-3 for _ in range(n)]),  # mV (= EK)
-                    'g_ampa': np.array([1.6e-9 for _ in range(n)]),  # nS
-                    'g_nmda': np.array([0.4e-9 for _ in range(n)]),  # nS
+                    'g_ampa': np.array([0.2808e-9 for _ in range(n)]),  # nS -> for sigma = 0
+                    'g_nmda': np.array([0.0981e-9 for _ in range(n)]),  # nS -> for sigma = 0
                     'E_ampa': np.array([0e-3 for _ in range(n)]),  # mV
                     'E_nmda': np.array([0e-3 for _ in range(n)]),  # mV
-                    'tau_Ca': np.array([8.0e-3 for _ in range(n)]),  # ms  8000e-3
+                    'tau_Ca': np.array([6.0e-3 for _ in range(n)]),  # ms  6000e-3
                     'alpha_Ca': np.array([0.00035 for _ in range(n)]),  # per spike
                     'V_init': np.array([-39.0e-3 for _ in range(n)]),  # mV
-                    'V_reset': np.array([-39.0e-3 for _ in range(n)]),  # mV (no voltage reset, just refractory)
-                    'V_threshold': np.array([0.0e-3 for _ in range(n)]),  # mV (from Brian2: V>0*mV)
-                    't_refractory': np.array([2.0e-3 for _ in range(n)]),  # ms
-                    'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]),  # NOT USED IN THIS MODEL
-                    'y_lim_plot': y_lim_memPot,  # NOT USED IN THIS MODEL
+                    # 'V_reset': np.array([-39.0e-3 for _ in range(n)]),  # mV (no voltage reset, just refractory)
+                    'V_threshold': np.array([0.0e-3 for _ in range(n)]),  # 0mV (from Brian2: V>0*mV)
+                    'tau_m': np.array([1.0e-3 for _ in range(n)]),  # mV
+                    'y_lim_plot': False  # NOT USED IN THIS MODEL
                     }
-        # Missing to tune sigma  ********
+        #  From paper "Breaking the burst" - Doorn, et al., 2024
+        # For strong STD
+        if ind == 1:
+            n_params['Cm'] = np.array([6e-12 for _ in range(n)])  # pF (from area=300 um², Cm=2 uF/cm²)
+            n_params['g_na'] = np.array([240e-9 for _ in range(n)])  # nS -> (80 mS/cm² * 300 um²)
+            n_params['g_kd'] = np.array([19.5e-9 for _ in range(n)])  # nS -> (6.5 mS/cm² * 300 um²)
+            n_params['g_AHP'] = np.array([5e-9 for _ in range(n)])  # nS
+            n_params['g_ampa'] = np.array([1.6e-9 for _ in range(n)])
+            n_params['g_nmda'] = np.array([0.4e-9 for _ in range(n)])
+            # n_params['sigma'] = np.array([0e-3 for _ in range(n)])  # 8mV
+            n_params['tau_Ca'] = np.array([8.0e-3 for _ in range(n)])  # 8000ms
+        #  From paper "Breaking the burst" - Doorn, et al., 2024
         # For strong STD
         if ind == 2 or ind == 3:
+            n_params['Cm'] = np.array([6e-12 for _ in range(n)])  # pF (from area=300 um², Cm=2 uF/cm²)
+            n_params['g_na'] = np.array([240e-9 for _ in range(n)])  # nS -> (80 mS/cm² * 300 um²)
+            n_params['g_kd'] = np.array([19.5e-9 for _ in range(n)])  # nS -> (6.5 mS/cm² * 300 um²)
             n_params['g_AHP'] = np.array([4.0e-9 for _ in range(n)])
-            # n_params['sigma'] = np.array([6e-3 for _ in range(n)])
+            # n_params['sigma'] = np.array([6e-3 for _ in range(n)])  # 6000ms
+            n_params['tau_Ca'] = np.array([8.0e-3 for _ in range(n)])  # 8000ms
+        #  From paper "Breaking the burst" - Doorn, et al., 2024
         # For low and high Asynchronous release
         if ind == 4 or ind == 5:
+            n_params['Cm'] = np.array([6e-12 for _ in range(n)])  # pF (from area=300 um², Cm=2 uF/cm²)
+            n_params['g_na'] = np.array([240e-9 for _ in range(n)])  # nS -> (80 mS/cm² * 300 um²)
+            n_params['g_kd'] = np.array([19.5e-9 for _ in range(n)])  # nS -> (6.5 mS/cm² * 300 um²)
             n_params['g_AHP'] = np.array([8.0e-9 for _ in range(n)])
-            # n_params['sigma'] = np.array([5.5e-3 for _ in range(n)])
+            # n_params['sigma'] = np.array([0e-3 for _ in range(n)])  # 5.5mV
+            n_params['tau_Ca'] = np.array([8.0e-3 for _ in range(n)])  # 8000ms
+        #  From paper "Breaking the burst" - Doorn, et al., 2024
         # For Strong NMDA currents
         if ind == 6:
-            n_params['Cm'] = np.array([3e-12 for _ in range(n)]),  # pF (from area=300 um², Cm=1 uF/cm²)
-            n_params['g_na'] = np.array([150e-9 for _ in range(n)]),  # nS -> (50 mS/cm² * 300 um²)
-            n_params['g_kd'] = np.array([15e-9 for _ in range(n)]),  # nS -> (5 mS/cm² * 300 um²)
             # For delta = 0.5 -> g_ampa = 1 + delta, g_nmda = 1 - delta
-            n_params['g_ampa'] = np.array([1.5e-9 for _ in range(n)]),  # nS
-            n_params['g_nmda'] = np.array([0.5e-9 for _ in range(n)]),  # nS
-            # n_params['sigma'] = np.array([3.5e-3 for _ in range(n)])
+            n_params['g_ampa'] = np.array([1.5e-9 for _ in range(n)])  # nS
+            n_params['g_nmda'] = np.array([0.5e-9 for _ in range(n)])  # nS
+            n_params['g_AHP'] = np.array([5e-9 for _ in range(n)])  # nS
+            # n_params['sigma'] = np.array([0e-3 for _ in range(n)])  # 3.5mV
+            n_params['tau_Ca'] = np.array([8.0e-3 for _ in range(n)])  # 8000ms
+        #  From paper "Breaking the burst" - Doorn, et al., 2024
         # For STF
         if ind == 7:
-            pass
-            # n_params['sigma'] = np.array([5.5e-3 for _ in range(n)])
+            n_params['Cm'] = np.array([6e-12 for _ in range(n)])  # pF (from area=300 um², Cm=2 uF/cm²)
+            n_params['g_na'] = np.array([240e-9 for _ in range(n)])  # nS -> (80 mS/cm² * 300 um²)
+            n_params['g_kd'] = np.array([19.5e-9 for _ in range(n)])  # nS -> (6.5 mS/cm² * 300 um²)
+            n_params['g_AHP'] = np.array([5e-9 for _ in range(n)])  # nS
+            # n_params['sigma'] = np.array([0e-3 for _ in range(n)])  # 5.5mV
+            n_params['tau_Ca'] = np.array([8.0e-3 for _ in range(n)])  # 8000ms
+        # From paper "An in silico and in vitro human NN model" - Doorn, et al., 2023
         if ind == 8:
-            n_params['Cm'] = np.array([3e-12 for _ in range(n)])        # For Cm = 1uF*cm-2
-            n_params['g_na'] = np.array([150e-9 for _ in range(n)])     # For g_na = 50mS*cm-2
-            n_params['g_kd'] = np.array([15e-9 for _ in range(n)])      # For g_kd = 5mS*cm-2
-            # n_params['sigma'] = np.array([4.1e-3 for _ in range(n)])  # For sigma = 4.1mV
-            n_params['g_AHP'] = np.array([10.0e-9 for _ in range(n)])   # For g_AHP = 10nS
-            n_params['tau_Ca'] = np.array([6.0e-3 for _ in range(n)])   # For tau_AHP = 6ms (Originally 6 Seconds)
-            n_params['g_ampa'] = np.array([0.2808e-9 for _ in range(n)])   # For g_ampa = 0.2808nS
-            n_params['g_nmda'] = np.array([0.0981e-9 for _ in range(n)])   # For g_nmda = 0.0981nS
+            n_params['alpha_Ca'] = np.array([0.00005 for _ in range(n)])  # per spike
     assert n_params is not None, 'parameters for neuron model %s and index %d not found' % (n_model, ind)
     return n_params
 
@@ -199,11 +217,11 @@ def get_params_stp(name_model, ind):
     # params_s_dep = {'tau_g': 2e-3, 'tau_alpha': 300e-3, 'g0': 0.075, 'f': 0.75}
 
     # Control
+    # From paper "An in silico and in vitro human NN model" - Doorn, et al., 2023
     if name_model == "DoornSTD" and ind == 0:
         description = "DoornSTD " + str(ind) + ", Control net, (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d',
-                       'U',
-                       'S']
+                       'U', 'S']
         syn_params = [0.0e-3,   # mV
                       0.0e-3,   # mV
                       2e-3,     # s
@@ -214,21 +232,25 @@ def get_params_stp(name_model, ind):
                       15e-3,    # unitless - STD release probability
                       1.65      # unitless - overall strength
                       ]
+    #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornSTD" and ind == 1:
         description = "DoornSTD " + str(ind) + ", Control net, (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
                        'S']
         syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 200e-3, 0.2, 0.4]
+    #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornSTD" and ind == 2:
         description = "DoornSTD " + str(ind) + ", Strong STD (a), (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
                        'S']
         syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 250e-3, 6e-3, 0.25]
+    #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornSTD" and ind == 3:
         description = "DoornSTD " + str(ind) + ", Strong STD (b), (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
                        'S']
         syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 250e-3, 35e-3, 0.25]
+    #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornAsyn" and ind == 4:
         description = "DoornAsyn " + str(ind) + ", low Asynchronous rel, (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
@@ -236,23 +258,31 @@ def get_params_stp(name_model, ind):
                        # Asynchronous parameters
                        'x0', 'tau_ar', 'Uar', 'Umax']
         syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 200e-3, 0.01, 0.4, 5, 700e-3, 0.5, 0.5 * 1e3]  # 5e-4*1e3
+    #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornAsyn" and ind == 5:
         description = "DoornAsyn " + str(ind) + ", high Asynchronous rel, (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
                        'S',
                        # Asynchronous parameters
                        'x0', 'tau_ar', 'Uar', 'Umax']
-        syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 200e-3, 0.01, 0.4, 5, 700e-3, 0.5,
-                      4.5 * 1e3]  # 45e-4*1e3
+        syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 200e-3, 0.01, 0.4, 5, 700e-3, 0.5, 4.5 * 1e3]  #45e-4*1e3
+    #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornSTD" and ind == 6:
         description = "DoornSTD " + str(ind) + ", Strong NMDA current, (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
                        'S']
         syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 800e-3, 0.2, 1.5]
+    #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornSTF" and ind == 7:
         description = "DoornSTF " + str(ind) + ", STF, (Breaking the burst)"
         name_params = ['tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'tau_f', 'U', 'S']
         syn_params = [2e-3, 2e-3, 100e-3, 0.5, 1000e-3, 1000e-3, 0.005, 13]
+    #  From paper "An in silico and in vitro human NN model" - Doorn, et al., 2023
+    if name_model == "DoornSTD" and ind == 8:
+        description = "DoornSTD " + str(ind) + ", STD, (Dravet Syndrome - 2023)"
+        name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
+                       'S']
+        syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 813e-3, 0.01, 0.7]
     assert syn_params is not None, "Not parameters for model %s and index %d" % (name_model, ind)
 
     return syn_params, description, name_params
@@ -1371,7 +1401,7 @@ def get_time_series_statistics_of_transitions(time_series, f_vector, prop_rates,
     return th_tr_a, res
 
 
-def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5, filtering=False, cutoff=5):
+def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5, filtering=False, cutoff=5, title=""):
     # Filtering signals if flag is true
     if filtering:
         signal1 = lowpass(signal1, cutoff, 1 / dt)
@@ -1401,24 +1431,29 @@ def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5,
         mask_change_indtr = first_indtr > (signal1.shape[1] - ind_500ms)
     # if first_indtr of a neuron is greater than len_window minus 500ms, then set first_indtr to len_window minus 500ms
     first_indtr[mask_change_indtr] = [signal1.shape[1] - ind_500ms for _ in range(np.sum(mask_change_indtr))]
-    """
-    fig = plt.figure(figsize=(8, 3))
-    time_vec = np.arange(0, int(signal1.shape[1] * dt), dt)
-    for n in range(signal1.shape[0]):
-        aux = signal1[n, :] + n * 0.005
-        plt.plot(time_vec, aux)
-        aux = signal2[n, :] + n * 0.005
-        plt.plot(time_vec, aux)
-        aux = np.array([np.min(signal1[n, :]), np.min(signal1[n, :]) + 0.01]) + (n * 0.005)
-        plt.plot([first_indtr[n] * dt, first_indtr[n] * dt], aux, c='black')
-    plt.grid()
-    plt.title(str(first_indtr))
+    # """
+    f1 = plt.figure()
+    t_v = np.arange(0, signal1.shape[1] * dt, dt)
+    ax2 = f1.add_subplot(2, 1, 1)
+    ax2.plot(t_v, signal1[0, :], label="ini")
+    ax2.plot(t_v, signal2[0, :], label="end")
+    ax2.legend(loc="best")
+    ax2.grid()
+    ax = f1.add_subplot(2, 1, 2)
+    ax.plot(t_v[:-10], ini_minus_end_windows[0, :], label="diff")
+    ax.plot([t_v[0], t_v[-1]], [thresholds[0], thresholds[0]], c="red", label="thr")
+    ax.grid()
+    ax.legend(loc="best")
+    aux = np.array([np.min(ini_minus_end_windows[0, :]), np.max(ini_minus_end_windows[0, :])])
+    ax.plot([first_indtr[0] * dt, first_indtr[0] * dt], aux, c='black')
+    plt.suptitle(title + " " + str(first_indtr * dt) + "s")
+    plt.tight_layout()
     # """
     return first_indtr
 
 
 def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transition, sim_params, t_transitions, dt,
-                             th_percentage=1e-2, filtering=False, cutoff=5):
+                             th_percentage=1e-2, filtering=False, cutoff=5, title=None):
     """
 
     Parameters
@@ -1433,6 +1468,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     th_percentage
     filtering
     cutoff
+    title
     Returns
     statistical descriptors array
     transition_time_array
@@ -1463,7 +1499,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     th_tr_a_filt = [0.0 for _ in range(sig_prop.shape[0])]
     # Getting time range of transition period
     if threshold_transition is None:
-        th_tr_a = get_transition_time_from_2_signals(piw, pew, dt, th_percentage=th_percentage) * dt
+        th_tr_a = get_transition_time_from_2_signals(piw, pew, dt, th_percentage=th_percentage, title=title) * dt
         if filtering:
             th_tr_a_filt = get_transition_time_from_2_signals(piw, pew, dt, th_percentage=5e-2, filtering=filtering,
                                                               cutoff=cutoff) * dt

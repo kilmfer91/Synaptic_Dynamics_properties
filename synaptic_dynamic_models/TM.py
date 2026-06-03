@@ -85,6 +85,10 @@ class TM_model(SynDynModel):
             assert len(spike_range) == 2, "'Input' must have 2-dimensions"
             self.Input = Input
 
+    def get_state_variables(self):
+        """Get all state variables."""
+        return {'R': self.R, 'U': self.U, 'epsc': self.I_out}
+
     def evaluate_model_euler(self, I_it, it):
         self.Input[:, it] = I_it
 

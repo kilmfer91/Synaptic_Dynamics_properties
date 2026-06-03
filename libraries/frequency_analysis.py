@@ -173,7 +173,7 @@ class Freq_analysis:
                 self.Input_vector[i, 0] = 1
             i += 1
 
-    def run(self, stochastic=False, num_trials=10, f_int=None):
+    def run(self, stochastic=False, num_trials=10, f_int=None, ax=None):
         """
 
         Parameters
@@ -181,6 +181,7 @@ class Freq_analysis:
         stochastic
         num_trials
         f_int
+        ax
         Returns
         -------
 
@@ -215,13 +216,14 @@ class Freq_analysis:
             self.eff_st_tonic = np.array(self.eff_st_tonic)
             self.fa_t_max_tonic = np.array(self.fa_t_max_tonic)
         else:
-            self.run_analysis(freq_interest=f_int)
+            self.run_analysis(freq_interest=f_int, ax=ax)
 
-    def run_analysis(self, freq_interest=None, stochastic=False, num_trials=10):
+    def run_analysis(self, freq_interest=None, stochastic=False, num_trials=10, ax=None):
         """
         freq_interest
         stochastic
         num_trials
+        ax
         Returns
         -------
         """
@@ -231,6 +233,7 @@ class Freq_analysis:
 
         # Looping through all frequencies
         i = 0
+        c_ax = 0  # counter for axes to plot
         num_freq = len(self.loop_frequencies)
         while i < num_freq:  # 59:
             r = self.loop_frequencies[i]
@@ -241,8 +244,10 @@ class Freq_analysis:
             self.ss_t[:] = np.nan
 
             # Additional arguments
-            kwargs_model = {'model': self.model_stp, 'Input': Input, 'params_name': self.name_params, 'mode': 'ODE',
-                            'model_neuron': self.model_neuron}
+            # kwargs_model = {'model': self.model_stp, 'Input': Input, 'params_name': self.name_params,
+            #                 'mode': 'ODE', 'model_neuron': self.model_neuron}
+            kwargs_model = {'model': self.model_stp, 'Input': Input[np.newaxis, :], 'params_name': self.name_params,
+                            'mode': 'ODE', 'model_neuron': self.model_neuron}
 
             # Evaluating the model
             self.model_stp.run_model(time_vector, *self.pa, **kwargs_model)
@@ -269,20 +274,33 @@ class Freq_analysis:
             aux_time_max = phasic_ind_max * self.dt
             aux_time_max_tonic = tonic_ind_max * self.dt
 
-            # """
-            fig = plt.figure()
+            """
+            fig = plt.figure(figsize=[8, 2])
             ax = fig.add_subplot(111)
             ax.plot([0.1, 0.8], [phasic_st[0], phasic_st[0]], c='tab:red', alpha=0.5)
-            ax.plot(self.time_vector, model_output[0, :], c='black')  # , label="phasic effect")
-            ax.set_xlabel("time (s)")
-            ax.set_ylabel(r"$E_{psp}$(t)")
+            ax.plot(self.time_vector[:int(1 / self.dt)], model_output[0, :int(1 / self.dt)], c='gray')  # , label="phasic effect")
+            # ax.set_xlabel("time (s)", c='gray')
+            ax.set_ylabel(r"$E_{psp}$(t)", c='gray')
             ax.grid(True)
-            ax.set_title("Rate at " + str(r) + "Hz")
-            ax.set_ylim([-0.005, 0.085])
+            ax.set_title("Input rate at " + str(r) + "Hz", c='black', alpha=0.7, fontsize=16)
+            ax.set_ylim([-0.005, 0.125])  # [-0.005, 0.085] facilitation, [-0.005, 0.125] depression
             # x.legend()
-            fig.savefig("../gain_control/plots/MSSM_fac_freq_res_" + str(r) + ".png", format='png')
+            plt.tight_layout()
+            fig.savefig("../gain_control/plots/MSSM_dep_freq_res_" + str(r) + ".png", format='png')
             plt.close(fig)
             # """
+            # External axis
+            if ax is not None:
+                if r in [10, 50, 500]:
+                    ax[c_ax].plot([0.1, 1.1], [phasic_st[0], phasic_st[0]], c='tab:red', alpha=0.5)
+                    ax[c_ax].plot(self.time_vector[:int(1 / self.dt)], model_output[0, :int(1 / self.dt)],
+                                  c='gray')  # , label="phasic effect")
+                    if r == 500: ax[c_ax].set_xlabel("time (s)", c='gray')
+                    ax[c_ax].set_ylabel("(mV)", c='gray')
+                    ax[c_ax].grid(True)
+                    ax[c_ax].set_title("$E_{psp}$(t) at input rate " + str(r) + "Hz", c='black', alpha=0.7, fontsize=16)
+                    ax[c_ax].set_ylim([-0.005, 0.125])  # [-0.005, 0.085] facilitation, [-0.005, 0.125] depression
+                    c_ax += 2
 
             # Update times of maximum and stedy-state
             self.time_max.append(aux_time_max)
@@ -299,7 +317,7 @@ class Freq_analysis:
             self.eff_st_tonic.append(tonic_st)
             # """
 
-            # """
+            """
             # Updating time_vector to time of steady state + 1 sec.
             aux_t_ss = np.max(self.time_ss[-1])
             if aux_t_ss == self.max_t and r > 1:
@@ -309,6 +327,7 @@ class Freq_analysis:
                 # updating time vector and end_t
                 time_vector = np.arange(0, aux_t_ss + 0.2, self.dt)
                 end_t = aux_t_ss + 0.1
+            # """
 
             """
             # if r % 10 == 0:
