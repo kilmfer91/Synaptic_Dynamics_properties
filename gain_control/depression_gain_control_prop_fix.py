@@ -8,7 +8,7 @@ ind = 0                     # Index to recover params of a given synaptic and ne
 sfreq = 30e3                # Sampling frequency of the simulation  16.8KHz
 max_freq = 3701             # Maximum baseline rate of the experiment
 tau_m_lif = 1               # If LIF neuron is used, this specifies the time constant (in milliseconds)
-folder_vars = "../gain_control/variables/high_freq_30k/"  # Folder to save results
+folder_vars = "../gain_control/variables/high_freq_30k_2/"  # Folder to save results
 folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
@@ -32,9 +32,9 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = True            # Save results in folders
+save_vars = False            # Save results in folders
 force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
-stoch_input = False         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
+stoch_input = True         # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 
 plot_ind_memPot = False     # Plot temporal dynamics
 save_figs = False           # Save temporal dynamics in folders
@@ -49,7 +49,7 @@ cutoff_filt = 5             # Cut-off frequency of the filter if used
 threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
 total_realizations = 104    # Number of stochastic realisations if activated  104
-num_realizations = 8        # Number of parallel realisations                 8
+num_realizations = 4        # Number of parallel realisations                 8
 # **********************************************************************************************************************
 # Time conditions
 max_t = 6                               # Time of simulation (in seconds)
@@ -74,7 +74,7 @@ dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_
                'total_realizations': total_realizations, 'neuron_noise': n_noise}
 
 # Instance of Gain-Control class
-initial_frequencies = np.array([10, 1000]) if force_experiment else None
+initial_frequencies = np.array([10, 700]) if force_experiment else None
 gc_prop_cons = GC_prop_cons(dict_params)
 _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=max_freq)
 

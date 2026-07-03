@@ -1356,7 +1356,7 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
 def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2, norm_neuron, titles, markers, alphas):
     for n in range(len(name_state_vars)):
         aux = ''
-        if name_state_vars[n] != 'v': aux = name_state_vars[n]
+        if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron)
         Eff_i_st, G_mi_st, G_mi_tr, Eff_det_i_st, G_det_mi_st, G_det_mi_tr = a
         i = 0

@@ -12,11 +12,11 @@ from gain_control.utils_gc import *
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-name_n_state_variables = ['v']  # ['v', 'm', 'h', 'n']  #
-name_syn_state_variables = ['R', 'U', 'epsc']  # ['s_ampa', 's_nmda', 'x_nmda', 'xd']  #
-s_model = 'TM'
-n_model = "LIF"
-ind = 8
+name_n_state_variables = ['v', 'm', 'h', 'n']  #  ['v']  #
+name_syn_state_variables = ['s_ampa', 's_nmda', 'x_nmda', 'xd']  # ['R', 'U', 'epsc']  #
+s_model = 'DoornSTD'
+n_model = "HH"
+ind = 0
 run_experiment = False
 save_figs = True
 imputations = True
@@ -26,14 +26,14 @@ plot_figs = True
 num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 12e3
+sfreq = 30e3
 tau_lif = 1  # ms
 total_realizations = 1  # 100
 num_realizations = 1  # 8 for server, 4 for macbook air
 t_tra = None  # 0.25
 
 # Path variables
-path_vars = "../gain_control/variables/high_freq_" + str(int(sfreq/1e3)) + "k/"  # synaptic_entropy_high_freq/"
+path_vars = "../gain_control/variables/high_freq_" + str(int(sfreq/1e3)) + "k_2/"  # synaptic_entropy_high_freq/"
 check_create_folder(path_vars)
 folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
@@ -111,13 +111,15 @@ if plot_figs:
                                          imputations, 0.1, n_noise=n_noise)
     if os.path.isfile(path_vars + dr_gain_control_file) and not filt_dict_loaded:
         figNeur_pos_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_n_state_variables))]  # 6.5, 5
-        title_ = 'Frequency portrait for short-term facilitation - membrane potential - positive changes of rate'  # title + " " + name_n_state_variables[j]
-        for j in range(len(name_n_state_variables)): figNeur_pos_gc[j].suptitle(title_, fontsize=22)
+        title_ = 'Frequency portrait for short-term depression - %s(t) - positive changes of rate'
+        for j in range(len(name_n_state_variables)):
+            figNeur_pos_gc[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
         ax_p = [[figNeur_pos_gc[i].add_subplot(2, 3, j + 1) for j in range(len(title_mp))] for i in
                range(len(name_n_state_variables))]
         figNeur_neg_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_n_state_variables))]  # 6.5, 5
-        title_ = 'Frequency portrait for short-term facilitation - membrane potential - negative changes of rate'  # title + " " + name_n_state_variables[j]
-        for j in range(len(name_n_state_variables)): figNeur_neg_gc[j].suptitle(title_, fontsize=22)
+        title_ = 'Frequency portrait for short-term depression - %s(t) - negative changes of rate'
+        for j in range(len(name_n_state_variables)):
+            figNeur_neg_gc[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
         ax_n = [[figNeur_neg_gc[i].add_subplot(2, 3, j + 1) for j in range(len(title_mp))] for i in
                range(len(name_n_state_variables))]
 
@@ -239,28 +241,36 @@ for gain in gain_v:
     # Plots 1
     # FREQUENCY RESPONSES OF SYNAPTIC PROPERTIES
     dr_ = dr_gain
-    # For Membrane potential analysis
-    var_ = organise_keys_dr_gc(sufix='')
-    # Plotting properties
     if plot_figs:
-        axb_ = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, axb_, dr_['time_transition'], min_n=min_n,
-                                   max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
+        if 'name_neuron_state_variables' not in dr_:
+            # For Membrane potential analysis
+            var_ = organise_keys_dr_gc(sufix='')
+            # Plotting properties
+            axb_ = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, axb_, dr_['time_transition'], min_n=min_n,
+                                       max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
+        else:
+            for name_ in dr_['name_neuron_state_variables']:
+                var_ = organise_keys_dr_gc(sufix=name_ + '_')
+                if name_ == 'v':
+                    var_ = organise_keys_dr_gc(sufix='')
+                    # Plotting properties
+                    axb_ = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, axb_, dr_['time_transition'], min_n=min_n,
+                                                   max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
 
-    # For Synaptic analysis
-    var_ = organise_keys_dr_gc(sufix='syn_')
-    # Plotting properties
-    if plot_figs:
-        axb_s = plot_properties_in_freq(dr_, var_, f_vec, aux_H_s, gain, axb_s, dr_['time_transition_syn'],
-                                    c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=False)
+        if 'name_syn_state_variables' not in dr_:
+            # For Synaptic analysis
+            var_ = organise_keys_dr_gc(sufix='syn_')
+            # Plotting properties
+            axb_s = plot_properties_in_freq(dr_, var_, f_vec, aux_H_s, gain, axb_s, dr_['time_transition_syn'],
+                                        c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=False)
 
-    # For Synaptic analysis (second synapse)
-    var_ = organise_keys_dr_gc(sufix='syn_b_')
-    # Plotting properties
-    if plot_figs:
-        if fig_syn_b:
-            axb_sb = plot_properties_in_freq(dr_, var_, f_vec, aux_H_sb, gain, axb_sb,
-                                             dr_['time_transition_syn_b'], c_g=c_g[i_g], plot_filt=i_g == 0,
-                                             norm_neuron=False)
+            # For Synaptic analysis (second synapse)
+            var_ = organise_keys_dr_gc(sufix='syn_b_')
+            # Plotting properties
+            if fig_syn_b:
+                axb_sb = plot_properties_in_freq(dr_, var_, f_vec, aux_H_sb, gain, axb_sb,
+                                                 dr_['time_transition_syn_b'], c_g=c_g[i_g], plot_filt=i_g == 0,
+                                                 norm_neuron=False)
     # **********************************************************************************************************
     # Plots 2
 

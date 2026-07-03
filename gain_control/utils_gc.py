@@ -33,6 +33,10 @@ stat_list = ['st_ini_prop_mean', 'st_ini_prop_med', 'st_ini_prop_q5', 'st_ini_pr
              'mtr_ini_prop_med', 'mtr_ini_prop_q90', 'mtr_ini_prop_q10', 'mtr_ini_prop_max', 'mtr_ini_prop_min',
              'mtr_mid_prop_med', 'mtr_mid_prop_q90', 'mtr_mid_prop_q10', 'mtr_mid_prop_max', 'mtr_mid_prop_min',
              'mtr_end_prop_med', 'mtr_end_prop_q90', 'mtr_end_prop_q10', 'mtr_end_prop_max', 'mtr_end_prop_min',
+             'st_ini_num_spike_v', 'st_mid_num_spike_v', 'st_end_num_spike_v',
+             'mtr_ini_num_spike_v', 'mtr_mid_num_spike_v', 'mtr_end_num_spike_v',
+             'st_ini_ISI_v', 'st_mid_ISI_v', 'st_end_ISI_v',
+             'mtr_ini_ISI_v', 'mtr_mid_ISI_v', 'mtr_end_ISI_v',
              'initial_frequencies', 'stp_model', 'name_params', 'dyn_synapse', 'num_synapses', 'syn_params',
              'sim_params', 'lif_params', 'lif_params2', 'prop_rate_change_a', 'fix_rate_change_a', 'num_changes_rate',
              'description', 'seeds', 'realizations', 't_realizations', 'time_transition']
@@ -86,7 +90,7 @@ def get_neuron_params(n_model, tau_m, ind, y_lim_ind_plot=False, num_syn=1, num_
                     'y_lim_plot': False  # NOT USED IN THIS MODEL
                     }
         #  From paper "Breaking the burst" - Doorn, et al., 2024
-        # For strong STD
+        # For strong STD - Figure 2
         if ind == 1:
             n_params['Cm'] = np.array([6e-12 for _ in range(n)])  # pF (from area=300 um², Cm=2 uF/cm²)
             n_params['g_na'] = np.array([240e-9 for _ in range(n)])  # nS -> (80 mS/cm² * 300 um²)
@@ -1245,7 +1249,7 @@ def correct_poisson_spike_trains(Input_aux, num_realizations, seed=None, imputat
 
 
 def simple_spike_train(sfreq, rate, L, num_realizations=1, poisson=False, seeds=None, correction=True,
-                       imputation=True):
+                       imputation=True, avoid_last_fast_spike_det=False):
     seed = None
     if seeds is not None:
         assert isinstance(seeds, list), "seeds must be a list"
@@ -1262,6 +1266,10 @@ def simple_spike_train(sfreq, rate, L, num_realizations=1, poisson=False, seeds=
 
     else:
         aux_s = input_spike_train(sfreq, rate, L / sfreq)
+        # Setting to zero the last spike if it is closer to L
+        # with the aim of avoiding having two consecutive spikes with faster frequency than the expected rate
+        if avoid_last_fast_spike_det:
+            aux_s[L - int(sfreq / rate) + 1:] = 0
         Input_test = np.repeat(np.expand_dims(aux_s, axis=0), num_realizations, axis=0)
 
     # print(seed_print)
@@ -1401,7 +1409,31 @@ def get_time_series_statistics_of_transitions(time_series, f_vector, prop_rates,
     return th_tr_a, res
 
 
-def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5, filtering=False, cutoff=5, title=""):
+def get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, low, high, sfreq):
+    """
+
+    :param ind_spikes_gen:
+    :param r:
+    :param low:
+    :param high:
+    :param sfreq:
+    :return:
+    """
+    # Check if spikes are within the window
+    mask = (ind_spikes_gen[r] > low) & (ind_spikes_gen[r] <= high)
+    ind_spikes = ind_spikes_gen[r][mask]
+
+    ISI, num_spike = [], 0
+    # Save ISI and number of spikes of window
+    if len(ind_spikes) > 0:
+        ISI = np.diff(ind_spikes / sfreq)
+        num_spike = np.sum(mask)
+
+    return ISI, num_spike
+
+
+def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5, filtering=False, cutoff=5, title="",
+                                       det_in=False, det_r=100):
     # Filtering signals if flag is true
     if filtering:
         signal1 = lowpass(signal1, cutoff, 1 / dt)
@@ -1427,11 +1459,17 @@ def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5,
     # Answering if first_indtr is lower than the index of the last 500ms of the window
     ind_500ms = int(0.5 / dt)
     mask_change_indtr = [False for _ in range(signal1.shape[0])]
+    # Upper limit
     if ind_500ms < signal1.shape[1]:
         mask_change_indtr = first_indtr > (signal1.shape[1] - ind_500ms)
-    # if first_indtr of a neuron is greater than len_window minus 500ms, then set first_indtr to len_window minus 500ms
-    first_indtr[mask_change_indtr] = [signal1.shape[1] - ind_500ms for _ in range(np.sum(mask_change_indtr))]
-    # """
+        # if first_indtr of a neuron is greater than len_win minus 500ms, then set first_indtr to len_window minus 500ms
+        first_indtr[mask_change_indtr] = [signal1.shape[1] - ind_500ms for _ in range(np.sum(mask_change_indtr))]
+    # Lower limit (only for deterministic inputs)
+    if np.any(first_indtr < (1 / (det_r * dt))) and det_in:  # if first ind is lower than time between two spikes
+        mask_change_indtr = first_indtr < int(1 / (det_r * dt))
+        first_indtr[mask_change_indtr] = [int(1 / (det_r * dt)) for _ in range(np.sum(mask_change_indtr))]
+
+    """
     f1 = plt.figure()
     t_v = np.arange(0, signal1.shape[1] * dt, dt)
     ax2 = f1.add_subplot(2, 1, 1)
@@ -1446,14 +1484,15 @@ def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5,
     ax.legend(loc="best")
     aux = np.array([np.min(ini_minus_end_windows[0, :]), np.max(ini_minus_end_windows[0, :])])
     ax.plot([first_indtr[0] * dt, first_indtr[0] * dt], aux, c='black')
-    plt.suptitle(title + " " + str(first_indtr * dt) + "s")
+    plt.suptitle(title + " " + str(first_indtr * dt) + "s" + " " + str(first_indtr))
     plt.tight_layout()
     # """
     return first_indtr
 
 
 def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transition, sim_params, t_transitions, dt,
-                             th_percentage=1e-2, filtering=False, cutoff=5, title=None):
+                             th_percentage=1e-2, filtering=False, cutoff=5, title=None, det_in=False, det_r=100,
+                             ind_spikes_gen=None):
     """
 
     Parameters
@@ -1469,6 +1508,9 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     filtering
     cutoff
     title
+    det_in
+    det_r
+    ind_spikes_gen
     Returns
     statistical descriptors array
     transition_time_array
@@ -1499,10 +1541,11 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     th_tr_a_filt = [0.0 for _ in range(sig_prop.shape[0])]
     # Getting time range of transition period
     if threshold_transition is None:
-        th_tr_a = get_transition_time_from_2_signals(piw, pew, dt, th_percentage=th_percentage, title=title) * dt
+        th_tr_a = get_transition_time_from_2_signals(piw, pew, dt, th_percentage=th_percentage, title=title,
+                                                     det_in=det_in, det_r=det_r) * dt
         if filtering:
             th_tr_a_filt = get_transition_time_from_2_signals(piw, pew, dt, th_percentage=5e-2, filtering=filtering,
-                                                              cutoff=cutoff) * dt
+                                                              cutoff=cutoff, det_in=det_in, det_r=det_r) * dt
         """
         # Substract ini and end window to define the transition period (exclude lasst 10 samples to avoid errors)
         ini_minus_end_windows = np.abs(piw[:, :-10] - pew[:, :-10])
@@ -1541,11 +1584,29 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     mean_tr_cm, median_tr_cm, q5_tr_cm, q10_tr_cm, q90_tr_cm, q95_tr_cm, min_tr_cm, max_tr_cm = [[] for _ in range(8)]
     mean_tr_ce, median_tr_ce, q5_tr_ce, q10_tr_ce, q90_tr_ce, q95_tr_ce, min_tr_ce, max_tr_ce = [[] for _ in range(8)]
 
+    # For suprathreshold regime
+    st_ISI_pi, tr_ISI_pi, st_ISI_pm, tr_ISI_pm, st_ISI_pe, tr_ISI_pe = [[] for _ in range(6)]
+    st_num_spike_pi, tr_num_spike_pi, st_num_spike_pm, tr_num_spike_pm, st_num_spike_pe, tr_num_spike_pe = [0 for _ in range(6)]
+
     # Getting statistics for transition and steady-state components of mid window if time_transition is provided
     if t_transition_mid_win is not None:
+        # SUBTHRESHOLD REGIME
         # Extracting steady-state statistical descriptors of middle window
         st_pm = sig_prop[:, int((Le_time_win + t_transition_mid_win) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
         st_cm = sig_cons[:, int((Le_time_win + t_transition_mid_win) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
+
+        # SUPRATHRESHOLD REGIME
+        # **************************************************************************************************
+        if ind_spikes_gen is not None:
+            for r in range(sig_prop.shape[0]):
+                # Get ISI and number of spikes in stationary regime of ini window
+                IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r,
+                                                          int((Le_time_win + t_transition_mid_win) / dt),
+                                                          int(2 * Le_time_win / dt), sim_params['sfreq'])
+                st_ISI_pm = st_ISI_pm + list(IS)
+                st_num_spike_pm += NS
+        # **************************************************************************************************
+
         # Getting statistics
         bu, eu = statistics_signal(st_pm, axis=1), statistics_signal(st_cm, axis=1)
         mean_st_pm, median_st_pm, q5_st_pm, q10_st_pm, q90_st_pm, q95_st_pm, min_st_pm, max_st_pm = bu
@@ -1554,6 +1615,19 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
         # Extracting transition statistical descriptors of middle windows
         tr_pm = sig_prop[:, int(Le_time_win / dt):int((Le_time_win + t_transition_mid_win) / dt)]  # [, 2s:t_tr]
         tr_cm = sig_cons[:, int(Le_time_win / dt):int((Le_time_win + t_transition_mid_win) / dt)]  # [, 2s:t_tr]
+
+        # SUPRATHRESHOLD REGIME
+        # **************************************************************************************************
+        if ind_spikes_gen is not None:
+            for r in range(sig_prop.shape[0]):
+                # Get ISI and number of spikes in stationary regime of ini window
+                IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, int(Le_time_win / dt),
+                                                          int((Le_time_win + t_transition_mid_win) / dt),
+                                                          sim_params['sfreq'])
+                tr_ISI_pm = tr_ISI_pm + list(IS)
+                tr_num_spike_pm += NS
+        # **************************************************************************************************
+
         # Getting statistics
         hu, nu = statistics_signal(tr_pm, axis=1), statistics_signal(tr_cm, axis=1)
         mean_tr_pm, median_tr_pm, q5_tr_pm, q10_tr_pm, q90_tr_pm, q95_tr_pm, min_tr_pm, max_tr_pm = hu
@@ -1565,11 +1639,28 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
 
     # Getting statistical descriptors for transition and steady-state components of signals
     for r in range(sig_prop.shape[0]):
-        # Extracting steady-state statistical descriptors of initial and ending windows
+        # Getting stationary-state time-series of initial and ending windows
         st_pi = sig_prop[r, int(th_tr_a[r] / dt):int(Le_time_win / dt)]  # [, t_tr:2s]
         st_pe = sig_prop[r, int((2 * Le_time_win + th_tr_a[r]) / dt):int(max_t / dt)]  # [, t_tr:6.0s]
         st_ci = sig_cons[r, int(th_tr_a[r] / dt):int(Le_time_win / dt)]  # [, t_tr:2s]
         st_ce = sig_cons[r, int((2 * Le_time_win + th_tr_a[r]) / dt):int(max_t / dt)]  # [, t_tr:6.0s]
+
+        # SUPRATHRESHOLD REGIME
+        # **************************************************************************************************
+        if ind_spikes_gen is not None:
+            # Get ISI and number of spikes in stationary regime of ini window
+            IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, int(th_tr_a[r] / dt), int(Le_time_win / dt),
+                                                      sim_params['sfreq'])
+            st_ISI_pi = st_ISI_pi + list(IS)
+            st_num_spike_pi += NS
+            # Get ISI and number of spikes in stationary regime of end window
+            IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, int((2 * Le_time_win + th_tr_a[r]) / dt),
+                                                      int(max_t / dt), sim_params['sfreq'])
+            st_ISI_pe = st_ISI_pe + list(IS)
+            st_num_spike_pe += NS
+        # **************************************************************************************************
+
+        # SUBTHRESHOLD REGIME
         # Getting statistics
         au, cu = statistics_signal(st_pi), statistics_signal(st_pe)
         du, fu = statistics_signal(st_ci), statistics_signal(st_ce)
@@ -1583,12 +1674,30 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
         mean_st_ce.append(fu[0]), median_st_ce.append(fu[1]), q5_st_ce.append(fu[2]), q10_st_ce.append(fu[3])
         q90_st_ce.append(fu[4]), q95_st_ce.append(fu[5]), min_st_ce.append(fu[6]), max_st_ce.append(fu[7])
 
-        # Extracting transition parts of statistical descriptors of initial and ending windows
+        # Getting transitory-state time-series of initial and ending windows
         tr_pi = sig_prop[r, 0:int(th_tr_a[r] / dt)]  # [, 0s:t_tr]
         tr_pe = sig_prop[r, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr_a[r]) / dt)]  # [, 4s:t_tr]
         tr_ci = sig_cons[r, 0:int(th_tr_a[r] / dt)]  # [, 0s:t_tr]
         tr_ce = sig_cons[r, int(2 * Le_time_win / dt):int((2 * Le_time_win + th_tr_a[r]) / dt)]  # [, 4s:t_tr]
+
+        # SUPRATHRESHOLD REGIME
+        # **************************************************************************************************
+        if ind_spikes_gen is not None:
+            # Get ISI and number of spikes in transitory regime of ini window
+            IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, 0, int(th_tr_a[r] / dt),
+                                                      sim_params['sfreq'])
+            tr_ISI_pi = tr_ISI_pi + list(IS)
+            tr_num_spike_pi += NS
+            # Get ISI and number of spikes in transitory regime of end window
+            IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, int(2 * Le_time_win / dt),
+                                                      int((2 * Le_time_win + th_tr_a[r]) / dt), sim_params['sfreq'])
+            tr_ISI_pe = tr_ISI_pe + list(IS)
+            tr_num_spike_pe += NS
+        # **************************************************************************************************
+
         # Getting statistics
+        if np.isnan(tr_pi).any():
+            print(tr_pi)
         gu, ku = statistics_signal(tr_pi), statistics_signal(tr_pe)
         mu, nu = statistics_signal(tr_ci), statistics_signal(tr_ce)
         # Updating final variables
@@ -1607,19 +1716,42 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
 
         # Getting statistics for transition and steady-state components of middle windows
         if t_transition_mid_win is None:
-            # Extracting steady-state statistical descriptors of middle windows
+            # Getting stationary-state time-series of middle window
             st_pm = sig_prop[r, int((Le_time_win + th_tr_a[r]) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
             st_cm = sig_cons[r, int((Le_time_win + th_tr_a[r]) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
             bu, eu = statistics_signal(st_pm), statistics_signal(st_cm)
+
+            # SUPRATHRESHOLD REGIME
+            # **************************************************************************************************
+            if ind_spikes_gen is not None:
+                # Get ISI and number of spikes in stationary regime of ini window
+                IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, int((Le_time_win + th_tr_a[r]) / dt),
+                                                          int(2 * Le_time_win / dt), sim_params['sfreq'])
+                st_ISI_pm = st_ISI_pm + list(IS)
+                st_num_spike_pm += NS
+            # **************************************************************************************************
+
             # Getting statistics
             mean_st_pm.append(bu[0]), median_st_pm.append(bu[1]), q5_st_pm.append(bu[2]), q10_st_pm.append(bu[3])
             q90_st_pm.append(bu[4]), q95_st_pm.append(bu[5]), min_st_pm.append(bu[6]), max_st_pm.append(bu[7])
             mean_st_cm.append(eu[0]), median_st_cm.append(eu[1]), q5_st_cm.append(eu[2]), q10_st_cm.append(eu[3])
             q90_st_cm.append(eu[4]), q95_st_cm.append(eu[5]), min_st_cm.append(eu[6]), max_st_cm.append(eu[7])
 
-            # Extracting transition statistical descriptors of middle windows
+            # Getting transitory-state time-series of middle window
             tr_pm = sig_prop[r, int(Le_time_win / dt):int((Le_time_win + th_tr_a[r]) / dt)]  # [, 2s:t_tr]
             tr_cm = sig_cons[r, int(Le_time_win / dt):int((Le_time_win + th_tr_a[r]) / dt)]  # [, 2s:t_tr]
+
+            # SUPRATHRESHOLD REGIME
+            # **************************************************************************************************
+            if ind_spikes_gen is not None:
+                # Get ISI and number of spikes in stationary regime of ini window
+                IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, int(Le_time_win / dt),
+                                                                              int((Le_time_win + th_tr_a[r]) / dt),
+                                                                              sim_params['sfreq'])
+                tr_ISI_pm = tr_ISI_pm + list(IS)
+                tr_num_spike_pm += NS
+            # **************************************************************************************************
+
             # Getting statistics
             hu, nu = statistics_signal(tr_pm), statistics_signal(tr_cm)
             # Updating final variables
@@ -1632,11 +1764,19 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
             tr_p_mw_timeSeries.append(tr_pm)
             tr_c_mw_timeSeries.append(tr_cm)
 
-    tr_timeSeries = [tr_p_iw_timeSeries, tr_p_mw_timeSeries, tr_p_ew_timeSeries,
-                     tr_c_iw_timeSeries, tr_c_mw_timeSeries, tr_c_ew_timeSeries]
-    tr_timeSeries = [list(piw), list(pmw), list(pew), list(ciw), list(cmw), list(cew)]
+    # tr_timeSeries = [tr_p_iw_timeSeries, tr_p_mw_timeSeries, tr_p_ew_timeSeries,
+    #                  tr_c_iw_timeSeries, tr_c_mw_timeSeries, tr_c_ew_timeSeries]
+    # tr_timeSeries = [list(piw), list(pmw), list(pew), list(ciw), list(cmw), list(cew)]
+    tr_timeSeries = []
 
-    return np.array([  # For steady-state
+    # Suprathreshold statistics
+    ISI = [st_ISI_pi, tr_ISI_pi, st_ISI_pm, tr_ISI_pm, st_ISI_pe, tr_ISI_pe]
+    num_spikes = [st_num_spike_pi, tr_num_spike_pi, st_num_spike_pm, tr_num_spike_pm, st_num_spike_pe, tr_num_spike_pe]
+    ISI = [list(isi) for isi in ISI]
+
+    return np.array([
+        # SUBTHRESHOLD REGIME
+        # For steady-state
         np.array(mean_st_pi), np.array(median_st_pi), np.array(q5_st_pi), np.array(q10_st_pi),  # 3
         np.array(q90_st_pi), np.array(q95_st_pi), np.array(min_st_pi), np.array(max_st_pi),  # 7
         np.array(mean_st_pm), np.array(median_st_pm), np.array(q5_st_pm), np.array(q10_st_pm),
@@ -1656,8 +1796,7 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
         np.array(min_tr_pm),  # 57
         np.array(median_tr_pe), np.array(q90_tr_pe), np.array(q10_tr_pe), np.array(max_tr_pe),  # 61
         np.array(min_tr_pe)]  # 62
-
-    ), th_tr_a, tr_timeSeries, piw, pmw, pew, th_tr_a_filt
+    ), th_tr_a, tr_timeSeries, piw, pmw, pew, th_tr_a_filt, ISI, num_spikes
 
 
 def norm_array(np_array, compute_norm=True, min_n=None, max_n=None):

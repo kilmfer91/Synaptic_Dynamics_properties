@@ -67,7 +67,8 @@ class GC_prop_cons:
             int(sfreq / 1000)) + "k_syn_" + str(num_syn)
         if self.lif_output and self.neuron_model == 'LIF': aux_name += "_tau" + n_model + "_" + str(tau_n) + "ms"
         self.file_name = model + aux_name
-        if not self.stoch_input: self.file_name = model + '_det' + aux_name
+        if not self.stoch_input:
+            self.file_name = model + '_det' + aux_name
         else:
             if self.neuron_noise: self.file_name += '_noise'
         print("For file %s and index %d" % (self.file_name, ind))
@@ -246,10 +247,14 @@ class GC_prop_cons:
         [total_realizations, stoch_input, seeds, num_realizations, num_freq_exp, sfreq, f_vector, num_changes_rate,
          aux_num_r, dyn_synapse, sim_params, t_tra, t_tra_syn, t_tra_syn_b, lif_output, file_name, gain_v,
          fix_rate_change_a, folder_vars, stp_params, n_noise] = [dr['t_realizations'], self.stoch_input, dr['seeds'],
-         dr['realizations'], dr['num_freq_exp'], dr['sfreq'], dr['initial_frequencies'], dr['num_changes_rate'],
-         dr['num_instance_model'], dr['dyn_synapse'], dr['sim_params'], dr['time_transition'],
-         dr['time_transition_syn'], dr['time_transition_syn_b'], self.lif_output, self.file_name, self.gain_vector,
-         dr['fix_rate_change_a'], self.folder_vars, self.stp_params, self.neuron_noise]
+                                                                 dr['realizations'], dr['num_freq_exp'], dr['sfreq'],
+                                                                 dr['initial_frequencies'], dr['num_changes_rate'],
+                                                                 dr['num_instance_model'], dr['dyn_synapse'],
+                                                                 dr['sim_params'], dr['time_transition'],
+                                                                 dr['time_transition_syn'], dr['time_transition_syn_b'],
+                                                                 self.lif_output, self.file_name, self.gain_vector,
+                                                                 dr['fix_rate_change_a'], self.folder_vars,
+                                                                 self.stp_params, self.neuron_noise]
 
         title_graph = self.description.split(",")[0] + ", gain " + str(gain)
         stp_params = dict(zip(self.stp_name_params, self.stp_value_params))
@@ -275,6 +280,20 @@ class GC_prop_cons:
         res_real = [np.zeros((shape_stat, total_realizations, num_freq_exp)) for _ in range(l_sv)]
         res_real_syn = [np.zeros((shape_stat, total_realizations, num_freq_exp)) for _ in range(l_svs)]
         res_real_syn_b = np.zeros((shape_stat, total_realizations, num_freq_exp))
+
+        # Suprathreshold spikes for neuron model
+        ISI_tr_per_freq_i = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        ISI_st_per_freq_i = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        ISI_tr_per_freq_m = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        ISI_st_per_freq_m = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        ISI_tr_per_freq_e = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        ISI_st_per_freq_e = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        num_spike_tr_per_freq_i = [[0 for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        num_spike_st_per_freq_i = [[0 for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        num_spike_tr_per_freq_m = [[0 for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        num_spike_st_per_freq_m = [[0 for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        num_spike_tr_per_freq_e = [[0 for _ in range(num_freq_exp)] for _ in range(l_sv)]
+        num_spike_st_per_freq_e = [[0 for _ in range(num_freq_exp)] for _ in range(l_sv)]
 
         # Auxiliar variables for Information theory
         PSR_per_freq = [[] for _ in range(num_freq_exp)]
@@ -326,14 +345,17 @@ class GC_prop_cons:
                     n_seeds = [j + se for j in range(int(2 * L / 3))] + [j + se for j in range(int(L / 3))]
 
                 ref_signals = simple_spike_train(sfreq, f_vector[i], int(L / num_changes_rate),
-                                                 num_realizations=aux_num_r, poisson=self.stoch_input, seeds=seeds1)
+                                                 num_realizations=aux_num_r, poisson=self.stoch_input, seeds=seeds1,
+                                                 avoid_last_fast_spike_det=not self.stoch_input)
                 # ISIs, histograms = inter_spike_intervals(ref_signals, 1 / sfreq, 1e-3)
                 # histograms[0][1] *= 1000
                 # plot_isi_histogram(histograms, 0)
                 cons_aux = simple_spike_train(sfreq, proportional_changes[i], int(L / num_changes_rate),
-                                              num_realizations=aux_num_r, poisson=stoch_input, seeds=seeds2)
+                                              num_realizations=aux_num_r, poisson=stoch_input, seeds=seeds2,
+                                              avoid_last_fast_spike_det=not self.stoch_input)
                 fix_aux = simple_spike_train(sfreq, constant_changes[i], int(L / num_changes_rate),
-                                             num_realizations=aux_num_r, poisson=stoch_input, seeds=seeds3)
+                                             num_realizations=aux_num_r, poisson=stoch_input, seeds=seeds3,
+                                             avoid_last_fast_spike_det=not self.stoch_input)
 
                 cons_input = np.concatenate((ref_signals, cons_aux, ref_signals), axis=1)
                 fix_input = np.concatenate((ref_signals, fix_aux, ref_signals), axis=1)
@@ -351,7 +373,8 @@ class GC_prop_cons:
 
                 # Avoiding spikes in t==0
                 cons_input[:, 0], fix_input[:, 0] = 0, 0
-                if not stoch_input: cons_input[:, 1], fix_input[:, 1] = 1, 1
+                if not stoch_input:
+                    cons_input[:, 1], fix_input[:, 1] = 1, 1
                 else:
                     for neuron in range(cons_input.shape[0]):
                         cons_input[neuron, neuron + 1] = 1
@@ -387,34 +410,68 @@ class GC_prop_cons:
                 if len(aux_cond[0]) > 0:
                     aux_i = aux_cond[0][0]
                     t_tra_mid_win = np.max(t_tra[aux_i])
+                # For suprathreshold calculations
+                t_spikes_gen = [np.array(self.neuron_prop.time_spikes_generated[k]) / self.sfreq
+                                for k in range(self.neuron_prop.n_neurons)]
+                ind_spikes_gen = [np.array(self.neuron_prop.time_spikes_generated[k])
+                                  for k in range(self.neuron_prop.n_neurons)]
 
                 sv = 0
                 for k, v in self.neuron_prop.get_state_variables().items():
                     # Auxiliar title
                     title_graph_ = title_graph + ", freq. %dHz" % f_vector[i] + ", " + k
                     # Compute statistical descriptors
-                    print(k)
+                    # print(k)
                     signal_prop, signal_fix = v, self.neuron_fix.get_state_variables()[k]
+                    signal_prop_spikes = np.copy(signal_prop)
+
+                    # settting variable to check number of spikes generated by neuron
+                    ind_neuron_spikes = None
+
                     # Clipping signals to avoid suprathreshold maxima
                     if k == 'v':  # if not plot_ind_figs and k == 'v':
                         signal_prop = np.clip(signal_prop, None, self.neuron_prop.params['V_threshold'][0])  # 0.0)
                         signal_fix = np.clip(signal_fix, None, self.neuron_prop.params['V_threshold'][0])  # 0.0)
+                        ind_neuron_spikes = ind_spikes_gen
+
                     # Computing statistics of each window, for the whole win. and for the transition- and steady-states
                     a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
                                                  sim_params, [None, t_tra_mid_win, None], 1 / sfreq,
                                                  th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
-                                                 title=title_graph_)
+                                                 title=title_graph_, det_in=not self.stoch_input, det_r=f_vector[i],
+                                                 ind_spikes_gen=ind_neuron_spikes)
                     if a[0].shape[1] != res_per_reali[sv].shape[2]:
                         assert a[0].shape[1] == res_per_reali[sv].shape[2], "not same shape"
-                    res_per_reali[sv][:, i, :], t_tr_, tr_time_series_i, piw, pmw, pew, t_tr_filt = a
+                    res_per_reali[sv][:, i, :], t_tr_, tr_time_series_i, piw, pmw, pew, t_tr_filt, ISI, num_spikes = a
                     t_tra[i].append(t_tr_)
+                    # ISI = [st_pi, tr_pi, st_pm, tr_pm, st_pe, tr_pe]
+                    # num_spikes = [st_pi, tr_pi, st_pm, tr_pm, st_pe, tr_pe]
+
+                    # **************************************************************************************************
+                    # For Suprathreshold regime
+                    ISI_st_per_freq_i[sv][i] = ISI_st_per_freq_i[sv][i] + ISI[0]
+                    ISI_tr_per_freq_i[sv][i] = ISI_tr_per_freq_i[sv][i] + ISI[1]
+                    ISI_st_per_freq_m[sv][i] = ISI_st_per_freq_m[sv][i] + ISI[2]
+                    ISI_tr_per_freq_m[sv][i] = ISI_tr_per_freq_m[sv][i] + ISI[3]
+                    ISI_st_per_freq_e[sv][i] = ISI_st_per_freq_e[sv][i] + ISI[4]
+                    ISI_tr_per_freq_e[sv][i] = ISI_tr_per_freq_e[sv][i] + ISI[5]
+                    # For number of spikes
+                    num_spike_st_per_freq_i[sv][i] += num_spikes[0]
+                    num_spike_tr_per_freq_i[sv][i] += num_spikes[1]
+                    num_spike_st_per_freq_m[sv][i] += num_spikes[2]
+                    num_spike_tr_per_freq_m[sv][i] += num_spikes[3]
+                    num_spike_st_per_freq_e[sv][i] += num_spikes[4]
+                    num_spike_tr_per_freq_e[sv][i] += num_spikes[5]
+
+                    # **************************************************************************************************
 
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
                         t_tr = t_tr_[0]
                         path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
                         plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
-                                                       title_graph_, max_t, path_save=path_save, save_figs=self.save_figs,
+                                                       title_graph_, max_t, path_save=path_save,
+                                                       save_figs=self.save_figs,
                                                        y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
                     sv += 1
 
@@ -427,6 +484,7 @@ class GC_prop_cons:
 
                 sv = 0
                 for k, v in self.stp_prop.get_state_variables().items():
+                    # print(k)
                     # Auxiliar title
                     title_graph_ = title_graph + ", freq. %dHz" % f_vector[i] + ", " + k
                     # Compute statistical descriptors
@@ -434,18 +492,20 @@ class GC_prop_cons:
                     # Computing statistics of each window for transition- and steady-states
                     a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
                                                  sim_params, [None, t_tra_mid_win_syn, None], 1 / sfreq,
-                                                 th_percentage=th_percentage, filtering=filtering, cutoff=cutoff, title=title_graph_)
+                                                 th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
+                                                 title=title_graph_, det_in=not self.stoch_input, det_r=f_vector[i])
 
                     if a[0].shape[1] != res_per_reali_syn[sv].shape[2]:
                         assert a[0].shape[1] == res_per_reali_syn[sv].shape[2], "not same shape"
-                    res_per_reali_syn[sv][:, i, :], t_tr_syn, tr_time_series_i, piw, pmw, pew, t_tr_filt = a
+                    res_per_reali_syn[sv][:, i, :], t_tr_syn, tr_time_series_i, piw, pmw, pew, t_tr_filt, _, _ = a
                     t_tra_syn[i].append(t_tr_syn)
 
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
                         t_tr = t_tr_syn[0]
                         path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
-                        plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali_syn[sv],
+                        plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr,
+                                                       res_per_reali_syn[sv],
                                                        title_graph_, max_t, path_save=path_save,
                                                        save_figs=self.save_figs,
                                                        y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
@@ -489,7 +549,8 @@ class GC_prop_cons:
                     res_real[sv][res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali[sv][res_i, :].T
                 # Iterating through the state variables of the synapse
                 for sv in range(l_svs):
-                    res_real_syn[sv][res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[sv][res_i, :].T
+                    res_real_syn[sv][res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[sv][
+                        res_i, :].T
                 # res_real_syn[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[res_i, :].T
                 # For ampa if synapse is Doorn
                 # if self.stp_prop.get_output().ndim == 3:
@@ -523,10 +584,16 @@ class GC_prop_cons:
             dr['time_transition'] = t_tra
             dr['time_transition_syn'] = t_tra_syn
             if self.stp_prop.get_output().ndim == 3: dr['time_transition_syn_b'] = t_tra_syn_b
+
             # ##########################################################################################################
             # """
             # Getting information theory analysis
-            # Iterating through general realizations
+
+            # getting times of windows
+            l_w = sim_params['max_t']
+            i_w, m_w, e_w = int(l_w / 3), int(2 * l_w / 3), sim_params['max_t']
+
+            # Auxiliar variables
             a = [[] for _ in range(num_freq_exp)]
             ISI_per_freq_iw_tr, ISI_per_freq_mw_tr, ISI_per_freq_ew_tr = a.copy(), a.copy(), a.copy()
             ISI_per_freq_iw_st, ISI_per_freq_mw_st, ISI_per_freq_ew_st = a.copy(), a.copy(), a.copy()
@@ -539,6 +606,8 @@ class GC_prop_cons:
 
             # min-max of synaptic contributions
             min_syn, max_syn, min_syn_b, max_syn_b = np.inf, -np.inf, np.inf, -np.inf
+
+            # Iterating through general realizations
             realization = 0
             for realization in range(num_loop_realizations):
                 # Iterating through frequencies
@@ -549,9 +618,9 @@ class GC_prop_cons:
                     for neuron_realization in range(num_realizations):
                         # Input spike events
                         ta = np.array(spike_event_per_freq[i][realization][neuron_realization]) / sfreq
-                        # Postsynaptic contribution on the neuron
+                        # Postsynaptic contribution to the neuron
                         PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
-                        # Postsynaptic contribution on the receptor
+                        # Postsynaptic contribution to the receptor
                         PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization])
                         # Getting time of reaching steady-state for ini and end windows
                         tr_st_time = dr['time_transition'][num_realizations * realization + neuron_realization, i]
@@ -560,27 +629,28 @@ class GC_prop_cons:
                         aux_cond = np.where(proportional_changes[i] <= f_vector)
                         if len(aux_cond[0]) > 0:
                             aux_i = aux_cond[0][0]
-                            tr_st_time_mw = dr['time_transition'][num_realizations * realization + neuron_realization, aux_i]
+                            tr_st_time_mw = dr['time_transition'][
+                                num_realizations * realization + neuron_realization, aux_i]
                         # Getting masks to separate transitory and stationary states for ini, mid and end windows
-                        mask_iw_tr = (ta >= 0) & (ta < tr_st_time)
-                        mask_iw_st = (ta >= tr_st_time) & (ta < 2)
-                        mask_mw_tr = (ta >= 2) & (ta < 2 + tr_st_time_mw)
-                        mask_mw_st = (ta >= 2 + tr_st_time_mw) & (ta < 4)
-                        mask_ew_tr = (ta >= 4) & (ta < 4 + tr_st_time)
-                        mask_ew_st = (ta >= 4 + tr_st_time)
-                        
+                        mask_iw_tr = (ta < tr_st_time)
+                        mask_iw_st = (ta >= tr_st_time) & (ta < i_w)
+                        mask_mw_tr = (ta >= i_w) & (ta < i_w + tr_st_time_mw)
+                        mask_mw_st = (ta >= i_w + tr_st_time_mw) & (ta < m_w)
+                        mask_ew_tr = (ta >= m_w) & (ta < m_w + tr_st_time)
+                        mask_ew_st = (ta >= m_w + tr_st_time)
+
                         # Getting masks to separate ini, mid and end windows
-                        mask_iniw = ta < 2
-                        mask_endw = ta >= 4
+                        mask_iniw = ta < i_w
+                        mask_endw = ta >= m_w
                         mask_midw = np.logical_not(np.logical_xor(mask_iniw, mask_endw))
-                        
+
                         # Separating ini, mid and end windows of spike events
                         spike_ev_iw_tr = np.append(ta[mask_iw_tr], tr_st_time)
-                        spike_ev_iw_st = np.append(ta[mask_iw_st], 2.)
-                        spike_ev_mw_tr = np.append(ta[mask_mw_tr], 2. + tr_st_time_mw)
-                        spike_ev_mw_st = np.append(ta[mask_mw_st], 4.)
-                        spike_ev_ew_tr = np.append(ta[mask_ew_tr], 4. + tr_st_time)
-                        spike_ev_ew_st = np.append(ta[mask_ew_st], 6.)
+                        spike_ev_iw_st = np.append(ta[mask_iw_st], i_w)
+                        spike_ev_mw_tr = np.append(ta[mask_mw_tr], i_w + tr_st_time_mw)
+                        spike_ev_mw_st = np.append(ta[mask_mw_st], m_w)
+                        spike_ev_ew_tr = np.append(ta[mask_ew_tr], m_w + tr_st_time)
+                        spike_ev_ew_st = np.append(ta[mask_ew_st], e_w)
                         # Separating ini, mid and end windows of ISI
                         ISI_iw_tr = np.diff(spike_ev_iw_tr)
                         ISI_iw_st = np.diff(spike_ev_iw_st)
@@ -595,7 +665,7 @@ class GC_prop_cons:
                         ISI_per_freq_mw_st[i] = ISI_per_freq_mw_st[i] + list(ISI_mw_st)
                         ISI_per_freq_ew_tr[i] = ISI_per_freq_ew_tr[i] + list(ISI_ew_tr)
                         ISI_per_freq_ew_st[i] = ISI_per_freq_ew_st[i] + list(ISI_ew_st)
-                        
+
                         # Separating ini, mid and end windows of neuron PSR
                         PSR_iw_tr = PSR_aux[mask_iw_tr]
                         PSR_iw_st = PSR_aux[mask_iw_st]
@@ -803,23 +873,17 @@ class GC_prop_cons:
 
         # Saving final dictionary if file does not exist
         if not os.path.isfile(folder_vars + file_name):
-            """
-            dr = {'initial_frequencies': f_vector,
-                  'stp_model': self.model, 'name_params': self.stp_name_params, 'dyn_synapse': dyn_synapse,
-                  'num_synapses': self.num_syn, 'syn_params': syn_params, 'sim_params': sim_params,
-                  'lif_params': lif_params, 'lif_params2': lif_params2, 'gain_v': gain_v,
-                  'fix_rate_change_a': fix_rate_change_a, 'num_changes_rate': num_changes_rate,
-                  'description': description, 'seeds': seeds,
-                  'realizations': num_realizations, 't_realizations': self.total_realizations, 'time_transition': t_tra}
-            # """
+
             # Updating final dictionary
             for nam in range(res_real[0].shape[0]):
                 # Looping through state variables of neuron
                 names_sv = list(self.neuron_prop.get_state_variables().keys())
                 for sv in range(l_sv):
                     name_sv = names_sv[sv]
-                    if name_sv == 'v': dr[stat_list[nam]] = res_real[sv][nam, :]
-                    else: dr[name_sv + '_' + stat_list[nam]] = res_real[sv][nam, :]
+                    if name_sv == 'v':
+                        dr[stat_list[nam]] = res_real[sv][nam, :]
+                    else:
+                        dr[name_sv + '_' + stat_list[nam]] = res_real[sv][nam, :]
 
                 # For synapses
                 names_sv = list(self.stp_prop.get_state_variables().keys())
@@ -828,6 +892,29 @@ class GC_prop_cons:
                     dr[name_sv + '_' + stat_list[nam]] = res_real_syn[sv][nam, :]
                 # dr['syn_' + stat_list[nam]] = res_real_syn[nam, :]
                 # if self.stp_prop.get_output().ndim == 3: dr['syn_b_' + stat_list[nam]] = res_real_syn_b[nam, :]
+
+            # **********************************************************************************************************
+            # For ISI of postsynaptic neuron in suprathreshold
+            names_sv = list(self.neuron_prop.get_state_variables().keys())
+            nam = res_real[0].shape[0]
+            for sv in range(l_sv):
+                name_sv = names_sv[sv] + '_'
+                if name_sv == 'v_': name_sv = ''
+                # For number of spikes
+                dr[name_sv + stat_list[nam + 0]] = num_spike_st_per_freq_i[sv]
+                dr[name_sv + stat_list[nam + 1]] = num_spike_st_per_freq_m[sv]
+                dr[name_sv + stat_list[nam + 2]] = num_spike_st_per_freq_e[sv]
+                dr[name_sv + stat_list[nam + 3]] = num_spike_tr_per_freq_i[sv]
+                dr[name_sv + stat_list[nam + 4]] = num_spike_tr_per_freq_m[sv]
+                dr[name_sv + stat_list[nam + 5]] = num_spike_tr_per_freq_e[sv]
+                # For ISI
+                dr[name_sv + stat_list[nam + 6]] = ISI_st_per_freq_i[sv]
+                dr[name_sv + stat_list[nam + 7]] = ISI_st_per_freq_m[sv]
+                dr[name_sv + stat_list[nam + 8]] = ISI_st_per_freq_e[sv]
+                dr[name_sv + stat_list[nam + 9]] = ISI_tr_per_freq_i[sv]
+                dr[name_sv + stat_list[nam + 10]] = ISI_tr_per_freq_m[sv]
+                dr[name_sv + stat_list[nam + 11]] = ISI_tr_per_freq_e[sv]
+            # **********************************************************************************************************
 
             if self.save_vars:
                 saveObject(dr, file_name, folder_vars)
