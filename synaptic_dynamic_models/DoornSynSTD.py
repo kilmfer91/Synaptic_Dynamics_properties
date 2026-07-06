@@ -28,6 +28,11 @@ class DoornSTD_model(SynDynModel):
         self.s_nmda_steady_state = None
         self.x_nmda_steady_state = None
         self.x_d_steady_state = None
+        # Operators to get spiking events for state variables s_ampa, s_nmda, x_nmda, x_d
+        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0),
+                             lambda a: np.min(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmax(a, axis=0), lambda a: np.argmin(a, axis=0)]
 
         # Derivative variables [n_syn, L]
         self.d_s_ampa = None
@@ -70,7 +75,16 @@ class DoornSTD_model(SynDynModel):
 
     def get_state_variables(self):
         # s_ampa, s_nmda_tot, x_nmda, x_d
-        return {'s_ampa': self.s_ampa, 's_nmda': self.S * self.x_d * self.s_nmda, 'x_nmda': self.x_nmda, 'xd': self.x_d}
+        return {'s_ampa': self.s_ampa, 's_nmda': self.s_nmda, 'x_nmda': self.x_nmda, 'xd': self.x_d}
+
+    def get_output_state_variables(self):
+        """Get all state variables as a numpy array"""
+        return np.stack([self.s_ampa, self.s_nmda, self.x_nmda, self.x_d])
+
+    def get_state_variables_spike_events(self):
+        # s_ampa, s_nmda_tot, x_nmda, x_d
+        return {'s_ampa': self.s_ampa_spike_events, 's_nmda': self.s_nmda_spike_events,
+                'x_nmda': self.x_nmda_spike_events, 'xd': self.x_d_spike_events}
 
     def set_initial_conditions(self, Input=None):
         """Initialize all state variables to steady-state."""
@@ -194,7 +208,9 @@ class DoornSTD_model(SynDynModel):
             self.s_nmda[:, it] = self.s_nmda[:, it - 1] + ds
 
     def append_spike_event(self, t, active_synapses, output, append_time=True):
-        """Store spike events for analysis (override parent)."""
+        """
+        Store spike events for analysis (override parent).
+        """
         synapses_with_input_event = np.array(range(self.n_syn))[active_synapses]
 
         for s in synapses_with_input_event:
@@ -213,6 +229,7 @@ class DoornSTD_model(SynDynModel):
                 spike_range = (self.time_spike_events[s][-2], self.time_spike_events[s][-1])
                 self.compute_output_spike_event(spike_range, s, output)
 
+    """
     def compute_output_spike_event(self, spike_range, s, output):
         # print("TM, append_spike_event(), spike range ", spike_range, " in time ", spike_range[0])
         assert isinstance(spike_range, tuple), "Param 'spike_range' must be a tuple"
@@ -250,3 +267,4 @@ class DoornSTD_model(SynDynModel):
             # Updating index of phasic and tonic spike event occurences
             self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
             self.ind_spike_events[s].append(a + spike_range[0])
+    # """

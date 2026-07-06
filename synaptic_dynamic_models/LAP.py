@@ -143,6 +143,16 @@ class LAP_model(SynDynModel):
         return {'c': self.Cai, 'p': self.Prel, 'v': self.Rrel, 'n': self.FluxGlu, 'epsc': self.EPSC,
                 'krecov': self.Krecov}
 
+    def get_output_state_variables(self):
+        """Get all state variables as a numpy array"""
+        return np.stack([self.Cai, self.Prel, self.Rrel, self.FluxGlu, self.EPSC, self.Krecov])
+
+    def get_state_variables_spike_events(self):
+        """Get all state variables."""
+        return {'c': self.Cai_spike_events, 'p': self.Prel_spike_events, 'v': self.Rrel_spike_events,
+                'n': self.FluxGlu_spike_events, 'epsc': self.output_spike_events,
+                'krecov': self.Krecov_spike_events}
+
     def evaluate_model_euler(self, ICa_it, it):
         self.Input[:, it] = ICa_it
         self.calcium_concentration(ICa_it, it)

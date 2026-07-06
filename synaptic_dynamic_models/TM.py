@@ -15,7 +15,10 @@ class TM_model(SynDynModel):
         self.U_spike_events = None
         self.R_steady_state = None
         self.U_steady_state = None
-
+        # Operators to get spiking events for state variables R, U, and I_out
+        self.operators_sv = [lambda a: np.min(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmin(a, axis=0), lambda a: np.argmax(a, axis=0),
+                             lambda a: np.argmax(a, axis=0)]
         # Output variables
         self.I_out = None
 
@@ -89,6 +92,14 @@ class TM_model(SynDynModel):
         """Get all state variables."""
         return {'R': self.R, 'U': self.U, 'epsc': self.I_out}
 
+    def get_state_variables_spike_events(self):
+        """Get all spike events state variables."""
+        return {'R': self.R_spike_events, 'U': self.U_spike_events, 'epsc': self.output_spike_events}
+
+    def get_output_state_variables(self):
+        """Get all state variables as a numpy array"""
+        return np.stack([self.R, self.U, self.I_out])
+
     def evaluate_model_euler(self, I_it, it):
         self.Input[:, it] = I_it
 
@@ -97,6 +108,7 @@ class TM_model(SynDynModel):
         self.output(I_it, it)
 
     def get_output(self):
+        # return self.I_out
         return self.I_out
 
     def release_prob_u(self, I_it, it):

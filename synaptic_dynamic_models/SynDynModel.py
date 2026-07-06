@@ -13,7 +13,8 @@ class SynDynModel:
         self.Input = None
 
         # Model variables - IMPLEMENT ON EACH CHILD CLASS
-
+        self.operators_sv = None
+        self.arg_operators_sv = None
         # Spike events
         self.edge_detection = False
         self.output_spike_events = None
@@ -67,6 +68,12 @@ class SynDynModel:
         pass
 
     def get_state_variables(self):
+        pass
+
+    def get_output_state_variables(self):
+        pass
+
+    def get_state_variables_spike_events(self):
         pass
 
     def evaluate_model_euler(self, I_it, it):
@@ -132,9 +139,37 @@ class SynDynModel:
         assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
         assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
         assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
-        assert len(output.shape) == 2, "Param 'output' must be a 2D-array, current size is " + str(output.shape)
-        assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+        # assert len(output.shape) == 2, "Param 'output' must be a 2D-array, current size is " + str(output.shape)
+        # assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+        #                                            "the length of param 'output'")
+        assert len(output.shape) == 3, "Param 'output' must be a 3D-array, current size is " + str(output.shape)
+        assert output.shape[2] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
                                                    "the length of param 'output'")
+        if spike_range[1] == spike_range[0]:
+            # phasic component of spiking responses
+            self.output_spike_events[s].append(list(output[:, s, spike_range[0]]))
+            # tonic component of spiking responses
+            self.output_spike_events_tonic[s].appen(list(output[:, s, 0]))
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
+            self.ind_spike_events[s].append(spike_range[0])
+
+        else:
+            # Tonic component of the spiking response
+            self.output_spike_events_tonic[s].append(list(output[:, s,  spike_range[0] - 1]))
+
+            # Applying different operators for each state variable
+            assert output.shape[0] == len(self.operators_sv), "One operator needed per state variable"
+            per_state_variable = [op(xi) for xi, op in zip(output[:, s, spike_range[0]: spike_range[1]], self.operators_sv)]
+            self.output_spike_events[s].append(per_state_variable)
+            assert output.shape[0] == len(self.arg_operators_sv), "One operator needed per state variable"
+            a = np.array([op(xi) for xi, op in zip(output[:, s, spike_range[0]: spike_range[1]], self.arg_operators_sv)])
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
+            self.ind_spike_events[s].append(a + spike_range[0])
+        """
         if spike_range[1] == spike_range[0]:
             # phasic component of spiking responses
             self.output_spike_events[s].append(output[s, spike_range[0]])
@@ -161,6 +196,7 @@ class SynDynModel:
             # Updating index of phasic and tonic spike event occurences
             self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
             self.ind_spike_events[s].append(a + spike_range[0])
+        # """
 
     @staticmethod
     def reach_steady_state(input_signals, size_window=10, epsilon=None):

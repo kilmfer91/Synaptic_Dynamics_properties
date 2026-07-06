@@ -48,6 +48,11 @@ class HH_AHP_model:
         self.ind_spike_events = None
         self.ind_spike_events_tonic = None
         self.time_spikes_generated = None
+        # Operators to get spiking events for state variables membrane_potential, m_gate, h_gate, n_gate
+        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0),
+                             lambda a: np.max(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0)]
 
         # State variables (all shape: [n_neurons, L])
         self.membrane_potential = None  # V [mV]
@@ -133,6 +138,10 @@ class HH_AHP_model:
     def get_state_variables(self):
         # return {'v': self.membrane_potential, 'm': self.m_gate, 'h': self.h_gate, 'n': self.n_gate, 'Ca': self.Ca}
         return {'v': self.membrane_potential, 'm': self.m_gate, 'h': self.h_gate, 'n': self.n_gate}
+
+    def get_output_state_variables(self):
+        """Get all state variables as a numpy array"""
+        return np.stack([self.membrane_potential, self.m_gate, self.h_gate, self.n_gate])
 
     def set_seed(self, seed):
         # Assign seed
@@ -431,7 +440,9 @@ class HH_AHP_model:
             self.append_spike_event(t, self.edge_detection, output)
 
     def append_spike_event(self, t, activated_neurons, output, append_time=True):
-        """Store spike events for analysis (override parent)."""
+        """
+        Store spike events for analysis (override parent).
+        """
         neurons_with_input_event = np.array(range(self.n_neurons))[activated_neurons]
 
         for n in neurons_with_input_event:
@@ -448,29 +459,45 @@ class HH_AHP_model:
                 self.compute_output_spike_event(spike_range, n, output)
 
     def compute_output_spike_event(self, spike_range, n, output):
-        """
         assert isinstance(spike_range, tuple), "Param 'spike_range' must be a tuple"
         assert len(spike_range) == 2, "Param 'spike_range' must be a tuple of 2 values"
         assert isinstance(spike_range[0], int), "first element of param 'spike_range' must be integer"
         assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
         assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
         assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
-        assert len(output.shape) == 2, "Param 'output' must be a 2D-array"
-        assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+        # assert len(output.shape) == 2, "Param 'output' must be a 2D-array, current size is " + str(output.shape)
+        # assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+        #                                            "the length of param 'output'")
+        assert len(output.shape) == 3, "Param 'output' must be a 3D-array, current size is " + str(output.shape)
+        assert output.shape[2] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
                                                    "the length of param 'output'")
-
         if spike_range[1] == spike_range[0]:
             # phasic component of spiking responses
-            self.output_spike_events.append(output[:, spike_range[0]])
+            self.output_spike_events[n].append(list(output[:, n, spike_range[0]]))
             # tonic component of spiking responses
-            self.output_spike_events_tonic.appen(output[:, 0])
+            self.output_spike_events_tonic[n].appen(list(output[:, n, 0]))
 
             # Updating index of phasic and tonic spike event occurences
-            self.ind_spike_events_tonic.append(spike_range[0] - 1)
-            self.ind_spike_events.append(a + spike_range[0])
+            self.ind_spike_events_tonic[n].append(spike_range[0] - 1)
+            self.ind_spike_events[n].append(spike_range[0])
 
-        else: # """
+        else:
+            # Tonic component of the spiking response
+            self.output_spike_events_tonic[n].append(list(output[:, n,  spike_range[0] - 1]))
 
+            # Applying different operators for each state variable
+            assert output.shape[0] == len(self.operators_sv), "One operator needed per state variable"
+            per_state_variable = [op(xi) for xi, op in zip(output[:, n, spike_range[0]: spike_range[1]], self.operators_sv)]
+            self.output_spike_events[n].append(per_state_variable)
+            assert output.shape[0] == len(self.arg_operators_sv), "One operator needed per state variable"
+            a = np.array([op(xi) for xi, op in zip(output[:, n, spike_range[0]: spike_range[1]], self.arg_operators_sv)])
+
+            # Updating index of phasic and tonic spike event occurences
+            self.ind_spike_events_tonic[n].append(spike_range[0] - 1)
+            self.ind_spike_events[n].append(a + spike_range[0])
+
+    """         
+    def compute_output_spike_event(self, spike_range, n, output):
         # Tonic component of the spiking response
         self.output_spike_events_tonic[n].append(output[n, spike_range[0] - 1])
 
@@ -486,3 +513,4 @@ class HH_AHP_model:
         # Updating index of phasic and tonic spike event occurences
         self.ind_spike_events_tonic[n].append(spike_range[0] - 1)
         self.ind_spike_events[n].append(a + spike_range[0])
+    # """

@@ -403,6 +403,19 @@ def update_tr_st_trackers(conds, tr_st_array, window_length, num_slid_wins, slid
     return aux_array
 
 
+# Compact helper
+def append_entropy2(target_H, target_bin, target_edge, data, bin_size):
+    H_, bins, edges = H_entropy_dyn_bins(data, bin_size=bin_size)
+    target_H.append(H_)
+    # target_bin.append(bins)
+    # target_edge.append(edges)
+
+
+def append_entropy(target_H, data, bin_size):
+    H_, bins, edges = H_entropy_dyn_bins(data, bin_size=bin_size)
+    target_H.append(H_)
+
+
 def H_entropy_dyn_bins(data, bin_size=0.01, range_d=None, plot=False):
     """
     Compute Shannon entropy of data using histogram with dynamic number of bins.
@@ -620,8 +633,8 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
         n_model.update_state(flex_t, seed, use_noise, I_args)
 
         # Detecting spike events for synapse and neuron, storing model output
-        n_model.detect_spike_event(flex_t, Input, n_model.membrane_potential)
-        stp_model.detect_spike_event(flex_t, Input, stp_model.get_output())
+        n_model.detect_spike_event(flex_t, Input, n_model.get_output_state_variables())
+        stp_model.detect_spike_event(flex_t, Input, stp_model.get_output_state_variables())
 
         """
         # **************************************************************************************************************
@@ -1113,8 +1126,8 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
             # if count_spikes_in_t != num_neu:
             if np.sum(new_spikes) == num_neu:
                 # n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.membrane_potential)
-                n_model.append_spike_event(flex_t, new_spikes, n_model.membrane_potential)
-                stp_model.append_spike_event(flex_t, new_spikes, stp_model.get_output())
+                n_model.append_spike_event(flex_t, new_spikes, n_model.get_output_state_variables())
+                stp_model.append_spike_event(flex_t, new_spikes, stp_model.get_output_state_variables())
         else:
             pass
 
@@ -1142,8 +1155,10 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
 
     # Detecting spike events and storing model output
     spike_range = (n_model.time_spike_events[-1], it)
-    n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.membrane_potential, append_time=False)
-    stp_model.append_spike_event(it, [True for _ in range(num_neu)], stp_model.get_output(), append_time=False)
+    n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.get_output_state_variables(),
+                               append_time=False)
+    stp_model.append_spike_event(it, [True for _ in range(num_neu)], stp_model.get_output_state_variables(),
+                                 append_time=False)
     # return stat_descriptors_tr_st, tr_st_time
 
 

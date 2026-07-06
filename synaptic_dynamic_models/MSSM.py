@@ -24,6 +24,12 @@ class MSSM_model(SynDynModel):
         self.V_steady_state = None
         self.N_steady_state = None
         self.P_steady_state = None
+        # Operators to get spiking events for state variables C, P, V, N, EPSP
+        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.min(a, axis=0),
+                             lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmin(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmax(a, axis=0)]
 
         # derivative variables
         self.d_N = None
@@ -131,6 +137,15 @@ class MSSM_model(SynDynModel):
     def get_state_variables(self):
         """Get all state variables."""
         return {'c': self.C, 'p': self.P, 'v': self.V, 'n': self.N, 'epsp': self.EPSP}
+
+    def get_output_state_variables(self):
+        """Get all state variables as a numpy array"""
+        return np.stack([self.C, self.P, self.V, self.N, self.EPSP])
+
+    def get_state_variables_spike_events(self):
+        """Get all state variables."""
+        return {'c': self.C_spike_events, 'p': self.P_spike_events, 'v': self.V_spike_events,
+                'n': self.N_spike_events, 'epsp': self.output_spike_events}
 
     def evaluate_model_euler(self, I_t, t):
         """
