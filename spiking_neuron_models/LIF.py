@@ -31,8 +31,8 @@ class LIF_model:
         self.ind_spike_events_tonic = None
         self.time_spikes_generated = None
         # Operators to get spiking events for state variables membrane_potential
-        self.operators_sv = [lambda a: np.max(a, axis=0)]
-        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0)]
+        self.operators_sv = [lambda a: np.max(a, axis=1)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=1)]
 
         # Output
         self.membrane_potential = None
@@ -308,6 +308,37 @@ class LIF_model:
             # Updating index of phasic and tonic spike event occurences
             self.ind_spike_events_tonic[n].append(spike_range[0] - 1)
             self.ind_spike_events[n].append(a + spike_range[0])
+
+    def compute_output_spike_events(self, syn_spike_masks, input_spike_events):
+        # Computing inter-spike responses for state variables of neurons and synapses
+        state_variables = self.get_output_state_variables()
+        num_state_vars = state_variables.shape[0]
+
+        for n in range(self.n_neurons):
+            s_mask = syn_spike_masks[n]  # [num_masks, L]
+            s_var_syn = state_variables[:, n, :]  # [num state variables, L]
+            # Expand s_mask to (num_state_vars, n_intervals, L)
+            n_intervals = s_mask.shape[0]
+            mask_3d = np.broadcast_to(s_mask[np.newaxis, :, :], (num_state_vars, n_intervals, self.L))
+
+            # Expand s_var_syn to (num_state_vars, n_intervals, L)
+            var_3d = np.broadcast_to(s_var_syn[:, np.newaxis, :], (num_state_vars, n_intervals, self.L))
+
+            # Expand initial conditions of state variables to (num_state_vars, n_intervals, L)
+            ini_cond_sv = np.broadcast_to(state_variables[:, n, 0][:, np.newaxis, np.newaxis],
+                                             (num_state_vars, n_intervals, self.L))
+
+            # Element-wise multiplication (num_state_vars, n_intervals, L)
+            masked_var_3d = var_3d * mask_3d + np.logical_not(mask_3d) * ini_cond_sv
+
+            # Applying different operators for each state variable
+            assert masked_var_3d.shape[0] == len(self.operators_sv), "One operator needed per state variable"
+            per_state_variable = np.array([op(xi) for xi, op in zip(masked_var_3d, self.operators_sv)])
+            self.output_spike_events[n] = per_state_variable
+            assert masked_var_3d.shape[0] == len(self.arg_operators_sv), "One operator needed per state variable"
+            a = np.array([op(xi) for xi, op in zip(masked_var_3d, self.arg_operators_sv)])
+            self.ind_spike_events[n] = a
+            self.time_spike_events[n] = input_spike_events[n] * self.dt
 
     """
     def compute_output_spike_event(self, spike_range, n, output):

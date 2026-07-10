@@ -16,9 +16,9 @@ class TM_model(SynDynModel):
         self.R_steady_state = None
         self.U_steady_state = None
         # Operators to get spiking events for state variables R, U, and I_out
-        self.operators_sv = [lambda a: np.min(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0)]
-        self.arg_operators_sv = [lambda a: np.argmin(a, axis=0), lambda a: np.argmax(a, axis=0),
-                             lambda a: np.argmax(a, axis=0)]
+        self.operators_sv = [lambda a: np.min(a, axis=1), lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1)]
+        self.arg_operators_sv = [lambda a: np.argmin(a, axis=1), lambda a: np.argmax(a, axis=1),
+                             lambda a: np.argmax(a, axis=1)]
         # Output variables
         self.I_out = None
 
@@ -105,11 +105,11 @@ class TM_model(SynDynModel):
 
         self.release_prob_u(I_it, it)
         self.resources_available_R(I_it, it)  # IMPORTANT TO UPDATE FIRST R(t)
-        self.output(I_it, it)
+        self.I_output(I_it, it)
 
     def get_output(self):
-        # return self.I_out
-        return self.I_out
+        self.output = self.I_out
+        return self.output
 
     def release_prob_u(self, I_it, it):
         dt = self.dt
@@ -136,7 +136,7 @@ class TM_model(SynDynModel):
             dR = (dt / tau_d) * (1.0 - self.R[:, it - 1]) - self.U[:, it] * self.R[:, it - 1] * I_it
             self.R[:, it] = self.R[:, it - 1] + dR
 
-    def output(self, I_it, it):
+    def I_output(self, I_it, it):
         dt = self.dt
         Ase = self.Ase
         tau_syn = self.tau_syn

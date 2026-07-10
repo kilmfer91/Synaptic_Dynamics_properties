@@ -470,6 +470,61 @@ def binned_entropy(values, n_bins=20):
     return -np.sum(p * np.log2(p)), hist, edges
 
 
+def detect_spikes(Input: np.ndarray) -> np.ndarray:
+    """
+    Detect spikes (rising edges) in Input.
+    Parameters
+    ----------
+    Input : np.ndarray
+        Shape (n_syn, L)
+    Returns
+    -------
+    spike_mask : np.ndarray
+        Boolean array, shape (n_syn, L), True where a spike occurs.
+    """
+    assert Input.ndim == 2
+    n_syn, L = Input.shape
+    spike_mask = np.zeros_like(Input, dtype=bool)
+    # t == 0
+    spike_mask[:, 0] = Input[:, 0] > 0.0
+    # t > 0: rising edge
+    if L > 1:
+        spike_mask[:, 1:] = Input[:, 1:] > Input[:, :-1]
+    return spike_mask
+
+
+def spike_edges_from_mask(spike_mask):
+    n_syn, L = spike_mask.shape
+    rows, cols = np.where(spike_mask)
+
+    edges_per_syn = []
+    start = 0
+    for s in range(n_syn):
+        end = start + np.sum(rows == s)
+        spikes_s = cols[start:end]  # already sorted because cols is monotonic within each row
+        edges_per_syn.append(spikes_s)
+        start = end
+
+    return edges_per_syn
+
+
+def build_interval_masks_from_edges(edges, L):
+    """
+    spikes: 1D array of spike times (sorted), within [0, L-1]
+    L: total number of time steps
+    Returns: list of boolean masks, one per interval between consecutive spikes (including 0→first)
+    """
+    masks = []
+    for i in range(1, len(edges)):
+        mask = np.zeros(L, dtype=bool)
+        mask[edges[i - 1]:edges[i]] = True  # adjust +1 / no +1 depending on your convention
+        masks.append(mask)
+    mask = np.zeros(L, dtype=bool)
+    mask[edges[i]:] = True
+    masks.append(mask)
+    return np.array(masks)
+
+
 def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=False, lif_n=None, I_ext=0,
                        len_windows=None, epsilon=None, rate_input=None, st_prior=None):
     # Update parameters and initial conditions
@@ -632,489 +687,10 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
         if seeds is not None: seed = seeds[flex_t]
         n_model.update_state(flex_t, seed, use_noise, I_args)
 
+        """
         # Detecting spike events for synapse and neuron, storing model output
         n_model.detect_spike_event(flex_t, Input, n_model.get_output_state_variables())
         stp_model.detect_spike_event(flex_t, Input, stp_model.get_output_state_variables())
-
-        """
-        # **************************************************************************************************************
-        # Sliding windows approach
-        window = windows[counter_slid_win]
-        t0, t1 = window
-        win_duration_s = (t1 - t0) * n_model.dt
-        # Suprathreshold regime
-        spike_in_window = [[] for _ in range(num_neu)]
-        rate_in_window = np.zeros(num_neu)
-        ISI_in_window = [[] for _ in range(num_neu)]
-        mean_ISI_in_window = np.zeros(num_neu)
-        std_ISI_in_window = np.zeros(num_neu)
-        # subthreshold regime
-        v_in_window = [[] for _ in range(num_neu)]
-        mean_v_in_window = np.zeros(num_neu)
-        median_v_in_window = np.zeros(num_neu)
-        # q5_v_in_window = np.zeros(num_neu)
-        q10_v_in_window = np.zeros(num_neu)
-        q90_v_in_window = np.zeros(num_neu)
-        # q95_v_in_window = np.zeros(num_neu)
-        min_v_in_window = np.zeros(num_neu)
-        max_v_in_window = np.zeros(num_neu)
-
-        # If time is longer than first time window
-        if flex_t >= t1:
-            # Compute statistics of membrane potential to get transition and steady-state
-            # Suprathreshold: spikes in window
-            for n in range(num_neu):
-                spk_mask = (n_model.time_spikes_generated[n] >= t0) & (n_model.time_spikes_generated[n] < t1)
-                spike_in_window[n] = np.array(n_model.time_spikes_generated[n])[spk_mask] * n_model.dt
-
-                # rate computation
-                # If there are not spikes in the window, assign a neg value to the rate
-                if len(spike_in_window[n]) == 0:
-                    if np.sum(supra_rate[n, :counter_slid_win]) > 0:
-                        rate_in_window[n] = len(spike_in_window[n]) / win_duration_s
-                    # else:
-                    #     rate_in_window[n] = np.nan  # -10
-                else:
-                    rate_in_window[n] = len(spike_in_window[n]) / win_duration_s
-
-                # ISI computation
-                if len(spike_in_window[n]) >= 2:
-                    ISI_in_window[n] = np.diff(spike_in_window[n])
-                    mean_ISI_in_window[n] = np.mean(ISI_in_window[n])
-                    std_ISI_in_window[n] = np.std(ISI_in_window[n])
-
-                # For subthreshold regime
-                mask_v_aux = n_model.membrane_potential[n, t0:t1] < n_model.V_threshold[n]
-                v_aux = n_model.membrane_potential[n, t0:t1][mask_v_aux]
-                # Getting statistical descriptors
-                v_in_window[n] = v_aux
-                # a, b, c, d = np.mean(v_aux), np.median(v_aux), np.quantile(v_aux, 0.05), np.quantile(v_aux, 0.1)
-                # e, f, g, h = np.quantile(v_aux, 0.9), np.quantile(v_aux, 0.95), np.min(v_aux), np.max(v_aux)
-                # mean_v_in_window[n], median_v_in_window[n], q5_v_in_window[n], q10_v_in_window[n] = a, b, c, d
-                # q90_v_in_window[n], q95_v_in_window[n], min_v_in_window[n], max_v_in_window[n] = e, f, g, h
-                a, b, d = np.mean(v_aux), np.median(v_aux), np.quantile(v_aux, 0.1)
-                e, g, h = np.quantile(v_aux, 0.9), np.min(v_aux), np.max(v_aux)
-                mean_v_in_window[n], median_v_in_window[n], q10_v_in_window[n] = a, b, d
-                q90_v_in_window[n], min_v_in_window[n], max_v_in_window[n] = e, g, h
-
-            # Suprathreshold: spikes in windows
-            supra_rate[:, counter_slid_win] = rate_in_window
-            supra_mean_ISI[:, counter_slid_win] = mean_ISI_in_window
-            supra_std_ISI[:, counter_slid_win] = std_ISI_in_window
-            # Subthreshold: V(t) in windows
-            sub_mean_v[:, counter_slid_win] = mean_v_in_window
-            sub_median_v[:, counter_slid_win] = median_v_in_window
-            # sub_q5_v[:, counter_slid_win] = q5_v_in_window
-            sub_q10_v[:, counter_slid_win] = q10_v_in_window
-            sub_q90_v[:, counter_slid_win] = q90_v_in_window
-            # sub_q95_v[:, counter_slid_win] = q95_v_in_window
-            sub_min_v[:, counter_slid_win] = min_v_in_window
-            sub_max_v[:, counter_slid_win] = max_v_in_window
-
-            # Checking if statistical descriptors don't change more than the epsilon value in the last 10 windows
-            if counter_slid_win >= slid_win_start + num_tail_wins + num_slid_wins:
-                # Updating statistical descriptors in list
-                stat_des_supra = [supra_rate, supra_mean_ISI, supra_std_ISI]
-                stat_des_sub = [sub_mean_v, sub_median_v, sub_q10_v, sub_q90_v, sub_min_v, sub_max_v]
-                if st_prior is not None:
-                    stat_des_sub = [sub_mean_v]
-                # Steady-state condition-array for neurons and statistical descriptors
-                conds_supra_max_min = np.array([[False for _ in range(num_neu)] for _ in range(len(stat_des_supra))])
-                conds_supra_rel_cha = np.array([[False for _ in range(num_neu)] for _ in range(len(stat_des_supra))])
-                conds_supra_tol_dev = np.array([[False for _ in range(num_neu)] for _ in range(len(stat_des_supra))])
-                conds_sub_max_min = np.array([[False for _ in range(num_neu)] for _ in range(len(stat_des_sub))])
-                conds_sub_rel_cha = np.array([[False for _ in range(num_neu)] for _ in range(len(stat_des_sub))])
-                conds_sub_tol_dev = np.array([[False for _ in range(num_neu)] for _ in range(len(stat_des_sub))])
-
-                # Tail for computing stationary mean and std
-                min_tail = counter_slid_win - num_tail_wins - num_slid_wins
-                if counter_stim_win > 0:
-                    min_tail = np.max(len_stimuli_windows[:, counter_stim_win, 2])  # ...[:, counter_stim_win - 1, 3])
-                max_tail = counter_slid_win - num_slid_wins
-
-                # Counter statistical descriptors
-                c_sd = 0
-                # For suprathreshold regime. Looping through statistical descriptors
-                for i in range(num_stat_des_supra):
-                    # Selecting values of current statistical descriptor in the last num_slid_wins windows
-                    tail_stat_des = stat_des_supra[i][:, min_tail:max_tail]
-                    # Selecting values of current statistical descriptor in the last num_slid_wins windows
-                    aux_stat_des = stat_des_supra[i][:, counter_slid_win - num_slid_wins:counter_slid_win]
-
-                    # Computing mean and standard deviation in the provitional stationary tail
-                    aux_mean = np.repeat(np.reshape(np.mean(tail_stat_des, axis=1), (num_neu, 1)), num_slid_wins,
-                                         axis=1)
-                    aux_std = np.repeat(np.reshape(np.std(tail_stat_des, axis=1), (num_neu, 1)), num_slid_wins, axis=1)
-
-                    # Updating maxi and mini masks for a specific statistica descriptor
-                    aux_mask_ma = np.max(aux_stat_des, axis=1) > maxi_v_supra[i, :]
-                    if np.any(aux_mask_ma):
-                        maxi_v_supra[i, aux_mask_ma] = np.max(aux_stat_des, axis=1)[aux_mask_ma]
-                    aux_mask_mi = np.min(aux_stat_des, axis=1) < mini_v_supra[i, :]
-                    if np.any(aux_mask_mi):
-                        mini_v_supra[i, aux_mask_mi] = np.min(aux_stat_des, axis=1)[aux_mask_mi]
-                    # Stationary state by checking epsilon times difference between maxi and mini
-                    diff_max_min_local = np.max(aux_stat_des, axis=1) - np.min(aux_stat_des, axis=1)
-                    ep = (maxi_v_supra[i, :] - mini_v_supra[i, :]) * epsilon_min_max[c_sd]
-                    aux = diff_max_min_local <= ep
-
-                    # Stationary state by checking relative change of stat_des (∣stat_des−μ∣/(μ+1e-9)) <= epsilon
-                    delta_k = np.abs(aux_stat_des - aux_mean) / (np.abs(aux_mean) + 1e-9)
-                    aux_per_win = delta_k <= epsilon[c_sd]
-                    aux_rel = np.sum(aux_per_win, axis=1) == num_slid_wins
-
-                    # stationary state by checking relative tolerance
-                    delta_k2 = np.abs(aux_stat_des - aux_mean) / (aux_std + 1e-9)
-                    aux2_per_win = delta_k2 <= 1  # c[i] * epsilon[c_sd]
-                    aux_rel_tol = np.sum(aux2_per_win, axis=1) == num_slid_wins
-
-                    # Updating arrays that check conditions
-                    conds_supra_max_min[i, :] = aux
-                    conds_supra_rel_cha[i, :] = aux_rel
-                    conds_supra_tol_dev[i, :] = aux_rel_tol
-                    print("%s, maxi-mini: %s, max-min is %.2E and ep %.2E. "
-                          "Cond rel. change: %s, d_k %.2E, epsilon %.1E. "
-                          "Cond rel. tolerance: %s, d_k %.2E, epsilon 1" %
-                          (labels[i], aux[0], diff_max_min_local[0], ep[0], aux_rel[0], np.max(delta_k, axis=1)[0],
-                           epsilon[i], aux_rel_tol[0], np.max(delta_k2, axis=1)[0]))
-
-                    # Auxiliar plotting of statistical descriptors
-                    for n in range(num_neu):
-                        # aux_thr = mini_v[i, :] + ep[n] + n * bias_plot[i]
-                        # ax[i].plot([0, counter_slid_win], [aux_thr, aux_thr], color='gray')
-                        ax[c_sd].plot([ki for ki in range(counter_slid_win)], stat_des_supra[i][n, :counter_slid_win] +
-                                      n * bias_plot[c_sd], color=colors[c_sd])
-                    # Increasing counter of statistical descriptors
-                    c_sd += 1
-
-                # For subthreshold regime. Looping through statistical descriptors
-                for i in range(len(stat_des_sub)):
-                    # EVALUATING ONLY FOR NEURONS THAT DOES NOT REACH SUPRATHRESHOLD IN THE TIME OF TH SLIDING WINDOW
-                    neurons_not_spiking = supra_rate[:, min_tail:counter_slid_win] == 0
-                    mask_in_sub = np.sum(neurons_not_spiking, axis=1) == counter_slid_win - min_tail
-
-                    # If there is at least one neuron in subthreshold regime
-                    if np.any(mask_in_sub):
-                        # Selecting values of current statistical descriptor in the last num_slid_wins windows
-                        # tail_stat_des = stat_des_sub[i][:, min_tail:max_tail]
-                        tail_stat_des = stat_des_sub[i][mask_in_sub, min_tail:max_tail]
-                        # Selecting values of current statistical descriptor in the last num_slid_wins windows
-                        # aux_stat_des = stat_des_sub[i][:, counter_slid_win - num_slid_wins:counter_slid_win]
-                        aux_stat_des = stat_des_sub[i][mask_in_sub, counter_slid_win - num_slid_wins:counter_slid_win]
-
-                        # Default setup of aux_mean and std_mean in case all neurons are in suprathreshold during the
-                        # evaluation windows
-                        aux_mean = np.zeros((0, num_slid_wins))
-                        aux_std = np.zeros((0, num_slid_wins))
-                        if tail_stat_des.shape[0] > 0:
-                            if st_prior is None:
-                                # Computing mean and standard deviation in the provitional stationary tail
-                                aux1 = np.reshape(np.mean(tail_stat_des, axis=1), (tail_stat_des.shape[0], 1))
-                                aux_mean = np.repeat(aux1, num_slid_wins, axis=1)
-                                aux1 = np.reshape(np.std(tail_stat_des, axis=1), (tail_stat_des.shape[0], 1))
-                                aux_std = np.repeat(aux1, num_slid_wins, axis=1)
-                            else:
-                                # Using mean value from deterministic steady-state priors
-                                # aux_vals = [st_prior[counter_stim_win, 6] for _ in range(tail_stat_des.shape[0])]
-                                # aux1 = np.reshape(aux_vals, (tail_stat_des.shape[0], 1))
-                                # aux_mean = np.repeat(aux1, num_slid_wins, axis=1)
-                                # Computing mean in the provitional stationary tail
-                                aux1 = np.reshape(np.mean(tail_stat_des, axis=1), (tail_stat_des.shape[0], 1))
-                                aux_mean = np.repeat(aux1, num_slid_wins, axis=1)
-                                # Using variance value as diff between q95 and 95 from deterministic steady-state priors
-                                # ['q5', 'q10', 'q90', 'q95', 'min', 'max', 'mean', 'median']
-                                aux_vals = [[np.array([st_prior[counter_stim_win, 5] - st_prior[counter_stim_win, 4]])] for _ in range(tail_stat_des.shape[0])]
-                                aux1 = np.reshape(aux_vals, (tail_stat_des.shape[0], 1))
-                                aux_std = np.repeat(aux1, num_slid_wins, axis=1)
-
-                        # Updating maxi and mini masks for a specific statistica descriptor
-                        # aux_mask_ma = np.max(aux_stat_des, axis=1) > maxi_v_sub[i, :]
-                        aux_mask_ma = np.max(aux_stat_des, axis=1) > maxi_v_sub[i, mask_in_sub]
-                        if np.any(aux_mask_ma):
-                            aux = maxi_v_sub[i, mask_in_sub]
-                            aux[aux_mask_ma] = np.max(aux_stat_des, axis=1)[aux_mask_ma]
-                            maxi_v_sub[i, mask_in_sub] = aux
-                        # aux_mask_mi = np.min(aux_stat_des, axis=1) < mini_v_sub[i, :]
-                        aux_mask_mi = np.min(aux_stat_des, axis=1) < mini_v_sub[i, mask_in_sub]
-                        if np.any(aux_mask_mi):
-                            aux = mini_v_sub[i, mask_in_sub]
-                            aux[aux_mask_mi] = np.min(aux_stat_des, axis=1)[aux_mask_mi]
-                            mini_v_sub[i, mask_in_sub] = aux
-                        # Stationary state by checking epsilon times difference between maxi and mini
-                        diff_max_min_local = np.max(aux_stat_des, axis=1) - np.min(aux_stat_des, axis=1)
-                        # ep = (maxi_v_sub[i, :] - mini_v_sub[i, :]) * epsilon_min_max[c_sd]
-                        ep = (maxi_v_sub[i, mask_in_sub] - mini_v_sub[i, mask_in_sub]) * epsilon_min_max[c_sd]
-                        aux = diff_max_min_local <= ep
-
-                        # Stationary state by checking relative change of stat_des (∣stat_des−μ∣/(μ+1e-9)) <= epsilon
-                        delta_k = np.abs(aux_stat_des - aux_mean) / (np.abs(aux_mean) + 1e-9)
-                        aux_per_win = delta_k <= epsilon[c_sd]
-                        aux_rel = np.sum(aux_per_win, axis=1) == num_slid_wins
-
-                        # stationary state by checking relative tolerance
-                        delta_k2 = np.abs(aux_stat_des - aux_mean) / (aux_std + 1e-9)
-                        aux2_per_win = delta_k2 <= c_tol_dev[c_sd]  # 1.5  # c[i] * epsilon[c_sd]
-                        aux_rel_tol = np.sum(aux2_per_win, axis=1) == num_slid_wins
-
-                        # Updating arrays that check conditions
-                        # conds_sub_max_min[i, :] = aux
-                        # conds_sub_rel_cha[i, :] = aux_rel
-                        # conds_sub_tol_dev[i, :] = aux_rel_tol
-                        conds_sub_max_min[i, mask_in_sub] = aux
-                        conds_sub_rel_cha[i, mask_in_sub] = aux_rel
-                        conds_sub_tol_dev[i, mask_in_sub] = aux_rel_tol
-                        if tail_stat_des.shape[0] > 0:
-                            print("%s, maxi-mini: %s, max-min is %.2E and ep %.2E. "
-                                  "Cond rel. change: %s, d_k %.2E, epsilon %.1E. "
-                                  "Cond rel. tolerance: %s, d_k %.2E, epsilon %.2E" %
-                                  (labels[c_sd], aux[0], diff_max_min_local[0], ep[0], aux_rel[0],
-                                   np.max(delta_k, axis=1)[0], epsilon[c_sd], aux_rel_tol[0],
-                                   np.max(delta_k2, axis=1)[0], c_tol_dev[c_sd]))
-                            # Auxiliar plotting of statistical descriptors
-                            for n in range(num_neu):
-                                ax[c_sd].plot([ki for ki in range(counter_slid_win)],
-                                              stat_des_sub[i][n, :counter_slid_win] +
-                                              n * bias_plot[c_sd], color=colors[c_sd])
-                                # ['q5', 'q10', 'q90', 'q95', 'min', 'max', 'mean', 'median']
-                                lims = [0, counter_slid_win]
-                                if st_prior is not None:
-                                    aux_a = st_prior[counter_stim_win, 6]
-                                    ax[c_sd].plot(lims, np.array([aux_a, aux_a]) + n * bias_plot[c_sd], c="tab:orange")
-                                    aux_a = st_prior[counter_stim_win, 5]
-                                    ax[c_sd].plot(lims, np.array([aux_a, aux_a]) + n * bias_plot[c_sd], c="tab:olive")
-                                    aux_a = st_prior[counter_stim_win, 4]
-                                    ax[c_sd].plot(lims, np.array([aux_a, aux_a]) + n * bias_plot[c_sd], c="tab:olive")
-                        else:
-                            print("%s, Neuron in suprathreshold regime" % labels[c_sd])
-
-                    # Increasing counter of statistical descriptors
-                    c_sd += 1
-
-                # If all signals reach the steady-state value, then stop the loop
-                # compute time of possible steady-state for suprathreshold statistical descriptors:
-                # ind_ = 3
-                a = counter_stim_win
-                supra_mini_maxi[a, :] = update_tr_st_trackers(conds_supra_max_min, supra_mini_maxi[a, :],
-                                                              window_length, num_slid_wins, sliding_step, n_model.dt,
-                                                              flex_t)
-                sub_mini_maxi[a, :] = update_tr_st_trackers(conds_sub_max_min, sub_mini_maxi[a, :], window_length,
-                                                            num_slid_wins, sliding_step, n_model.dt, flex_t)
-                supra_rel_cha[a, :] = update_tr_st_trackers(conds_supra_rel_cha, supra_rel_cha[a, :], window_length,
-                                                            num_slid_wins, sliding_step, n_model.dt, flex_t)
-                sub_rel_cha[a, :] = update_tr_st_trackers(conds_sub_rel_cha, sub_rel_cha[a, :], window_length,
-                                                          num_slid_wins, sliding_step, n_model.dt, flex_t)
-                supra_tol_dev[a, :] = update_tr_st_trackers(conds_supra_tol_dev, supra_tol_dev[a, :], window_length,
-                                                            num_slid_wins, sliding_step, n_model.dt, flex_t)
-                sub_tol_dev[a, :] = update_tr_st_trackers(conds_sub_tol_dev, sub_tol_dev[a, :], window_length,
-                                                          num_slid_wins, sliding_step, n_model.dt, flex_t)
-                print("Stim win: " + str(a) + ", supra(min-max): " + str(supra_mini_maxi[a, 0, :]) +
-                      ", supra(rel-cha): " + str(supra_rel_cha[a, 0, :]) + ", supra(tol_dev): " +
-                      str(supra_tol_dev[a, 0, :]))
-                print("Stim win: " + str(a) + ", sub(min-max): " + str(sub_mini_maxi[a, 0, :]) + ", sub(rel-cha): " +
-                      str(sub_rel_cha[a, 0, :]) + ", sub(tol_dev): " + str(sub_tol_dev[a, 0, :]))
-
-                mask_supr_mm = np.where(supra_mini_maxi[a, 0, :] > 0)[0]
-                mask_sub_mm = np.where(sub_mini_maxi[a, 0, :] > 0)[0]
-                mask_supr_rc = np.where(supra_rel_cha[a, 0, :] > 0)[0]
-                mask_sub_rc = np.where(sub_rel_cha[a, 0, :] > 0)[0]
-                mask_supr_td = np.where(supra_tol_dev[a, 0, :] > 0)[0]
-                mask_sub_td = np.where(sub_tol_dev[a, 0, :] > 0)[0]
-                # Updating time of reaching st based on each approach (mini-maxi, relative change, tolarance deviation)
-                mask_to_update = tr_st_3_cond[0, mask_sub_mm] == 0
-                tr_update = [flex_t for i in range(int(np.sum(mask_to_update)))]
-                if np.any(mask_to_update):
-                    # tr_st_3_cond[0, mask_sub_mm[mask_to_update]] = tr_update
-                    pass
-                mask_to_update = tr_st_3_cond[1, mask_sub_td] == 0
-                tr_update = [flex_t for i in range(int(np.sum(mask_to_update)))]
-                if np.any(mask_to_update):
-                    tr_st_3_cond[1, mask_sub_td[mask_to_update]] = tr_update
-                # if tr_st_3_cond[2, mask_sub_rc] == 0: tr_st_3_cond[2, mask_sub_rc] = flex_t
-                # Which neurons reach steady-state with all methods?
-                mask_sub = np.sum(tr_st_3_cond > 0, axis=0) == 1 # tr_st_3_cond.shape[0]  # num_neu
-                # updating index of reaching steady-state for each neuron
-                if np.any(mask_sub):
-                    ind_to_update = len_stimuli_windows[:, counter_stim_win, 1] == 0
-                    if np.any(ind_to_update):
-                        mask_to_update = np.logical_and(mask_sub, ind_to_update)
-                        tr_update = [flex_t for _ in range(int(np.sum(mask_to_update)))]
-                        win_update = [counter_slid_win for _ in range(int(np.sum(mask_to_update)))]
-                        len_stimuli_windows[mask_to_update, counter_stim_win, 1] = tr_update
-                        len_stimuli_windows[mask_to_update, counter_stim_win, 3] = win_update
-
-                # counting of neurons reaching steady-state
-                cond_supr_mm, cond_sub_mm = mask_supr_mm.shape[0], mask_sub_mm.shape[0]
-                cond_supr_rc, cond_sub_rc = mask_supr_rc.shape[0], mask_sub_rc.shape[0]
-                cond_supr_td, cond_sub_td = mask_supr_td.shape[0], mask_sub_td.shape[0]
-                # if cond_sub_mm == num_neu and cond_sub_rc == num_neu and cond_sub_td == num_neu:
-                # if cond_sub_mm == num_neu and cond_sub_td == num_neu:
-                if cond_sub_td == num_neu:
-                    # if cond_sub_td == num_neu:
-                    print("All neurons reach steady-state")
-                    fig_mem = plt.figure()
-                    axfm = fig_mem.add_subplot(111)
-                    # axfm.plot(n_model.time_vector[:flex_t], n_model.membrane_potential[0, :flex_t], c="gray")
-
-                    min_m = np.min(n_model.membrane_potential[:, :flex_t])
-                    max_m = np.max(n_model.membrane_potential[:, :flex_t])
-                    for n in range(num_neu):
-                        # Plotting membrane potential
-                        aux_t_vec = n_model.time_vector[:flex_t]
-                        axfm.plot(aux_t_vec, n_model.membrane_potential[n, :flex_t] + n * .01,
-                                  c="gray")
-                        # Through stimuli-windows
-                        for b in range(a + 1):
-                            # Plotting tr_st_time for each method
-                            lim_a, lim_b = min_m + 0.01 * n, max_m + 0.01 * n
-                            axfm.plot([sub_mini_maxi[b, 0, n], sub_mini_maxi[b, 0, n]], [lim_a, lim_b], c="tab:red")
-                            axfm.plot([sub_rel_cha[b, 0, n], sub_rel_cha[b, 0, n]], [lim_a, lim_b], c="tab:green")
-                            axfm.plot([sub_tol_dev[b, 0, n], sub_tol_dev[b, 0, n]], [lim_a, lim_b], c="tab:blue")
-                            aux_p = len_stimuli_windows[n, b, 0] * n_model.dt
-                            axfm.plot([aux_p, aux_p], [min_m, max_m + 0.01 * n], c="black")
-                            if st_prior is not None:
-                                # ['q5', 'q10', 'q90', 'q95', 'min', 'max', 'mean', 'median']
-                                lims = len_stimuli_windows[n, b, :2] * n_model.dt
-                                axfm.plot(lims, [st_prior[b, 0] + 0.01 * n, st_prior[b, 0] + 0.01 * n], c="tab:olive")
-                                axfm.plot(lims, [st_prior[b, 1] + 0.01 * n, st_prior[b, 1] + 0.01 * n], c="tab:green")
-                                axfm.plot(lims, [st_prior[b, 2] + 0.01 * n, st_prior[b, 2] + 0.01 * n], c="tab:green")
-                                axfm.plot(lims, [st_prior[b, 3] + 0.01 * n, st_prior[b, 3] + 0.01 * n], c="tab:olive")
-                                axfm.plot(lims, [st_prior[b, 4] + 0.01 * n, st_prior[b, 4] + 0.01 * n], c="tab:red")
-                                axfm.plot(lims, [st_prior[b, 5] + 0.01 * n, st_prior[b, 5] + 0.01 * n], c="tab:red")
-                                axfm.plot(lims, [st_prior[b, 6] + 0.01 * n, st_prior[b, 6] + 0.01 * n], c="tab:orange")
-                                axfm.plot(lims, [st_prior[b, 7] + 0.01 * n, st_prior[b, 7] + 0.01 * n], c="tab:blue")
-                    axfm.grid()
-
-                    # updating it
-                    if 0 < it <= int(L / 3):
-                        # ini window is computed
-                        ind_max_tr_st = [np.max(len_stimuli_windows[:, counter_stim_win, 1]) for _ in range(num_neu)]
-                        # len_stimuli_windows[:, counter_stim_win + 1, 0] = len_stimuli_windows[:, counter_stim_win, 1]
-                        len_stimuli_windows[:, counter_stim_win, 1] = ind_max_tr_st
-                        len_stimuli_windows[:, counter_stim_win + 1, 0] = ind_max_tr_st
-                        len_stimuli_windows[:, counter_stim_win + 1, 2] = (len_stimuli_windows[:, counter_stim_win, 3] +
-                                                                           int(window_length / sliding_step))
-                        # len_stimuli_windows[0][1] = flex_t
-                        # len_stimuli_windows[1][0] = flex_t
-                        # len_stimuli_windows[0][3] = counter_slid_win
-                        # len_stimuli_windows[1][2] = counter_slid_win + int(window_length / sliding_step)
-                        it = int(L / 3) - 1
-                    elif int(L / 3) < it <= int(2 * L / 3):
-                        # mid window is computed
-                        ind_max_tr_st = [np.max(len_stimuli_windows[:, counter_stim_win, 1]) for _ in range(num_neu)]
-                        len_stimuli_windows[:, counter_stim_win, 1] = ind_max_tr_st
-                        len_stimuli_windows[:, counter_stim_win + 1, 0] = ind_max_tr_st
-                        len_stimuli_windows[:, counter_stim_win + 1, 2] = (len_stimuli_windows[:, counter_stim_win, 3] +
-                                                                           int(window_length / sliding_step))
-                        # len_stimuli_windows[1][1] = flex_t
-                        # len_stimuli_windows[2][0] = flex_t
-                        # len_stimuli_windows[1][3] = counter_slid_win
-                        # len_stimuli_windows[2][2] = counter_slid_win + int(window_length / sliding_step)
-                        it = int(2 * L / 3) - 1
-                    else:
-                        # end window is computed
-                        # len_stimuli_windows[2][1] = flex_t
-                        # len_stimuli_windows[2][3] = counter_slid_win
-                        ind_max_tr_st = [np.max(len_stimuli_windows[:, counter_stim_win, 1]) for _ in range(num_neu)]
-                        len_stimuli_windows[:, counter_stim_win, 1] = ind_max_tr_st
-                        it = L - 1
-                        finish_sliding_window = True
-
-                    print(tr_st_3_cond)
-                    print(len_stimuli_windows)
-                    # Updating window
-                    counter_slid_win += int(window_length / sliding_step) - 1
-                    # updating when to start analysing sliding windows
-                    slid_win_start = counter_slid_win + 1
-                    # Updating input
-                    Input = np.copy(np.concatenate((Input[:, :flex_t], Input_copy[:, it + 1:]), axis=1))
-                    # Initialising mini and maxi arrays to begin computing new window
-                    # Auxiliar variables to compute maxi and mini in sliding windows
-                    maxi_v_supra = np.array([[-np.inf for _ in range(num_neu)] for _ in range(num_stat_des_supra)])
-                    mini_v_supra = np.array([[np.inf for _ in range(num_neu)] for _ in range(num_stat_des_supra)])
-                    maxi_v_sub = np.array([[-np.inf for _ in range(num_neu)] for _ in range(num_stat_des_sub)])
-                    mini_v_sub = np.array([[np.inf for _ in range(num_neu)] for _ in range(num_stat_des_sub)])
-                    # Resetting matrix with indices where each neuron reaches transition-state
-                    tr_st_3_cond = np.zeros((2, num_neu))
-                    # updating counter of stimuli windows
-                    counter_stim_win += 1
-
-            # increasing counter of windows
-            counter_slid_win += 1
-            print("Computing window %d/%d while t is %.3f" % (counter_slid_win, num_windows, flex_t * n_model.dt))
-
-        if finish_sliding_window:
-            # Computing transition and steady-state values
-            # sliding windows of ini, mid and end stimuli-windows
-            i_iw = (len_stimuli_windows[0, 0, :2] * n_model.dt * 1e3) / sliding_step  # len_stimuli_windows[0, 2:4]
-            i_mw = (len_stimuli_windows[0, 1, :2] * n_model.dt * 1e3) / sliding_step  # len_stimuli_windows[1, 2:4]
-            i_ew = (len_stimuli_windows[0, 2, :2] * n_model.dt * 1e3) / sliding_step  # len_stimuli_windows[2, 2:4]
-            l_win = window_length / sliding_step
-            i_iw[1], i_mw[1], i_ew[1] = i_iw[1] - l_win, i_mw[1] - l_win, i_ew[1] - l_win
-            i_iw = i_iw.astype(int)
-            i_mw = i_mw.astype(int)
-            i_ew = i_ew.astype(int)
-            # Computing steady-state statistics for the last 25 windows
-            st_win_l = num_tail_wins + num_slid_wins
-            mem_pot_iw_st = n_model.membrane_potential[:, windows[i_iw[1] - st_win_l][0]: windows[i_iw[1]][1]]
-            mem_pot_mw_st = n_model.membrane_potential[:, windows[i_mw[1] - st_win_l][0]: windows[i_mw[1]][1]]
-            mem_pot_ew_st = n_model.membrane_potential[:, windows[i_ew[1] - st_win_l][0]: windows[i_ew[1]][1]]
-            # Auxiliar function to compute: mean, median, q5, q10, q90, q95, min, max
-            iw_st = statistics_signal(mem_pot_iw_st, axis=1)
-            mw_st = statistics_signal(mem_pot_mw_st, axis=1)
-            ew_st = statistics_signal(mem_pot_ew_st, axis=1)
-            tr_signals = [sub_mean_v, sub_median_v, sub_q5_v, sub_q10_v, sub_q90_v, sub_q95_v, sub_min_v, sub_max_v]
-            iw_tr = stat_tr_slid(tr_signals, i_iw, st_win_l)
-            mw_tr = stat_tr_slid(tr_signals, i_mw, st_win_l)
-            ew_tr = stat_tr_slid(tr_signals, i_ew, st_win_l)
-            # time to reach steady-state for each stimuli-window
-            windows_a = np.array(windows)
-            tr_st_time = np.array([windows_a[np.diff(len_stimuli_windows[:, :, 2:4])[:, i, 0], 0] for i in range(3)])
-            tr_st_time = tr_st_time * n_model.dt
-            # Final summary of sliding window:
-            # steady-state mean, median, q5, q10, q90, q95, min, max of ini, mid and end stimuli-windows, then
-            # transition-series mean, median, q5, q10, q90, q95, min, max of ini, mid and end stimuli-windows, then
-            # time for reaching steady-state of ini, mid and end stimuli-windows
-            a = np.array([iw_st[0], iw_st[1], iw_st[2], iw_st[3], iw_st[4], iw_st[5], iw_st[6], iw_st[7],
-                          mw_st[0], mw_st[1], mw_st[2], mw_st[3], mw_st[4], mw_st[5], mw_st[6], mw_st[7],
-                          ew_st[0], ew_st[1], ew_st[2], ew_st[3], ew_st[4], ew_st[5], ew_st[6], ew_st[7]])
-            b = [iw_tr[0], iw_tr[1], iw_tr[2], iw_tr[3], iw_tr[4], iw_tr[5], iw_tr[6], iw_tr[7],
-                 mw_tr[0], mw_tr[1], mw_tr[2], mw_tr[3], mw_tr[4], mw_tr[5], mw_tr[6], mw_tr[7],
-                 ew_tr[0], ew_tr[1], ew_tr[2], ew_tr[3], ew_tr[4], ew_tr[5], ew_tr[6], ew_tr[7]]
-            stat_descriptors_tr_st = a
-            time_series_tr = b
-            # Old method to get beginning of steady-state
-            # a = np.max([mem_pot_iw_st.shape[1], mem_pot_ew_st.shape[1]])
-            # piw, pew = mem_pot_iw_st[:, :a], mem_pot_ew_st[:, :a]
-            piw = n_model.membrane_potential[:, :len_stimuli_windows[0, 0, 1]]
-            lim_a, lim_b = len_stimuli_windows[0, 2, :2]
-            pew = n_model.membrane_potential[:, lim_a:lim_b]
-            # auxiliar plots
-            plt.figure()
-            for n in range(num_neu):
-                aux = piw[n, :] + n * 0.005
-                plt.plot(n_model.time_vector[:aux.shape[0]], aux)
-                aux = pew[n, :] + n * 0.005
-                plt.plot(n_model.time_vector[:aux.shape[0]], aux)
-            plt.grid()
-            plt.figure()
-            for n in range(num_neu):
-                plt.plot(sub_mean_v[n, i_iw[0]:i_iw[1]] + n * 0.005)
-                plt.plot(sub_mean_v[n, i_ew[0]:i_ew[1]] + n * 0.005)
-            plt.grid()
-            a = np.min([piw.shape[1], pew.shape[1]])
-            th_tr_a = get_transition_time_from_2_signals(piw[:, :a], pew[:, :a], n_model.dt,
-                                                         th_percentage=1e-2) * n_model.dt
-            th_tr_ab = get_transition_time_from_2_signals(piw[:, :a], pew[:, :a], n_model.dt, th_percentage=1e-1,
-                                                          filtering=True) * n_model.dt
-        # End sliding windows
-        # **************************************************************************************************************
-        # """
-
-        # Sliding window analysis
-        # it, finish_sliding_window = slid_win.update(flex_t, it)
-        # if finish_sliding_window:
-        #     print("finished sliding window")
-            # aa, bb, cc, dd, ee = slid_win.analyse()
 
         # Forcing spike event when changing from ini-to-mid and mid-to-end windows
         if it == int(L / 3) - 1 or it == int(2 * L / 3) - 1:
@@ -1125,23 +701,11 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
                 if flex_t in n_model.time_spike_events[n]: new_spikes[n] = False
             # if count_spikes_in_t != num_neu:
             if np.sum(new_spikes) == num_neu:
-                # n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.membrane_potential)
                 n_model.append_spike_event(flex_t, new_spikes, n_model.get_output_state_variables())
                 stp_model.append_spike_event(flex_t, new_spikes, stp_model.get_output_state_variables())
         else:
             pass
-
-        if lif_n is not None:
-            # Converting model output into matrix alike
-            aux_input_n = np.resize(np.repeat(stp_model.N[:, it], num_neu), (num_syn * num_neu, num_neu))
-            c = aux_input_n * connectivity
-            input_lif_n = np.matmul(c.T, id_rep).T * stp_model.params[
-                'k_EPSP'] / 2  # k_EPSP/2, factor to transform N(t) into the small range as Epsp(t)
-
-            # Evaluating change in LIF neuron - membrane potential
-            # lif.update_state(mssm.get_output()[:, it], it)
-            I_args = [input_lif_n]
-            lif_n.update_state(it, I_args)
+        # """
 
         # Increasing time steps
         flex_t += 1
@@ -1153,6 +717,7 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
     if lif_n is not None:
         lif_n.membrane_potential[0, -1] = lif_n.membrane_potential[0, -2]
 
+    # """
     # Detecting spike events and storing model output
     spike_range = (n_model.time_spike_events[-1], it)
     n_model.append_spike_event(it, [True for _ in range(num_neu)], n_model.get_output_state_variables(),
@@ -1160,6 +725,7 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
     stp_model.append_spike_event(it, [True for _ in range(num_neu)], stp_model.get_output_state_variables(),
                                  append_time=False)
     # return stat_descriptors_tr_st, tr_st_time
+    # """
 
 
 def model_simple_dep(s_dep, lif, params, Input):

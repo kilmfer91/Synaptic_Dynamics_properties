@@ -29,10 +29,10 @@ class DoornSTD_model(SynDynModel):
         self.x_nmda_steady_state = None
         self.x_d_steady_state = None
         # Operators to get spiking events for state variables s_ampa, s_nmda, x_nmda, x_d
-        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0),
-                             lambda a: np.min(a, axis=0)]
-        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
-                                 lambda a: np.argmax(a, axis=0), lambda a: np.argmin(a, axis=0)]
+        self.operators_sv = [lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1),
+                             lambda a: np.min(a, axis=1)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=1), lambda a: np.argmax(a, axis=1),
+                                 lambda a: np.argmax(a, axis=1), lambda a: np.argmin(a, axis=1)]
 
         # Derivative variables [n_syn, L]
         self.d_s_ampa = None
@@ -129,10 +129,16 @@ class DoornSTD_model(SynDynModel):
         self.x_nmda[:, 0] = 0.0
         self.x_d[:, 0] = 1.0  # fully recovered
 
+        # Input vector
         if Input is None:
             self.Input = np.zeros((self.n_syn, self.L))
         else:
             self.Input = Input
+
+        # Output vector
+        self.output = np.zeros((2, self.n_syn, self.L))  # stacking s_ampa and s_nmda_tot
+
+        # Edge detection
         self.edge_detection = False
 
     def evaluate_model_euler(self, I_it, it):
@@ -149,7 +155,10 @@ class DoornSTD_model(SynDynModel):
         """Return synaptic conductances for neuron: [s_ampa, s_nmda_tot] shape (2, n_syn, L)."""
         # s_nmda_tot = w * S * x_d * s_nmda (per synapse, to be summed by user code)
         s_nmda_tot = self.S * self.x_d * self.s_nmda  # w=1 for now
-        return np.stack([self.s_ampa, s_nmda_tot])   # [2, n_syn, L] unitless [0-1]
+        self.output[0, :] = self.s_ampa
+        self.output[1, :] = s_nmda_tot
+        # return np.stack([self.s_ampa, s_nmda_tot])   # [2, n_syn, L] unitless [0-1]
+        return self.output
 
     def update_x_nmda(self, it):
         """NMDA availability: dx_nmda/dt = -x_nmda/tau_nmda_rise [clock-driven]."""

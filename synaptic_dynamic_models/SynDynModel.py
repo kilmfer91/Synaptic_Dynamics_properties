@@ -9,8 +9,9 @@ class SynDynModel:
         self.time_vector = None
         self.L = None
 
-        # input vector
+        # input/output vector
         self.Input = None
+        self.output = None
 
         # Model variables - IMPLEMENT ON EACH CHILD CLASS
         self.operators_sv = None
@@ -197,6 +198,55 @@ class SynDynModel:
             self.ind_spike_events_tonic[s].append(spike_range[0] - 1)
             self.ind_spike_events[s].append(a + spike_range[0])
         # """
+
+    def compute_output_spike_events(self, syn_spike_masks, input_spike_events):
+        # Computing inter-spike responses for state variables of neurons and synapses
+        state_variables = self.get_output_state_variables()
+        # AUX_SV = list(self.get_state_variables().keys())
+        num_state_vars = state_variables.shape[0]
+
+        for s in range(self.n_syn):
+            s_mask = syn_spike_masks[s]  # [num_masks, L]
+            s_var_syn = state_variables[:, s, :]  # [num state variables, L]
+            # Expand s_mask to (num_state_vars, n_intervals, L)
+            n_intervals = s_mask.shape[0]
+            mask_3d = np.broadcast_to(s_mask[np.newaxis, :, :], (num_state_vars, n_intervals, self.L))
+
+            # Expand s_var_syn to (num_state_vars, n_intervals, L)
+            var_3d = np.broadcast_to(s_var_syn[:, np.newaxis, :], (num_state_vars, n_intervals, self.L))
+
+            # Expand initial conditions of state variables to (num_state_vars, n_intervals, L)
+            ini_cond_sv = np.broadcast_to(state_variables[:, s, 0][:, np.newaxis, np.newaxis],
+                                            (num_state_vars, n_intervals, self.L))
+
+            # Element-wise multiplication (num_state_vars, n_intervals, L)
+            masked_var_3d = var_3d * mask_3d + np.logical_not(mask_3d) * ini_cond_sv
+
+            # Auxiliar plot
+            """
+            import matplotlib.pyplot as plt
+            fig = plt.figure()
+            plt.suptitle('For synapse %s, at ind 0: %s' % (s, state_variables[:, s, 0]))
+            ax = fig.add_subplot(121)
+            for i in range(n_intervals):
+                ax.plot(syn_spike_masks[s][i, :] + (1.1 * i) + 1)
+            ax.grid()
+            ax.set_title('masks', c='gray')
+            ax = fig.add_subplot(122)
+            for i in range(n_intervals):
+                ax.plot(masked_var_3d[0, i, :] + (1.1 * i) + 1)
+            ax.grid()
+            ax.set_title('masked state var ' + AUX_SV[0], c='gray')
+            # """
+
+            # Applying different operators for each state variable
+            assert masked_var_3d.shape[0] == len(self.operators_sv), "One operator needed per state variable"
+            per_state_variable = np.array([op(xi) for xi, op in zip(masked_var_3d, self.operators_sv)])
+            self.output_spike_events[s] = per_state_variable
+            assert masked_var_3d.shape[0] == len(self.arg_operators_sv), "One operator needed per state variable"
+            a = np.array([op(xi) for xi, op in zip(masked_var_3d, self.arg_operators_sv)])
+            self.ind_spike_events[s] = a
+            self.time_spike_events[s] = input_spike_events[s] * self.dt
 
     @staticmethod
     def reach_steady_state(input_signals, size_window=10, epsilon=None):

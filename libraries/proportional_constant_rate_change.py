@@ -1,4 +1,5 @@
 from gain_control.utils_gc import *
+import cProfile, pstats, tracemalloc, os, psutil
 
 
 class GC_prop_cons:
@@ -240,7 +241,7 @@ class GC_prop_cons:
         pass
 
     def run(self, gain, fixed_rate_change=None, dr=None, soft_stop_cond=True, plot_ind_figs=False, th_percentage=1e-2,
-            y_lims_ind_plot=None, st_prior=None, filtering=False, cutoff=5):
+            y_lims_ind_plot=None, st_prior=None, filtering=False, cutoff=5, profiling=False):
         if dr is None: dr = self.dict_results
         self.validate_dict_params(dr)
 
@@ -310,6 +311,13 @@ class GC_prop_cons:
         # time-series for transition times: piw, pmw, pew, ciw, cmw, cew
         tr_time_series = [[[] for _ in range(num_freq_exp)] for _ in range(6)]
 
+        # **************************************************************************************************************
+        # PROFILING
+        if profiling:
+            profiler = cProfile.Profile()
+            profiler.enable()
+        # **************************************************************************************************************
+
         ini_loop_time = m_time()
         print("Ini big loop")
         realization = 0
@@ -330,6 +338,8 @@ class GC_prop_cons:
             while i >= 0:  # while i < num_freq_exp:
                 loop_experiments = m_time()
 
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                # Input creation
                 se = int(time.time())
                 seeds1, seeds2, seeds3, n_seeds = [1984], [1884], [1848], None
                 # For poisson or deterministic inputs
@@ -379,7 +389,9 @@ class GC_prop_cons:
                     for neuron in range(cons_input.shape[0]):
                         cons_input[neuron, neuron + 1] = 1
                         fix_input[neuron, neuron + 1] = 1
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 # Running STP model
                 if dyn_synapse:
                     # Reseting initial conditions
@@ -389,12 +401,37 @@ class GC_prop_cons:
                     self.neuron_fix.set_simulation_params(sim_params, seeds1[0])
                     # Running the models
                     st_prior_ = None
-                    # if st_prior is not None:
-                    #     st_i = np.where(f_vector[i] <= st_prior[0, :])[0][0]
-                    #     st_ip = np.where(proportional_changes[i] <= st_prior[0, :])[0][0]
-                    #     st_prior_ = np.array([st_prior[1:, st_i], st_prior[1:, st_ip], st_prior[1:, st_i]])
+
+                    # Getting masks of interspike intervals (to compute spike responses for each state variable)
+                    spike_mask = detect_spikes(cons_input)
+                    edges_syn = spike_edges_from_mask(spike_mask)
+                    syn_spike_masks = [build_interval_masks_from_edges(edges_syn[s], L) for s in range(self.stp_prop.n_syn)]
+
+                    # Running synapse-neuron model
                     model_stp_parallel(self.stp_prop, self.neuron_prop, stp_params, cons_input, n_seeds, n_noise,
                                        rate_input=f_vector[i], st_prior=st_prior_)
+
+                    # Computing output spike events
+                    self.stp_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
+                    self.neuron_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
+
+                    """
+                    for s in range(self.stp_prop.n_syn):
+                        s_mask = syn_spike_masks[s]  # [num_masks, L]
+                        s_var_syn = state_variables[:, s, :]  # [num state variables, L]
+                        # Expand s_mask to (num_state_vars, n_intervals, L)
+                        n_intervals = s_mask.shape[0]
+                        mask_3d = np.broadcast_to(s_mask[np.newaxis, :, :], (num_state_vars, n_intervals, L))
+
+                        # Expand s_var_syn to (num_state_vars, n_intervals, L)
+                        var_3d = np.broadcast_to(s_var_syn[:, np.newaxis, :], (num_state_vars, n_intervals, L))
+
+                        # Element-wise multiplication
+                        masked_var_3d = var_3d * mask_3d  # still (num_state_vars, n_intervals, L)
+
+                        # Applying operators
+                        per_state_variable = np.array([op(xi) for xi, op in zip(masked_var_3d, operators_sv)])
+                    # """
                     # model_stp_parallel(self.stp_fix, self.lif_fix, stp_params, fix_input)
                 else:
                     # Reseting initial conditions
@@ -403,7 +440,9 @@ class GC_prop_cons:
                     # Running the models
                     static_synapse(self.neuron_prop, cons_input, 9e0)  # , 0.0125e-6)
                     # static_synapse(lif_fix, fix_input, 9e0)  # , 0.0125e-6)
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 # STATE VARIABLES OF THE NEURON
                 # getting transition time for rate of proportional change if possible
                 aux_cond = np.where(proportional_changes[i] <= f_vector)
@@ -474,8 +513,10 @@ class GC_prop_cons:
                                                        save_figs=self.save_figs,
                                                        y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
                     sv += 1
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-                # SYNAPTIC CONTRIBUTION
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                # STATE VARIABLES OF SYNAPSES
                 # getting transition time for rate of proportional change if possible
                 aux_cond = np.where(proportional_changes[i] <= f_vector)
                 if len(aux_cond[0]) > 0:
@@ -521,13 +562,16 @@ class GC_prop_cons:
                         # c_a -= 1
                         # ****************************************************************************************
                     sv += 1
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 # Computing Postsynaptic response (PSR) to compute H(PSR) -unconditional entropy-
                 # Neuron contribution
                 PSR_per_freq[i].append(self.neuron_prop.output_spike_events)
                 spike_event_per_freq[i].append(self.neuron_prop.time_spike_events)
                 # Synaptic contribution
                 PSR_per_freq_syn[i].append(self.stp_prop.output_spike_events)
+                # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
                 # Final print of the loop
                 print_time(m_time() - loop_experiments, file_name + ", Realisation " + str(realization) +
@@ -541,7 +585,8 @@ class GC_prop_cons:
             # if self.save_figs: fig_syn_filt.savefig(path_save, format='png')
             # ****************************************************************************************
 
-            # steady-state part
+            # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            # Organising transitory and stationary statistical descriptors of 3 windows in final arrays
             for res_i in range(res_real[0].shape[0]):
                 r = realization
                 # Iterating through the state variables of the neuron
@@ -551,14 +596,17 @@ class GC_prop_cons:
                 for sv in range(l_svs):
                     res_real_syn[sv][res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[sv][
                         res_i, :].T
-                # res_real_syn[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn[res_i, :].T
-                # For ampa if synapse is Doorn
-                # if self.stp_prop.get_output().ndim == 3:
-                #     res_real_syn_b[res_i, r * num_realizations:(r + 1) * num_realizations] = res_per_reali_syn_b[res_i, :].T
-
+            # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             print_time(m_time() - loop_time, file_name + ", Realisation " + str(realization))
 
             realization += 1
+
+        # **************************************************************************************************************
+        # PROFILING
+        if profiling:
+            profiler.disable()
+            pstats.Stats(profiler).sort_stats(pstats.SortKey.CUMULATIVE).print_stats(50)
+        # **************************************************************************************************************
 
         #
         if soft_stop_cond:
@@ -636,11 +684,11 @@ class GC_prop_cons:
                     # Iterating through specific realizations
                     for neuron_realization in range(num_realizations):
                         # Input spike events
-                        ta = np.array(spike_event_per_freq[i][realization][neuron_realization]) / sfreq
+                        ta = np.array(spike_event_per_freq[i][realization][neuron_realization])  # / sfreq
                         # Postsynaptic contribution to the neuron
-                        PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])
+                        PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization]).T  # (spike_events, n_sv)
                         # Postsynaptic contribution to the receptor
-                        PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization])
+                        PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization]).T  # (spi_ev,n_syn)
                         # Getting time of reaching steady-state for ini and end windows
                         tr_st_time = dr['time_transition'][num_realizations * realization + neuron_realization, i]
                         # Getting time of reaching steady-state for mid window
@@ -713,7 +761,7 @@ class GC_prop_cons:
                                 f = PSR_ew_st[np.where(PSR_ew_st < thr)[0]]
                             else:
                                 a, b, c, d, e, f = PSR_iw_tr, PSR_iw_st, PSR_mw_tr, PSR_mw_st, PSR_ew_tr, PSR_ew_st
-                            print(f'realization {realization}, rate {f_}, neu realization {neuron_realization}, state variable {sv}')
+                            # print(f'realization {realization}, rate {f_}, neu realization {neuron_realization}, state variable {sv}')
                             SV_neu_per_freq_iw_tr[sv][i] = SV_neu_per_freq_iw_tr[sv][i] + list(a[sv])
                             SV_neu_per_freq_iw_st[sv][i] = SV_neu_per_freq_iw_st[sv][i] + list(b[sv])
                             SV_neu_per_freq_mw_tr[sv][i] = SV_neu_per_freq_mw_tr[sv][i] + list(c[sv])

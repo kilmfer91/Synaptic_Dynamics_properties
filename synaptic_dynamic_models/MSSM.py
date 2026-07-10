@@ -25,11 +25,11 @@ class MSSM_model(SynDynModel):
         self.N_steady_state = None
         self.P_steady_state = None
         # Operators to get spiking events for state variables C, P, V, N, EPSP
-        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.min(a, axis=0),
-                             lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0)]
-        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
-                                 lambda a: np.argmin(a, axis=0), lambda a: np.argmax(a, axis=0),
-                                 lambda a: np.argmax(a, axis=0)]
+        self.operators_sv = [lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1), lambda a: np.min(a, axis=1),
+                             lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=1), lambda a: np.argmax(a, axis=1),
+                                 lambda a: np.argmin(a, axis=1), lambda a: np.argmax(a, axis=1),
+                                 lambda a: np.argmax(a, axis=1)]
 
         # derivative variables
         self.d_N = None
@@ -126,13 +126,20 @@ class MSSM_model(SynDynModel):
         self.efficacy_3 = [0.0 for _ in range(self.n_syn)]
         self.t_steady_state = [0.0 for _ in range(self.n_syn)]
         self.t_max = [0.0 for _ in range(self.n_syn)]
-        self.edge_detection = False
+
+        # Input vector
         if Input is None:
             self.Input = np.zeros((self.n_syn, self.L))
         else:
             assert isinstance(Input, np.ndarray), "'Input' must be a numpy array"
             assert len(spike_range) == 2, "'Input' must have 2-dimensions"
             self.Input = Input
+
+        # Output vector
+        self.output = np.zeros((self.n_syn, self.L))
+
+        # Edge detection
+        self.edge_detection = False
 
     def get_state_variables(self):
         """Get all state variables."""
@@ -194,7 +201,8 @@ class MSSM_model(SynDynModel):
             self.EPSP[:, t] = d_EPSP_aux + self.EPSP[:, t - 1]
 
     def get_output(self):
-        return self.EPSP
+        self.output = self.EPSP
+        return self.output
 
     def append_spike_event(self, t, active_synapses, output, append_time=True):
         """Store spike events for analysis (override parent)."""
