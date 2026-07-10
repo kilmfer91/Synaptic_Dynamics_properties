@@ -16,9 +16,9 @@ class TM_model(SynDynModel):
         self.R_steady_state = None
         self.U_steady_state = None
         # Operators to get spiking events for state variables R, U, and I_out
-        self.operators_sv = [lambda a: np.min(a, axis=1), lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1)]
-        self.arg_operators_sv = [lambda a: np.argmin(a, axis=1), lambda a: np.argmax(a, axis=1),
-                             lambda a: np.argmax(a, axis=1)]
+        self.operators_sv = [lambda a: np.min(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmin(a, axis=0), lambda a: np.argmax(a, axis=0),
+                             lambda a: np.argmax(a, axis=0)]
         # Output variables
         self.I_out = None
 

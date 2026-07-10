@@ -192,6 +192,92 @@ class GC_prop_cons:
         self.dict_results = dr
         return self.file_loaded, self.dict_results
 
+    @staticmethod
+    def compute_spike_outputs_vectorized(output, time_spike_events, operators_sv, arg_operators_sv, dt):
+        """
+        Compute per-spike output summaries for all synapses.
+
+        Parameters
+        ----------
+        output : np.ndarray
+            Shape (n_state_vars, n_syn, L)
+        time_spike_events : list[np.ndarray]
+            List of length n_syn; each is a 1D array of spike times.
+        operators_sv : list[callable]
+            One operator per state variable, e.g. [np.min, np.max, ...]
+        arg_operators_sv : list[callable]
+            One operator per state variable returning an index, e.g. [np.argmin, np.argmax, ...]
+
+        Returns
+        -------
+        output_spike_events : list[list]
+            output_spike_events[s][i] = list of per-state-variable summaries for spike i of synapse s.
+        output_spike_events_tonic : list[list]
+            Tonic component per spike.
+        ind_spike_events : list[list]
+        ind_spike_events_tonic : list[list]
+        """
+        n_state_vars, n_syn, L = output.shape
+        assert len(time_spike_events) == n_syn
+        assert len(operators_sv) == n_state_vars
+        assert len(arg_operators_sv) == n_state_vars
+
+        output_spike_events = [[] for _ in range(n_syn)]
+        output_spike_events_tonic = [[] for _ in range(n_syn)]
+        ind_spike_events = [[] for _ in range(n_syn)]
+        ind_spike_events_tonic = [[] for _ in range(n_syn)]
+        time_spike_events_t = [[] for _ in range(n_syn)]
+
+        # Tonic component at t=0 (same for all spikes, but you can repeat per spike if needed)
+        tonic_all = output[:, :, 0]  # shape (n_state_vars, n_syn)
+
+        for s in range(n_syn):
+            spikes = time_spike_events[s]
+            if len(spikes) == 0:
+                continue
+
+            # Tonic: for each spike, store the same tonic vector (matching your original logic)
+            tonic_s = tonic_all[:, s]  # (n_state_vars,)
+            for _ in spikes:
+                output_spike_events_tonic[s].append(list(tonic_s))
+
+            # Phasic / interval-based
+            for i, t_curr in enumerate(spikes):
+                if i == 0:
+                    # No previous spike: treat as single-time phasic
+                    per_state_variable = list(output[:, s, t_curr])
+                    output_spike_events[s].append(per_state_variable)
+                    ind_spike_events_tonic[s].append(t_curr - 1)
+                    ind_spike_events[s].append(t_curr)
+                    continue
+
+                t_prev = spikes[i - 1]
+                if t_curr == t_prev:
+                    # Same time step (edge case)
+                    per_state_variable = list(output[:, s, t_curr])
+                    output_spike_events[s].append(per_state_variable)
+                    ind_spike_events_tonic[s].append(t_curr - 1)
+                    ind_spike_events[s].append(t_curr)
+                else:
+                    # Interval [t_prev, t_curr)
+                    segment = output[:, s, t_prev:t_curr]  # (n_state_vars, interval_len)
+
+                    # Apply operators per state variable
+                    per_state_variable = [op(segment[sv, :]) for sv, op in enumerate(operators_sv)]
+                    output_spike_events[s].append(per_state_variable)
+
+                    # Arg operators
+                    a = np.array([
+                        op(segment[sv, :]) for sv, op in enumerate(arg_operators_sv)
+                    ])
+
+                    ind_spike_events_tonic[s].append(t_prev - 1)
+                    ind_spike_events[s].append(a + t_prev)
+
+            # time spike events
+            time_spike_events_t[s] = time_spike_events[s] * dt
+        return output_spike_events, output_spike_events_tonic, ind_spike_events, ind_spike_events_tonic, time_spike_events_t
+
     def models_creation(self, model=None, sim_params=None, params=None, num_realizations=None, neuron_params=None,
                         num_instance_model=None):
         if model is None: model = self.model
@@ -413,7 +499,21 @@ class GC_prop_cons:
 
                     # Computing output spike events
                     self.stp_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
-                    self.neuron_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
+                    # self.neuron_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
+
+                    # Computing inter-spike responses for state variables of neurons and synapses
+                    state_variables = self.stp_prop.get_output_state_variables()
+                    # AUX_SV = list(self.get_state_variables().keys())
+                    num_state_vars = state_variables.shape[0]
+                    a = self.compute_spike_outputs_vectorized(state_variables, edges_syn, self.stp_prop.operators_sv, self.stp_prop.arg_operators_sv, 1 / self.sfreq)
+                    self.stp_prop.output_spike_events, self.stp_prop.output_spike_events_tonic, self.stp_prop.ind_spike_events, self.stp_prop.ind_spike_events_tonic, self.stp_prop.time_spike_events = a
+
+                    state_variables = self.neuron_prop.get_output_state_variables()
+                    # AUX_SV = list(self.get_state_variables().keys())
+                    num_state_vars = state_variables.shape[0]
+                    a = self.compute_spike_outputs_vectorized(state_variables, edges_syn, self.neuron_prop.operators_sv,
+                                                              self.neuron_prop.arg_operators_sv, 1 / self.sfreq)
+                    self.neuron_prop.output_spike_events, self.neuron_prop.output_spike_events_tonic, self.neuron_prop.ind_spike_events, self.neuron_prop.ind_spike_events_tonic, self.neuron_prop.time_spike_events = a
 
                     """
                     for s in range(self.stp_prop.n_syn):
@@ -686,9 +786,9 @@ class GC_prop_cons:
                         # Input spike events
                         ta = np.array(spike_event_per_freq[i][realization][neuron_realization])  # / sfreq
                         # Postsynaptic contribution to the neuron
-                        PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization]).T  # (spike_events, n_sv)
+                        PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])  # (n_sv, spike_events)
                         # Postsynaptic contribution to the receptor
-                        PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization]).T  # (spi_ev,n_syn)
+                        PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization])  # (n_syn,spi_ev)
                         # Getting time of reaching steady-state for ini and end windows
                         tr_st_time = dr['time_transition'][num_realizations * realization + neuron_realization, i]
                         # Getting time of reaching steady-state for mid window

@@ -49,10 +49,10 @@ class HH_AHP_model:
         self.ind_spike_events_tonic = None
         self.time_spikes_generated = None
         # Operators to get spiking events for state variables membrane_potential, m_gate, h_gate, n_gate
-        self.operators_sv = [lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1),
-                             lambda a: np.max(a, axis=1)]
-        self.arg_operators_sv = [lambda a: np.argmax(a, axis=1), lambda a: np.argmax(a, axis=1),
-                                 lambda a: np.argmax(a, axis=1), lambda a: np.argmax(a, axis=1)]
+        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0),
+                             lambda a: np.max(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0)]
 
         # State variables (all shape: [n_neurons, L])
         self.membrane_potential = None  # V [mV]

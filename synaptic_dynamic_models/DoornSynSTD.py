@@ -29,10 +29,10 @@ class DoornSTD_model(SynDynModel):
         self.x_nmda_steady_state = None
         self.x_d_steady_state = None
         # Operators to get spiking events for state variables s_ampa, s_nmda, x_nmda, x_d
-        self.operators_sv = [lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1),
-                             lambda a: np.min(a, axis=1)]
-        self.arg_operators_sv = [lambda a: np.argmax(a, axis=1), lambda a: np.argmax(a, axis=1),
-                                 lambda a: np.argmax(a, axis=1), lambda a: np.argmin(a, axis=1)]
+        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0),
+                             lambda a: np.min(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmax(a, axis=0), lambda a: np.argmin(a, axis=0)]
 
         # Derivative variables [n_syn, L]
         self.d_s_ampa = None

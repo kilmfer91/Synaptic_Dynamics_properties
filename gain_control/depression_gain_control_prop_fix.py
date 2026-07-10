@@ -2,9 +2,9 @@ from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
 gain_v = [0.1]              # Vector of gains
-s_model = 'DoornSTD'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
-n_model = "HH"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
-ind = 0                     # Index to recover params of a given synaptic and neuron model (See table below)
+s_model = 'TM'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
+n_model = "LIF"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
+ind = 1                     # Index to recover params of a given synaptic and neuron model (See table below)
 sfreq = 30e3                # Sampling frequency of the simulation  16.8KHz
 max_freq = 3701             # Maximum baseline rate of the experiment  3701
 tau_m_lif = 1               # If LIF neuron is used, this specifies the time constant (in milliseconds)
@@ -33,7 +33,7 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = True            # Save results in folders
+save_vars = False            # Save results in folders
 force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
 stoch_input = True          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 profiling = False           # Whether to run cProfile analysis
@@ -50,7 +50,7 @@ filtering_tr = False        # Use filtering to detect time of steady-state
 cutoff_filt = 5             # Cut-off frequency of the filter if used
 threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
-total_realizations = 104    # Number of stochastic realisations if activated  104
+total_realizations = 16    # Number of stochastic realisations if activated  104
 num_realizations = 8        # Number of parallel realisations                 8
 # **********************************************************************************************************************
 # Time conditions

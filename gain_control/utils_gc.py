@@ -496,13 +496,14 @@ def detect_spikes(Input: np.ndarray) -> np.ndarray:
 def spike_edges_from_mask(spike_mask):
     n_syn, L = spike_mask.shape
     rows, cols = np.where(spike_mask)
-
+    mw_i, ew_i = int(L / 3), int(2 * L / 3)  # Indices of beginning mid and end windows
     edges_per_syn = []
     start = 0
     for s in range(n_syn):
         end = start + np.sum(rows == s)
         spikes_s = cols[start:end]  # already sorted because cols is monotonic within each row
-        edges_per_syn.append(spikes_s)
+        spikes_s_m_e_wind = np.sort(list(spikes_s) + [int(L / 3), int(2 * L / 3)])
+        edges_per_syn.append(spikes_s_m_e_wind)
         start = end
 
     return edges_per_syn

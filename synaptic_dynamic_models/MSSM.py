@@ -25,11 +25,11 @@ class MSSM_model(SynDynModel):
         self.N_steady_state = None
         self.P_steady_state = None
         # Operators to get spiking events for state variables C, P, V, N, EPSP
-        self.operators_sv = [lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1), lambda a: np.min(a, axis=1),
-                             lambda a: np.max(a, axis=1), lambda a: np.max(a, axis=1)]
-        self.arg_operators_sv = [lambda a: np.argmax(a, axis=1), lambda a: np.argmax(a, axis=1),
-                                 lambda a: np.argmin(a, axis=1), lambda a: np.argmax(a, axis=1),
-                                 lambda a: np.argmax(a, axis=1)]
+        self.operators_sv = [lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0), lambda a: np.min(a, axis=0),
+                             lambda a: np.max(a, axis=0), lambda a: np.max(a, axis=0)]
+        self.arg_operators_sv = [lambda a: np.argmax(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmin(a, axis=0), lambda a: np.argmax(a, axis=0),
+                                 lambda a: np.argmax(a, axis=0)]
 
         # derivative variables
         self.d_N = None
