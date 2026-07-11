@@ -1,13 +1,13 @@
 from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
-gain_v = [0.1]              # Vector of gains
+gain_v = [1.0]              # Vector of gains
 s_model = 'TM'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
 n_model = "LIF"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
-ind = 1                     # Index to recover params of a given synaptic and neuron model (See table below)
+ind = 8                     # Index to recover params of a given synaptic and neuron model (See table below)
 sfreq = 30e3                # Sampling frequency of the simulation  16.8KHz
 max_freq = 3701             # Maximum baseline rate of the experiment  3701
-tau_m_lif = 1               # If LIF neuron is used, this specifies the time constant (in milliseconds)
+tau_m_lif = 30               # If LIF neuron is used, this specifies the time constant (in milliseconds)
 max_t = 6                   # Time of simulation (in seconds)
 folder_vars = "../gain_control/variables/high_freq_30k_2/"  # Folder to save results
 folder_plots = '../gain_control/plots/'                   # Folder to save plots
@@ -33,7 +33,7 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = False            # Save results in folders
+save_vars = True            # Save results in folders
 force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
 stoch_input = True          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 profiling = False           # Whether to run cProfile analysis

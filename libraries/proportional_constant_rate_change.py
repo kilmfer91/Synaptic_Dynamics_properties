@@ -207,7 +207,8 @@ class GC_prop_cons:
             One operator per state variable, e.g. [np.min, np.max, ...]
         arg_operators_sv : list[callable]
             One operator per state variable returning an index, e.g. [np.argmin, np.argmax, ...]
-
+        dt: float
+            Time step in seconds.
         Returns
         -------
         output_spike_events : list[list]
@@ -276,7 +277,9 @@ class GC_prop_cons:
 
             # time spike events
             time_spike_events_t[s] = time_spike_events[s] * dt
-        return output_spike_events, output_spike_events_tonic, ind_spike_events, ind_spike_events_tonic, time_spike_events_t
+        a = (output_spike_events, output_spike_events_tonic, ind_spike_events, ind_spike_events_tonic,
+             time_spike_events_t)
+        return a
 
     def models_creation(self, model=None, sim_params=None, params=None, num_realizations=None, neuron_params=None,
                         num_instance_model=None):
@@ -491,29 +494,31 @@ class GC_prop_cons:
                     # Getting masks of interspike intervals (to compute spike responses for each state variable)
                     spike_mask = detect_spikes(cons_input)
                     edges_syn = spike_edges_from_mask(spike_mask)
-                    syn_spike_masks = [build_interval_masks_from_edges(edges_syn[s], L) for s in range(self.stp_prop.n_syn)]
+                    syn_spike_masks = [build_interval_masks_from_edges(edges_syn[s], L)
+                                       for s in range(self.stp_prop.n_syn)]
 
                     # Running synapse-neuron model
                     model_stp_parallel(self.stp_prop, self.neuron_prop, stp_params, cons_input, n_seeds, n_noise,
                                        rate_input=f_vector[i], st_prior=st_prior_)
 
                     # Computing output spike events
-                    self.stp_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
+                    # self.stp_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
                     # self.neuron_prop.compute_output_spike_events(syn_spike_masks, edges_syn)
 
                     # Computing inter-spike responses for state variables of neurons and synapses
                     state_variables = self.stp_prop.get_output_state_variables()
-                    # AUX_SV = list(self.get_state_variables().keys())
-                    num_state_vars = state_variables.shape[0]
-                    a = self.compute_spike_outputs_vectorized(state_variables, edges_syn, self.stp_prop.operators_sv, self.stp_prop.arg_operators_sv, 1 / self.sfreq)
-                    self.stp_prop.output_spike_events, self.stp_prop.output_spike_events_tonic, self.stp_prop.ind_spike_events, self.stp_prop.ind_spike_events_tonic, self.stp_prop.time_spike_events = a
+                    a = self.compute_spike_outputs_vectorized(state_variables, edges_syn, self.stp_prop.operators_sv,
+                                                              self.stp_prop.arg_operators_sv, 1 / self.sfreq)
+                    (self.stp_prop.output_spike_events, self.stp_prop.output_spike_events_tonic,
+                     self.stp_prop.ind_spike_events, self.stp_prop.ind_spike_events_tonic,
+                     self.stp_prop.time_spike_events) = a
 
                     state_variables = self.neuron_prop.get_output_state_variables()
-                    # AUX_SV = list(self.get_state_variables().keys())
-                    num_state_vars = state_variables.shape[0]
                     a = self.compute_spike_outputs_vectorized(state_variables, edges_syn, self.neuron_prop.operators_sv,
                                                               self.neuron_prop.arg_operators_sv, 1 / self.sfreq)
-                    self.neuron_prop.output_spike_events, self.neuron_prop.output_spike_events_tonic, self.neuron_prop.ind_spike_events, self.neuron_prop.ind_spike_events_tonic, self.neuron_prop.time_spike_events = a
+                    (self.neuron_prop.output_spike_events, self.neuron_prop.output_spike_events_tonic,
+                     self.neuron_prop.ind_spike_events, self.neuron_prop.ind_spike_events_tonic,
+                     self.neuron_prop.time_spike_events) = a
 
                     """
                     for s in range(self.stp_prop.n_syn):
@@ -861,13 +866,20 @@ class GC_prop_cons:
                                 f = PSR_ew_st[np.where(PSR_ew_st < thr)[0]]
                             else:
                                 a, b, c, d, e, f = PSR_iw_tr, PSR_iw_st, PSR_mw_tr, PSR_mw_st, PSR_ew_tr, PSR_ew_st
-                            # print(f'realization {realization}, rate {f_}, neu realization {neuron_realization}, state variable {sv}')
-                            SV_neu_per_freq_iw_tr[sv][i] = SV_neu_per_freq_iw_tr[sv][i] + list(a[sv])
-                            SV_neu_per_freq_iw_st[sv][i] = SV_neu_per_freq_iw_st[sv][i] + list(b[sv])
-                            SV_neu_per_freq_mw_tr[sv][i] = SV_neu_per_freq_mw_tr[sv][i] + list(c[sv])
-                            SV_neu_per_freq_mw_st[sv][i] = SV_neu_per_freq_mw_st[sv][i] + list(d[sv])
-                            SV_neu_per_freq_ew_tr[sv][i] = SV_neu_per_freq_ew_tr[sv][i] + list(e[sv])
-                            SV_neu_per_freq_ew_st[sv][i] = SV_neu_per_freq_ew_st[sv][i] + list(f[sv])
+                            # print(f'realization {realization}, rate {f_}, neu realization {neuron_realization},
+                            # state variable {sv}')
+                            aux_l = list(a[sv])
+                            if len(aux_l) > 0: SV_neu_per_freq_iw_tr[sv][i] = SV_neu_per_freq_iw_tr[sv][i] + aux_l
+                            aux_l = list(b[sv])
+                            if len(aux_l) > 0: SV_neu_per_freq_iw_st[sv][i] = SV_neu_per_freq_iw_st[sv][i] + aux_l
+                            aux_l = list(c[sv])
+                            if len(aux_l) > 0: SV_neu_per_freq_mw_tr[sv][i] = SV_neu_per_freq_mw_tr[sv][i] + aux_l
+                            aux_l = list(d[sv])
+                            if len(aux_l) > 0: SV_neu_per_freq_mw_st[sv][i] = SV_neu_per_freq_mw_st[sv][i] + aux_l
+                            aux_l = list(e[sv])
+                            if len(aux_l) > 0: SV_neu_per_freq_ew_tr[sv][i] = SV_neu_per_freq_ew_tr[sv][i] + aux_l
+                            aux_l = list(f[sv])
+                            if len(aux_l) > 0: SV_neu_per_freq_ew_st[sv][i] = SV_neu_per_freq_ew_st[sv][i] + aux_l
                             # Updating min-max of synaptic contributions
                             if max_[sv] > max_neu[sv]: max_neu[sv] = max_[sv]
                             if min_[sv] < min_neu[sv]: min_neu[sv] = min_[sv]
@@ -937,12 +949,18 @@ class GC_prop_cons:
                         min_ = np.min(PSR_aux_syn, axis=0)
                         # Updating state varibles of synapses
                         for sv in range(l_svs):
-                            SV_syn_per_freq_iw_tr[sv][i] = SV_syn_per_freq_iw_tr[sv][i] + list(PSR_syn_iw_tr[sv])
-                            SV_syn_per_freq_iw_st[sv][i] = SV_syn_per_freq_iw_st[sv][i] + list(PSR_syn_iw_st[sv])
-                            SV_syn_per_freq_mw_tr[sv][i] = SV_syn_per_freq_mw_tr[sv][i] + list(PSR_syn_mw_tr[sv])
-                            SV_syn_per_freq_mw_st[sv][i] = SV_syn_per_freq_mw_st[sv][i] + list(PSR_syn_mw_st[sv])
-                            SV_syn_per_freq_ew_tr[sv][i] = SV_syn_per_freq_ew_tr[sv][i] + list(PSR_syn_ew_tr[sv])
-                            SV_syn_per_freq_ew_st[sv][i] = SV_syn_per_freq_ew_st[sv][i] + list(PSR_syn_ew_st[sv])
+                            aux_l = list(PSR_syn_iw_tr[sv])
+                            if len(aux_l) > 0: SV_syn_per_freq_iw_tr[sv][i] = SV_syn_per_freq_iw_tr[sv][i] + aux_l
+                            aux_l = list(PSR_syn_iw_st[sv])
+                            if len(aux_l) > 0: SV_syn_per_freq_iw_st[sv][i] = SV_syn_per_freq_iw_st[sv][i] + aux_l
+                            aux_l = list(PSR_syn_mw_tr[sv])
+                            if len(aux_l) > 0: SV_syn_per_freq_mw_tr[sv][i] = SV_syn_per_freq_mw_tr[sv][i] + aux_l
+                            aux_l = list(PSR_syn_mw_st[sv])
+                            if len(aux_l) > 0: SV_syn_per_freq_mw_st[sv][i] = SV_syn_per_freq_mw_st[sv][i] + aux_l
+                            aux_l = list(PSR_syn_ew_tr[sv])
+                            if len(aux_l) > 0: SV_syn_per_freq_ew_tr[sv][i] = SV_syn_per_freq_ew_tr[sv][i] + aux_l
+                            aux_l = list(PSR_syn_ew_st[sv])
+                            if len(aux_l) > 0: SV_syn_per_freq_ew_st[sv][i] = SV_syn_per_freq_ew_st[sv][i] + aux_l
                             # Updating min-max of synaptic contributions
                             if max_[sv] > max_syn[sv]: max_syn[sv] = max_[sv]
                             if min_[sv] < min_syn[sv]: min_syn[sv] = min_[sv]
