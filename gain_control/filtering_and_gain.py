@@ -16,7 +16,7 @@ name_n_state_variables = ['v', 'm', 'h', 'n']  #  ['v']  #
 name_syn_state_variables = ['s_ampa', 's_nmda', 'x_nmda', 'xd']  # ['R', 'U', 'epsc']  #
 s_model = 'DoornSTD'
 n_model = "HH"
-ind = 0
+ind = 1
 run_experiment = False
 save_figs = True
 imputations = True
@@ -27,13 +27,14 @@ num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 30e3
-tau_lif = 1  # ms
+tau_lif = 30  # ms
 total_realizations = 1  # 100
 num_realizations = 1  # 8 for server, 4 for macbook air
 t_tra = None  # 0.25
 
 # Path variables
-path_vars = "../gain_control/variables/high_freq_" + str(int(sfreq/1e3)) + "k_2/"  # synaptic_entropy_high_freq/"
+# path_vars = "../gain_control/variables/high_freq_" + str(int(sfreq/1e3)) + "k_2/"
+path_vars = "../gain_control/variables/high_freq_30k_2/"
 check_create_folder(path_vars)
 folder_plots = '../gain_control/plots/'
 check_create_folder(folder_plots)
@@ -69,16 +70,14 @@ lbl_syn = ['syn_st_mid_prop']
 lbl2_syn = ['syn_st_ini_prop']
 lbl_synb = ['syn_b_st_mid_prop']
 lbl2_synb = ['syn_b_st_ini_prop']
-lbl_h_tr = ['H_PSR_tr']
-lbl_h_st = ['H_PSR_st']
+lbl_h_tr = ['H_v_neu_tr']
+lbl_h_st = ['H_v_neu_st']
 lbl_hI_tr = ['H_ISI_tr']
 lbl_hI_st = ['H_ISI_st']
-lbl_h2_tr = ['H_PSR_tr_100']
-lbl_h2_st = ['H_PSR_st_100']
-lbl_h_s_tr = ['H_PSR_syn_tr']
-lbl_h_s_st = ['H_PSR_syn_st']
-lbl_h_sb_tr = ['H_PSR_syn_b_tr']
-lbl_h_sb_st = ['H_PSR_syn_b_st']
+lbl_h_s_tr = ['H_epsc_syn_tr'] if s_model == 'TM' else ['H_s_ampa_syn_tr']
+lbl_h_s_st = ['H_epsc_syn_st'] if s_model == 'TM' else ['H_s_ampa_syn_st']
+lbl_h_sb_tr = ['H_PSR_syn_b_tr'] if s_model == 'TM' else ['H_x_nmda_syn_tr']
+lbl_h_sb_st = ['H_PSR_syn_b_st'] if s_model == 'TM' else ['H_x_nmda_syn_st']
 titles_H = ['ini win.', 'mid win.', 'end win.', 'st-ini win.', 'st-mid win.', 'st-end win.']
 titles_H_syn = ['AMPA ini win.', 'AMPA mid win.', 'AMPA end win.', 'NMDA ini win.', 'NMDA mid win.', 'NMDA end win.']
 labels_H = ['tr-', 'tr-', 'tr-', 'st-', 'st-', 'st-']
@@ -206,6 +205,10 @@ for gain in gain_v:
         # filt_dict_loaded = True
         # lif_params2, syn_params, lif_params, name_params = dr_filt['lif_params2'], dr_filt['syn_params'],
         # dr_filt['lif_params'], dr_filt['name_params']
+
+        # Name state variables
+        name_n_state_variables = dr_filt['name_neuron_state_variables']
+        name_syn_state_variables = dr_filt['name_syn_state_variables']
 
     if os.path.isfile(path_vars + dr_gain_control_file) and not run_experiment:
         dr_gain = loadObject(dr_gain_control_file, path_vars)

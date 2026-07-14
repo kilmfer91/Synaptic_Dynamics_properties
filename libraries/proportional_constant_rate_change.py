@@ -582,8 +582,8 @@ class GC_prop_cons:
                     a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
                                                  sim_params, [None, t_tra_mid_win, None], 1 / sfreq,
                                                  th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
-                                                 title=title_graph_, det_in=not self.stoch_input, det_r=f_vector[i],
-                                                 ind_spikes_gen=ind_neuron_spikes)
+                                                 title=title_graph_, det_in=True, det_r=f_vector[i],
+                                                 ind_spikes_gen=ind_neuron_spikes)  # det_in=not self.stoch_input
                     if a[0].shape[1] != res_per_reali[sv].shape[2]:
                         assert a[0].shape[1] == res_per_reali[sv].shape[2], "not same shape"
                     res_per_reali[sv][:, i, :], t_tr_, tr_time_series_i, piw, pmw, pew, t_tr_filt, ISI, num_spikes = a
@@ -639,7 +639,8 @@ class GC_prop_cons:
                     a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
                                                  sim_params, [None, t_tra_mid_win_syn, None], 1 / sfreq,
                                                  th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
-                                                 title=title_graph_, det_in=not self.stoch_input, det_r=f_vector[i])
+                                                 title=title_graph_, det_in=True, det_r=f_vector[i])
+                                                 # det_in=not self.stoch_input
 
                     if a[0].shape[1] != res_per_reali_syn[sv].shape[2]:
                         assert a[0].shape[1] == res_per_reali_syn[sv].shape[2], "not same shape"
@@ -804,11 +805,11 @@ class GC_prop_cons:
                             tr_st_time_mw = dr['time_transition'][
                                 num_realizations * realization + neuron_realization, aux_i]
                         # Getting masks to separate transitory and stationary states for ini, mid and end windows
-                        mask_iw_tr = (ta < tr_st_time)
-                        mask_iw_st = (ta >= tr_st_time) & (ta < i_w)
-                        mask_mw_tr = (ta >= i_w) & (ta < i_w + tr_st_time_mw)
-                        mask_mw_st = (ta >= i_w + tr_st_time_mw) & (ta < m_w)
-                        mask_ew_tr = (ta >= m_w) & (ta < m_w + tr_st_time)
+                        mask_iw_tr = (ta <= tr_st_time)
+                        mask_iw_st = (ta >= tr_st_time) & (ta <= i_w)
+                        mask_mw_tr = (ta >= i_w) & (ta <= i_w + tr_st_time_mw)
+                        mask_mw_st = (ta >= i_w + tr_st_time_mw) & (ta <= m_w)
+                        mask_ew_tr = (ta >= m_w) & (ta <= m_w + tr_st_time)
                         mask_ew_st = (ta >= m_w + tr_st_time)
 
                         # Getting masks to separate ini, mid and end windows
