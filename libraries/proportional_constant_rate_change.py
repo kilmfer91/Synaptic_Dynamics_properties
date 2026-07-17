@@ -869,18 +869,24 @@ class GC_prop_cons:
                                 a, b, c, d, e, f = PSR_iw_tr, PSR_iw_st, PSR_mw_tr, PSR_mw_st, PSR_ew_tr, PSR_ew_st
                             # print(f'realization {realization}, rate {f_}, neu realization {neuron_realization},
                             # state variable {sv}')
-                            aux_l = list(a[sv])
-                            if len(aux_l) > 0: SV_neu_per_freq_iw_tr[sv][i] = SV_neu_per_freq_iw_tr[sv][i] + aux_l
-                            aux_l = list(b[sv])
-                            if len(aux_l) > 0: SV_neu_per_freq_iw_st[sv][i] = SV_neu_per_freq_iw_st[sv][i] + aux_l
-                            aux_l = list(c[sv])
-                            if len(aux_l) > 0: SV_neu_per_freq_mw_tr[sv][i] = SV_neu_per_freq_mw_tr[sv][i] + aux_l
-                            aux_l = list(d[sv])
-                            if len(aux_l) > 0: SV_neu_per_freq_mw_st[sv][i] = SV_neu_per_freq_mw_st[sv][i] + aux_l
-                            aux_l = list(e[sv])
-                            if len(aux_l) > 0: SV_neu_per_freq_ew_tr[sv][i] = SV_neu_per_freq_ew_tr[sv][i] + aux_l
-                            aux_l = list(f[sv])
-                            if len(aux_l) > 0: SV_neu_per_freq_ew_st[sv][i] = SV_neu_per_freq_ew_st[sv][i] + aux_l
+                            if len(a) == l_sv:
+                                aux_l = list(a[sv])
+                                if len(aux_l) > 0: SV_neu_per_freq_iw_tr[sv][i] = SV_neu_per_freq_iw_tr[sv][i] + aux_l
+                            if len(b) == l_sv:
+                                aux_l = list(b[sv])
+                                if len(aux_l) > 0: SV_neu_per_freq_iw_st[sv][i] = SV_neu_per_freq_iw_st[sv][i] + aux_l
+                            if len(c) == l_sv:
+                                aux_l = list(c[sv])
+                                if len(aux_l) > 0: SV_neu_per_freq_mw_tr[sv][i] = SV_neu_per_freq_mw_tr[sv][i] + aux_l
+                            if len(d) == l_sv:
+                                aux_l = list(d[sv])
+                                if len(aux_l) > 0: SV_neu_per_freq_mw_st[sv][i] = SV_neu_per_freq_mw_st[sv][i] + aux_l
+                            if len(e) == l_sv:
+                                aux_l = list(e[sv])
+                                if len(aux_l) > 0: SV_neu_per_freq_ew_tr[sv][i] = SV_neu_per_freq_ew_tr[sv][i] + aux_l
+                            if len(f) == l_sv:
+                                aux_l = list(f[sv])
+                                if len(aux_l) > 0: SV_neu_per_freq_ew_st[sv][i] = SV_neu_per_freq_ew_st[sv][i] + aux_l
                             # Updating min-max of synaptic contributions
                             if max_[sv] > max_neu[sv]: max_neu[sv] = max_[sv]
                             if min_[sv] < min_neu[sv]: min_neu[sv] = min_[sv]
@@ -950,18 +956,24 @@ class GC_prop_cons:
                         min_ = np.min(PSR_aux_syn, axis=0)
                         # Updating state varibles of synapses
                         for sv in range(l_svs):
-                            aux_l = list(PSR_syn_iw_tr[sv])
-                            if len(aux_l) > 0: SV_syn_per_freq_iw_tr[sv][i] = SV_syn_per_freq_iw_tr[sv][i] + aux_l
-                            aux_l = list(PSR_syn_iw_st[sv])
-                            if len(aux_l) > 0: SV_syn_per_freq_iw_st[sv][i] = SV_syn_per_freq_iw_st[sv][i] + aux_l
-                            aux_l = list(PSR_syn_mw_tr[sv])
-                            if len(aux_l) > 0: SV_syn_per_freq_mw_tr[sv][i] = SV_syn_per_freq_mw_tr[sv][i] + aux_l
-                            aux_l = list(PSR_syn_mw_st[sv])
-                            if len(aux_l) > 0: SV_syn_per_freq_mw_st[sv][i] = SV_syn_per_freq_mw_st[sv][i] + aux_l
-                            aux_l = list(PSR_syn_ew_tr[sv])
-                            if len(aux_l) > 0: SV_syn_per_freq_ew_tr[sv][i] = SV_syn_per_freq_ew_tr[sv][i] + aux_l
-                            aux_l = list(PSR_syn_ew_st[sv])
-                            if len(aux_l) > 0: SV_syn_per_freq_ew_st[sv][i] = SV_syn_per_freq_ew_st[sv][i] + aux_l
+                            if len(PSR_syn_iw_tr) == l_svs:
+                                aux_l = list(PSR_syn_iw_tr[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_iw_tr[sv][i] = SV_syn_per_freq_iw_tr[sv][i] + aux_l
+                            if len(PSR_syn_iw_st) == l_svs:
+                                aux_l = list(PSR_syn_iw_st[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_iw_st[sv][i] = SV_syn_per_freq_iw_st[sv][i] + aux_l
+                            if len(PSR_syn_mw_tr) == l_svs:
+                                aux_l = list(PSR_syn_mw_tr[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_mw_tr[sv][i] = SV_syn_per_freq_mw_tr[sv][i] + aux_l
+                            if len(PSR_syn_mw_st) == l_svs:
+                                aux_l = list(PSR_syn_mw_st[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_mw_st[sv][i] = SV_syn_per_freq_mw_st[sv][i] + aux_l
+                            if len(PSR_syn_ew_tr) == l_svs:
+                                aux_l = list(PSR_syn_ew_tr[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_ew_tr[sv][i] = SV_syn_per_freq_ew_tr[sv][i] + aux_l
+                            if len(PSR_syn_ew_st) == l_svs:
+                                aux_l = list(PSR_syn_ew_st[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_ew_st[sv][i] = SV_syn_per_freq_ew_st[sv][i] + aux_l
                             # Updating min-max of synaptic contributions
                             if max_[sv] > max_syn[sv]: max_syn[sv] = max_[sv]
                             if min_[sv] < min_syn[sv]: min_syn[sv] = min_[sv]

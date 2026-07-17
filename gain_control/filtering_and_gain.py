@@ -14,11 +14,11 @@ from gain_control.utils_gc import *
 # (Experiment 6) freq. response decay around 10Hz
 name_n_state_variables = ['v', 'm', 'h', 'n']  #  ['v']  #
 name_syn_state_variables = ['s_ampa', 's_nmda', 'x_nmda', 'xd']  # ['R', 'U', 'epsc']  #
-s_model = 'DoornSTD'
+s_model = 'DoornSTF'
 n_model = "HH"
-ind = 1
+ind = 7
 run_experiment = False
-save_figs = True
+save_figs = False
 imputations = True
 lif_output = True
 n_noise = True
@@ -26,7 +26,7 @@ plot_figs = True
 num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
-sfreq = 30e3
+sfreq = 10e3
 tau_lif = 30  # ms
 total_realizations = 1  # 100
 num_realizations = 1  # 8 for server, 4 for macbook air
@@ -473,7 +473,7 @@ if n_model == "HH":
                   [8.0,   0.15,  1.6,   1.05,  0.05,   0.013,  0.02,   4e-3,   0.5,  0.02]],
               7: [[-0.05, -1.3,  -0.01, -0.01, -0.1,   -15e-3, -0.04,  -12e-3, 0.05, -0.06],
                   [8.0,   0.4,   1.6,   1.1,   0.2,    12e-3,  65e-3,  0.02,   0.47, 0.08]],
-              10: [[-0.05, -1.3, -0.01, -0.01, -0.075, -5e-3,  -0.028,  -0.01,  0.05, -0.06],
+              8: [[-0.05, -1.3, -0.01, -0.01, -0.075, -5e-3,  -0.028,  -0.01,  0.05, -0.06],
                   [8.0,   0.65,  1.6,   1.02,   0.06,    0.3,  0.025,   0.02,   0.5,  0.08]]}
 
     xl_syn = {0: [[None for _ in range(10)],
@@ -492,7 +492,7 @@ if n_model == "HH":
                   [8.0,   0.3,  1.6,   2.6,   0.1,   0.01,  26e-3,  7e-3,  0.8,   0.03]],
               7: [[-0.05, -1.4, -0.01, -0.05, -0.4,  -5e-4, -0.04,  -2e-3, -0.05, -0.15],
                   [8.0,   1.4,  1.6,   2.5,   0.7,   5e-3,  65e-3,  6e-3,  0.8,   0.25]],
-              10: [[-0.05, -1.4, -0.01, -0.05, -0.4,  -0.02, -0.1,   -0.01, -0.05, -0.19],
+              8: [[-0.05, -1.4, -0.01, -0.05, -0.4,  -0.02, -0.1,   -0.01, -0.05, -0.19],
                   [8.0,   1.4,  1.6,   2.6,   0.7,   0.12,  0.1,    0.08,  0.8,   0.25]]}
     if fig_syn_b:
         xl_syb = {0: [[None for _ in range(10)],
@@ -511,7 +511,7 @@ if n_model == "HH":
                       [8.0,   0.21, 1.6,   0.81,  0.04,  0.04,  0.01,   0.01,   0.5,   0.05]],
                   7: [[-0.05, -1.7, -0.01, -0.05, -0.15, -0.15, -0.2,   -0.1,   -0.01, -0.12],
                       [8.0,   0.25, 1.6,   0.6,   0.22,  0.12,  0.1,    0.2,    0.43,  0.1]],
-                  10: [[-0.05, -1.7, -0.01, -0.05, -0.15, -0.15, -0.2,   -0.1,   -0.01, -0.12],
+                  8: [[-0.05, -1.7, -0.01, -0.05, -0.15, -0.15, -0.2,   -0.1,   -0.01, -0.12],
                       [8.0,   1.0,  1.6,   0.81,  0.22,  0.12,  0.1,    0.2,    0.5,   0.1]]}
 elif n_model == "LIF":
     if s_model == "MSSM":
@@ -540,7 +540,7 @@ path_save = (folder_plots + s_model + '_ind_' + str(ind) + '_' + str(len(gain_v)
 # ind = 10
 if plot_figs:
     sizeF = 20
-    for j in range(7):
+    for j in range(8):
         # For Computational properties vs. rate
         # axb_[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
         # axb_s[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
