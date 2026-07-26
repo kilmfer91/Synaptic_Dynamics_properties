@@ -45,6 +45,7 @@ class GC_prop_cons:
         self.tau_neu = dict_params['neuron_params']['tau_m'][0]
         self.total_realizations = dict_params['total_realizations'] if not dict_params['force_experiment'] else 1
         self.num_realizations = dict_params['num_realizations'] if not dict_params['force_experiment'] else 1
+        self.num_instance_model = int(self.num_realizations * self.num_syn)
         self.f_vector = None
         self.tr_time_series = None
         self.dict_results = None
@@ -138,8 +139,10 @@ class GC_prop_cons:
             if 'num_freq_exp' not in dr: dr['num_freq_exp'] = dr['initial_frequencies'].shape[0]
             if 'sfreq' not in dr: dr['sfreq'] = self.sim_params['sfreq']
             if 'num_instance_model' not in dr: dr['num_instance_model'] = self.num_instance_model
-            if 'time_transition' not in dr: dr['time_transition'] = [[] for _ in range(dr['num_freq_exp'])]
-            if 'time_transition_syn' not in dr: dr['time_transition_syn'] = [[] for _ in range(dr['num_freq_exp'])]
+            aux = [[[] for _ in range(dr['num_freq_exp'])] for _ in range(len(self.neuron_prop.get_state_variables()))]
+            if 'time_transition' not in dr: dr['time_transition'] = aux
+            aux = [[[] for _ in range(dr['num_freq_exp'])] for _ in range(len(self.stp_prop.get_state_variables()))]
+            if 'time_transition_syn' not in dr: dr['time_transition_syn'] = aux
             if 'time_transition_syn_b' not in dr: dr['time_transition_syn_b'] = [[] for _ in range(dr['num_freq_exp'])]
             # if 'stat_tSeries_transition' not in dr: dr['stat_tSeries_transition'] = [[np.zeros((1, 1))]]
             # if 'stat_time_transition' not in dr: dr['stat_time_transition'] = [np.zeros(1)]
@@ -173,8 +176,10 @@ class GC_prop_cons:
             dr['num_freq_exp'] = self.f_vector.shape[0]
 
             # array for time of transition-states
-            dr['time_transition'] = [[] for _ in range(dr['num_freq_exp'])]
-            dr['time_transition_syn'] = [[] for _ in range(dr['num_freq_exp'])]
+            aux = [[[] for _ in range(dr['num_freq_exp'])] for _ in range(len(self.neuron_prop.get_state_variables()))]
+            dr['time_transition'] = aux
+            aux = [[[] for _ in range(dr['num_freq_exp'])] for _ in range(len(self.stp_prop.get_state_variables()))]
+            dr['time_transition_syn'] = aux
             dr['time_transition_syn_b'] = [[] for _ in range(dr['num_freq_exp'])]
 
             # For poisson or deterministic inputs
@@ -188,6 +193,10 @@ class GC_prop_cons:
             # number of instance of stp model
             self.num_instance_model = int(self.num_realizations * self.num_syn)
             dr['num_instance_model'] = self.num_instance_model
+
+            # Setting names of state variables
+            dr['name_neuron_state_variables'] = list(self.neuron_prop.get_state_variables().keys())
+            dr['name_syn_state_variables'] = list(self.stp_prop.get_state_variables().keys())
 
         self.dict_results = dr
         return self.file_loaded, self.dict_results
@@ -323,8 +332,8 @@ class GC_prop_cons:
         self.neuron_fix.set_model_params(neuron_params)
 
         # Setting names of state variables in final dictionary
-        self.dict_results['name_neuron_state_variables'] = list(self.neuron_prop.get_state_variables().keys())
-        self.dict_results['name_syn_state_variables'] = list(self.stp_prop.get_state_variables().keys())
+        # self.dict_results['name_neuron_state_variables'] = list(self.neuron_prop.get_state_variables().keys())
+        # self.dict_results['name_syn_state_variables'] = list(self.stp_prop.get_state_variables().keys())
 
     def validate_dict_params(self, dr):
         pass
@@ -549,11 +558,6 @@ class GC_prop_cons:
 
                 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 # STATE VARIABLES OF THE NEURON
-                # getting transition time for rate of proportional change if possible
-                aux_cond = np.where(proportional_changes[i] <= f_vector)
-                if len(aux_cond[0]) > 0:
-                    aux_i = aux_cond[0][0]
-                    t_tra_mid_win = np.max(t_tra[aux_i])
                 # For suprathreshold calculations
                 t_spikes_gen = [np.array(self.neuron_prop.time_spikes_generated[k]) / self.sfreq
                                 for k in range(self.neuron_prop.n_neurons)]
@@ -562,6 +566,12 @@ class GC_prop_cons:
 
                 sv = 0
                 for k, v in self.neuron_prop.get_state_variables().items():
+                    # getting transition time for rate of proportional change if possible
+                    aux_cond = np.where(proportional_changes[i] <= f_vector)
+                    if len(aux_cond[0]) > 0:
+                        aux_i = aux_cond[0][0]
+                        t_tra_mid_win = np.max(t_tra[sv][aux_i])
+
                     # Auxiliar title
                     title_graph_ = title_graph + ", freq. %dHz" % f_vector[i] + ", " + k
                     # Compute statistical descriptors
@@ -587,7 +597,7 @@ class GC_prop_cons:
                     if a[0].shape[1] != res_per_reali[sv].shape[2]:
                         assert a[0].shape[1] == res_per_reali[sv].shape[2], "not same shape"
                     res_per_reali[sv][:, i, :], t_tr_, tr_time_series_i, piw, pmw, pew, t_tr_filt, ISI, num_spikes = a
-                    t_tra[i].append(t_tr_)
+                    t_tra[sv][i].append(t_tr_)
                     # ISI = [st_pi, tr_pi, st_pm, tr_pm, st_pe, tr_pe]
                     # num_spikes = [st_pi, tr_pi, st_pm, tr_pm, st_pe, tr_pe]
 
@@ -622,15 +632,15 @@ class GC_prop_cons:
 
                 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 # STATE VARIABLES OF SYNAPSES
-                # getting transition time for rate of proportional change if possible
-                aux_cond = np.where(proportional_changes[i] <= f_vector)
-                if len(aux_cond[0]) > 0:
-                    aux_i = aux_cond[0][0]
-                    t_tra_mid_win_syn = np.max(t_tra_syn[aux_i])
-
                 sv = 0
                 for k, v in self.stp_prop.get_state_variables().items():
                     # print(k)
+                    # getting transition time for rate of proportional change if possible
+                    aux_cond = np.where(proportional_changes[i] <= f_vector)
+                    if len(aux_cond[0]) > 0:
+                        aux_i = aux_cond[0][0]
+                        t_tra_mid_win_syn = np.max(t_tra_syn[sv][aux_i])
+
                     # Auxiliar title
                     title_graph_ = title_graph + ", freq. %dHz" % f_vector[i] + ", " + k
                     # Compute statistical descriptors
@@ -640,12 +650,12 @@ class GC_prop_cons:
                                                  sim_params, [None, t_tra_mid_win_syn, None], 1 / sfreq,
                                                  th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
                                                  title=title_graph_, det_in=True, det_r=f_vector[i])
-                                                 # det_in=not self.stoch_input
+                    # det_in=not self.stoch_input
 
                     if a[0].shape[1] != res_per_reali_syn[sv].shape[2]:
                         assert a[0].shape[1] == res_per_reali_syn[sv].shape[2], "not same shape"
                     res_per_reali_syn[sv][:, i, :], t_tr_syn, tr_time_series_i, piw, pmw, pew, t_tr_filt, _, _ = a
-                    t_tra_syn[i].append(t_tr_syn)
+                    t_tra_syn[sv][i].append(t_tr_syn)
 
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
@@ -724,29 +734,44 @@ class GC_prop_cons:
             # dr['stat_tSeries_transition'] = res
             # dr['stat_time_transition'] = st_tr_a
 
-            # transition-state
-            for i in range(num_freq_exp):
-                t_tra[i] = np.ravel(t_tra[i])
-                t_tra_syn[i] = np.ravel(t_tra_syn[i])
+            # transition-state for neuron variables
+            name_vars = dr['name_neuron_state_variables']
+            for sv in range(l_sv):
+                for i in range(num_freq_exp):
+                    t_tra[sv][i] = np.ravel(t_tra[sv][i])
+                # Organising data for final dictionary input
+                aux_n = "_" + name_vars[sv]
+                if name_vars[sv] == 'v': aux_n = ''
+                dr['time_transition' + aux_n] = np.array(t_tra[sv]).T
+
+            # transition-state for synaptic variables
+            name_vars = dr['name_syn_state_variables']
+            for sv in range(l_svs):
+                for i in range(num_freq_exp):
+                    t_tra_syn[sv][i] = np.ravel(t_tra_syn[sv][i])
+                # Organising data for final dictionary input
+                aux_n = "_" + name_vars[sv]
+                dr['time_transition_syn' + aux_n] = np.array(t_tra_syn[sv]).T
+
                 # For ampa if synapse is Doorn
-                if self.stp_prop.get_output().ndim == 3: t_tra_syn_b[i] = np.ravel(t_tra_syn_b[i])
-            t_tra = np.array(t_tra).T
-            t_tra_syn = np.array(t_tra_syn).T
-            if self.stp_prop.get_output().ndim == 3: t_tra_syn_b = np.array(t_tra_syn_b).T
+                # if self.stp_prop.get_output().ndim == 3: t_tra_syn_b[i] = np.ravel(t_tra_syn_b[i])
+            # t_tra = np.array(t_tra).T
+            # t_tra_syn = np.array(t_tra_syn).T
+            # if self.stp_prop.get_output().ndim == 3: t_tra_syn_b = np.array(t_tra_syn_b).T
 
             # Saving transition times of each window
-            dr['time_transition'] = t_tra
-            dr['time_transition_syn'] = t_tra_syn
-            if self.stp_prop.get_output().ndim == 3: dr['time_transition_syn_b'] = t_tra_syn_b
+            # dr['time_transition'] = t_tra
+            # dr['time_transition_syn'] = t_tra_syn
+            # if self.stp_prop.get_output().ndim == 3: dr['time_transition_syn_b'] = t_tra_syn_b
 
             # ##########################################################################################################
             # """
             # Getting information theory analysis
-            
+
             # Names of state variables
             names_syn_sv = list(self.stp_prop.get_state_variables().keys())
             names_neu_sv = list(self.neuron_prop.get_state_variables().keys())
-            
+
             # getting times of windows
             l_w = sim_params['max_t']
             i_w, m_w, e_w = int(l_w / 3), int(2 * l_w / 3), sim_params['max_t']
@@ -757,10 +782,6 @@ class GC_prop_cons:
             ISI_per_freq_iw_st, ISI_per_freq_mw_st, ISI_per_freq_ew_st = a.copy(), a.copy(), a.copy()
             PSR_per_freq_iw_tr, PSR_per_freq_mw_tr, PSR_per_freq_ew_tr = a.copy(), a.copy(), a.copy()
             PSR_per_freq_iw_st, PSR_per_freq_mw_st, PSR_per_freq_ew_st = a.copy(), a.copy(), a.copy()
-            # PSR_syn_per_freq_iw_tr, PSR_syn_per_freq_mw_tr, PSR_syn_per_freq_ew_tr = a.copy(), a.copy(), a.copy()
-            # PSR_syn_per_freq_iw_st, PSR_syn_per_freq_mw_st, PSR_syn_per_freq_ew_st = a.copy(), a.copy(), a.copy()
-            # PSR_syn_b_per_freq_iw_tr, PSR_syn_b_per_freq_mw_tr, PSR_syn_b_per_freq_ew_tr = a.copy(), a.copy(),a.copy()
-            # PSR_syn_b_per_freq_iw_st, PSR_syn_b_per_freq_mw_st, PSR_syn_b_per_freq_ew_st = a.copy(), a.copy(),a.copy()
             SV_neu_per_freq_iw_tr = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
             SV_neu_per_freq_mw_tr = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
             SV_neu_per_freq_ew_tr = [[[] for _ in range(num_freq_exp)] for _ in range(l_sv)]
@@ -779,6 +800,8 @@ class GC_prop_cons:
             # min-max of synaptic contributions
             min_neu, max_neu = [np.inf for _ in range(l_sv)], [-np.inf for _ in range(l_sv)]
             min_syn, max_syn = [np.inf for _ in range(l_svs)], [-np.inf for _ in range(l_svs)]
+            # membrane potential threshold
+            thr = self.neuron_prop.params['V_threshold'][0]
 
             # Iterating through general realizations
             realization = 0
@@ -795,15 +818,164 @@ class GC_prop_cons:
                         PSR_aux = np.array(PSR_per_freq[i][realization][neuron_realization])  # (n_sv, spike_events)
                         # Postsynaptic contribution to the receptor
                         PSR_aux_syn = np.array(PSR_per_freq_syn[i][realization][neuron_realization])  # (n_syn,spi_ev)
+                        # Auxiliar index to get correct rate
+                        aux_ind = num_realizations * realization + neuron_realization
+
+                        # Updating min-max of neuron contributions
+                        max_ = np.max(PSR_aux, axis=0)
+                        min_ = np.min(PSR_aux, axis=0)
+
+                        # Updating min-max of synaptic contributions
+                        max_s = np.max(PSR_aux_syn, axis=0)
+                        min_s = np.min(PSR_aux_syn, axis=0)
+
+                        # Iterating through neuron state variables
+                        for sv in range(l_sv):
+                            aux_n = "_" + names_neu_sv[sv]
+                            if names_neu_sv[sv] == 'v': aux_n = ''
+                            # Getting time of reaching steady-state for ini and end windows
+                            tr_st_time = dr['time_transition' + aux_n][aux_ind, i]
+                            # Getting time of reaching steady-state for mid window
+                            tr_st_time_mw = tr_st_time  # In case there is no tr_st_time for rate of mid window
+                            aux_cond = np.where(proportional_changes[i] <= f_vector)
+                            if len(aux_cond[0]) > 0:
+                                aux_i = aux_cond[0][0]
+                                tr_st_time_mw = dr['time_transition' + aux_n][aux_ind, aux_i]
+                            # Getting masks to separate transitory and stationary states for ini, mid and end windows
+                            mask_iw_tr = (ta <= tr_st_time)
+                            mask_iw_st = (ta >= tr_st_time) & (ta <= i_w)
+                            mask_mw_tr = (ta >= i_w) & (ta <= i_w + tr_st_time_mw)
+                            mask_mw_st = (ta >= i_w + tr_st_time_mw) & (ta <= m_w)
+                            mask_ew_tr = (ta >= m_w) & (ta <= m_w + tr_st_time)
+                            mask_ew_st = (ta >= m_w + tr_st_time)
+
+                            # Computing input
+                            if names_neu_sv[sv] == 'v':
+                                # Separating ini, mid and end windows of spike events
+                                spike_ev_iw_tr = np.append(ta[mask_iw_tr], tr_st_time)
+                                spike_ev_iw_st = np.append(ta[mask_iw_st], i_w)
+                                spike_ev_mw_tr = np.append(ta[mask_mw_tr], i_w + tr_st_time_mw)
+                                spike_ev_mw_st = np.append(ta[mask_mw_st], m_w)
+                                spike_ev_ew_tr = np.append(ta[mask_ew_tr], m_w + tr_st_time)
+                                spike_ev_ew_st = np.append(ta[mask_ew_st], e_w)
+
+                                # PRESYNAPTIC INPUT SPIKES
+                                # Separating ini, mid and end windows of ISI
+                                ISI_iw_tr = np.diff(spike_ev_iw_tr)
+                                ISI_iw_st = np.diff(spike_ev_iw_st)
+                                ISI_mw_tr = np.diff(spike_ev_mw_tr)
+                                ISI_mw_st = np.diff(spike_ev_mw_st)
+                                ISI_ew_tr = np.diff(spike_ev_ew_tr)
+                                ISI_ew_st = np.diff(spike_ev_ew_st)
+                                # Updating general varibles of ISI
+                                ISI_per_freq_iw_tr[i] = ISI_per_freq_iw_tr[i] + list(ISI_iw_tr)
+                                ISI_per_freq_iw_st[i] = ISI_per_freq_iw_st[i] + list(ISI_iw_st)
+                                ISI_per_freq_mw_tr[i] = ISI_per_freq_mw_tr[i] + list(ISI_mw_tr)
+                                ISI_per_freq_mw_st[i] = ISI_per_freq_mw_st[i] + list(ISI_mw_st)
+                                ISI_per_freq_ew_tr[i] = ISI_per_freq_ew_tr[i] + list(ISI_ew_tr)
+                                ISI_per_freq_ew_st[i] = ISI_per_freq_ew_st[i] + list(ISI_ew_st)
+
+                            # STATE VARIABLE CONTRIBUTIONS
+                            # Separating ini, mid and end windows of neuron PSR
+                            PSR_iw_tr = PSR_aux[mask_iw_tr].T
+                            PSR_iw_st = PSR_aux[mask_iw_st].T
+                            PSR_mw_tr = PSR_aux[mask_mw_tr].T
+                            PSR_mw_st = PSR_aux[mask_mw_st].T
+                            PSR_ew_tr = PSR_aux[mask_ew_tr].T
+                            PSR_ew_st = PSR_aux[mask_ew_st].T
+
+                            # Auxiliar variables for PSRs
+                            a, b, c, d, e, f = PSR_iw_tr, PSR_iw_st, PSR_mw_tr, PSR_mw_st, PSR_ew_tr, PSR_ew_st
+
+                            # Updating state varibles of neurons
+                            if len(a) == l_sv:
+                                aux_l = list(a[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(a[sv][a[sv] < thr])  # subthreshold for v
+                                if len(aux_l) > 0: SV_neu_per_freq_iw_tr[sv][i] = SV_neu_per_freq_iw_tr[sv][i] + aux_l
+                            if len(b) == l_sv:
+                                aux_l = list(b[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(b[sv][b[sv] < thr])  # subthreshold for v
+                                if len(aux_l) > 0: SV_neu_per_freq_iw_st[sv][i] = SV_neu_per_freq_iw_st[sv][i] + aux_l
+                            if len(c) == l_sv:
+                                aux_l = list(c[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(c[sv][c[sv] < thr])  # subthreshold for v
+                                if len(aux_l) > 0: SV_neu_per_freq_mw_tr[sv][i] = SV_neu_per_freq_mw_tr[sv][i] + aux_l
+                            if len(d) == l_sv:
+                                aux_l = list(d[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(d[sv][d[sv] < thr])  # subthreshold for v
+                                if len(aux_l) > 0: SV_neu_per_freq_mw_st[sv][i] = SV_neu_per_freq_mw_st[sv][i] + aux_l
+                            if len(e) == l_sv:
+                                aux_l = list(e[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(e[sv][e[sv] < thr])  # subthreshold for v
+                                if len(aux_l) > 0: SV_neu_per_freq_ew_tr[sv][i] = SV_neu_per_freq_ew_tr[sv][i] + aux_l
+                            if len(f) == l_sv:
+                                aux_l = list(f[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(f[sv][f[sv] < thr])  # subthreshold for v
+                                if len(aux_l) > 0: SV_neu_per_freq_ew_st[sv][i] = SV_neu_per_freq_ew_st[sv][i] + aux_l
+                            # Updating min-max of synaptic contributions
+                            if max_[sv] > max_neu[sv]: max_neu[sv] = max_[sv]
+                            if min_[sv] < min_neu[sv]: min_neu[sv] = min_[sv]
+
+                        # Iterating through neuron state variables
+                        for sv in range(l_svs):
+                            aux_n = "_" + names_syn_sv[sv]
+                            # Getting time of reaching steady-state for ini and end windows
+                            tr_st_time = dr['time_transition_syn' + aux_n][aux_ind, i]
+                            # Getting time of reaching steady-state for mid window
+                            tr_st_time_mw = tr_st_time  # In case there is no tr_st_time for rate of mid window
+                            aux_cond = np.where(proportional_changes[i] <= f_vector)
+                            if len(aux_cond[0]) > 0:
+                                aux_i = aux_cond[0][0]
+                                tr_st_time_mw = dr['time_transition_syn' + aux_n][aux_ind, aux_i]
+
+                            # Getting masks to separate transitory and stationary states for ini, mid and end windows
+                            mask_iw_tr = (ta <= tr_st_time)
+                            mask_iw_st = (ta >= tr_st_time) & (ta <= i_w)
+                            mask_mw_tr = (ta >= i_w) & (ta <= i_w + tr_st_time_mw)
+                            mask_mw_st = (ta >= i_w + tr_st_time_mw) & (ta <= m_w)
+                            mask_ew_tr = (ta >= m_w) & (ta <= m_w + tr_st_time)
+                            mask_ew_st = (ta >= m_w + tr_st_time)
+
+                            # Separating ini, mid and end windows of synapse PSR
+                            PSR_syn_iw_tr = PSR_aux_syn[mask_iw_tr].T
+                            PSR_syn_iw_st = PSR_aux_syn[mask_iw_st].T
+                            PSR_syn_mw_tr = PSR_aux_syn[mask_mw_tr].T
+                            PSR_syn_mw_st = PSR_aux_syn[mask_mw_st].T
+                            PSR_syn_ew_tr = PSR_aux_syn[mask_ew_tr].T
+                            PSR_syn_ew_st = PSR_aux_syn[mask_ew_st].T
+
+                            # Updating state varibles of synapses
+                            if len(PSR_syn_iw_tr) == l_svs:
+                                aux_l = list(PSR_syn_iw_tr[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_iw_tr[sv][i] = SV_syn_per_freq_iw_tr[sv][i] + aux_l
+                            if len(PSR_syn_iw_st) == l_svs:
+                                aux_l = list(PSR_syn_iw_st[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_iw_st[sv][i] = SV_syn_per_freq_iw_st[sv][i] + aux_l
+                            if len(PSR_syn_mw_tr) == l_svs:
+                                aux_l = list(PSR_syn_mw_tr[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_mw_tr[sv][i] = SV_syn_per_freq_mw_tr[sv][i] + aux_l
+                            if len(PSR_syn_mw_st) == l_svs:
+                                aux_l = list(PSR_syn_mw_st[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_mw_st[sv][i] = SV_syn_per_freq_mw_st[sv][i] + aux_l
+                            if len(PSR_syn_ew_tr) == l_svs:
+                                aux_l = list(PSR_syn_ew_tr[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_ew_tr[sv][i] = SV_syn_per_freq_ew_tr[sv][i] + aux_l
+                            if len(PSR_syn_ew_st) == l_svs:
+                                aux_l = list(PSR_syn_ew_st[sv])
+                                if len(aux_l) > 0: SV_syn_per_freq_ew_st[sv][i] = SV_syn_per_freq_ew_st[sv][i] + aux_l
+                            # Updating min-max of synaptic contributions
+                            if max_s[sv] > max_syn[sv]: max_syn[sv] = max_s[sv]
+                            if min_s[sv] < min_syn[sv]: min_syn[sv] = min_s[sv]
+
+                        """      
                         # Getting time of reaching steady-state for ini and end windows
-                        tr_st_time = dr['time_transition'][num_realizations * realization + neuron_realization, i]
+                        tr_st_time = dr['time_transition'][aux_ind, i]
                         # Getting time of reaching steady-state for mid window
                         tr_st_time_mw = tr_st_time  # In case there is no tr_st_time for rate of mid window
                         aux_cond = np.where(proportional_changes[i] <= f_vector)
                         if len(aux_cond[0]) > 0:
                             aux_i = aux_cond[0][0]
-                            tr_st_time_mw = dr['time_transition'][
-                                num_realizations * realization + neuron_realization, aux_i]
+                            tr_st_time_mw = dr['time_transition'][aux_ind, aux_i]
                         # Getting masks to separate transitory and stationary states for ini, mid and end windows
                         mask_iw_tr = (ta <= tr_st_time)
                         mask_iw_st = (ta >= tr_st_time) & (ta <= i_w)
@@ -855,59 +1027,48 @@ class GC_prop_cons:
                         min_ = np.min(PSR_aux, axis=0)
 
                         # Updating state varibles of neurons
+                        thr = self.neuron_prop.params['V_threshold'][0]
+                        a, b, c, d, e, f = PSR_iw_tr, PSR_iw_st, PSR_mw_tr, PSR_mw_st, PSR_ew_tr, PSR_ew_st
                         for sv in range(l_sv):
                             # Not considering suptrathreshold components of neuronal PSRs of membrane potential
-                            if names_neu_sv[sv] == 'v':
-                                thr = self.neuron_prop.params['V_threshold'][0]
-                                a = PSR_iw_tr[np.where(PSR_iw_tr < thr)[0]]
-                                b = PSR_iw_st[np.where(PSR_iw_st < thr)[0]]
-                                c = PSR_mw_tr[np.where(PSR_mw_tr < thr)[0]]
-                                d = PSR_mw_st[np.where(PSR_mw_st < thr)[0]]
-                                e = PSR_ew_tr[np.where(PSR_ew_tr < thr)[0]]
-                                f = PSR_ew_st[np.where(PSR_ew_st < thr)[0]]
-                            else:
-                                a, b, c, d, e, f = PSR_iw_tr, PSR_iw_st, PSR_mw_tr, PSR_mw_st, PSR_ew_tr, PSR_ew_st
+                            # if names_neu_sv[sv] == 'v':
+                            #     a = PSR_iw_tr[np.where(PSR_iw_tr < thr)[0]]
+                            #     b = PSR_iw_st[np.where(PSR_iw_st < thr)[0]]
+                            #     c = PSR_mw_tr[np.where(PSR_mw_tr < thr)[0]]
+                            #     d = PSR_mw_st[np.where(PSR_mw_st < thr)[0]]
+                            #     e = PSR_ew_tr[np.where(PSR_ew_tr < thr)[0]]
+                            #     f = PSR_ew_st[np.where(PSR_ew_st < thr)[0]]
+                            # else:
                             # print(f'realization {realization}, rate {f_}, neu realization {neuron_realization},
                             # state variable {sv}')
                             if len(a) == l_sv:
                                 aux_l = list(a[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(a[sv][a[sv] < thr])  # subthreshold for v
                                 if len(aux_l) > 0: SV_neu_per_freq_iw_tr[sv][i] = SV_neu_per_freq_iw_tr[sv][i] + aux_l
                             if len(b) == l_sv:
                                 aux_l = list(b[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(b[sv][b[sv] < thr])  # subthreshold for v
                                 if len(aux_l) > 0: SV_neu_per_freq_iw_st[sv][i] = SV_neu_per_freq_iw_st[sv][i] + aux_l
                             if len(c) == l_sv:
                                 aux_l = list(c[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(c[sv][c[sv] < thr])  # subthreshold for v
                                 if len(aux_l) > 0: SV_neu_per_freq_mw_tr[sv][i] = SV_neu_per_freq_mw_tr[sv][i] + aux_l
                             if len(d) == l_sv:
                                 aux_l = list(d[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(d[sv][d[sv] < thr])  # subthreshold for v
                                 if len(aux_l) > 0: SV_neu_per_freq_mw_st[sv][i] = SV_neu_per_freq_mw_st[sv][i] + aux_l
                             if len(e) == l_sv:
                                 aux_l = list(e[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(e[sv][e[sv] < thr])  # subthreshold for v
                                 if len(aux_l) > 0: SV_neu_per_freq_ew_tr[sv][i] = SV_neu_per_freq_ew_tr[sv][i] + aux_l
                             if len(f) == l_sv:
                                 aux_l = list(f[sv])
+                                if names_neu_sv[sv] == 'v': aux_l = list(f[sv][f[sv] < thr])  # subthreshold for v
                                 if len(aux_l) > 0: SV_neu_per_freq_ew_st[sv][i] = SV_neu_per_freq_ew_st[sv][i] + aux_l
                             # Updating min-max of synaptic contributions
                             if max_[sv] > max_neu[sv]: max_neu[sv] = max_[sv]
                             if min_[sv] < min_neu[sv]: min_neu[sv] = min_[sv]
-                        
-                        """
-                        # Not considering suptrathreshold components of neuronal PSRs
-                        PSR_iw_tr = PSR_iw_tr[np.where(PSR_iw_tr < self.neuron_prop.params['V_threshold'][0])[0]]
-                        PSR_iw_st = PSR_iw_st[np.where(PSR_iw_st < self.neuron_prop.params['V_threshold'][0])[0]]
-                        PSR_mw_tr = PSR_mw_tr[np.where(PSR_mw_tr < self.neuron_prop.params['V_threshold'][0])[0]]
-                        PSR_mw_st = PSR_mw_st[np.where(PSR_mw_st < self.neuron_prop.params['V_threshold'][0])[0]]
-                        PSR_ew_tr = PSR_ew_tr[np.where(PSR_ew_tr < self.neuron_prop.params['V_threshold'][0])[0]]
-                        PSR_ew_st = PSR_ew_st[np.where(PSR_ew_st < self.neuron_prop.params['V_threshold'][0])[0]]
-                        # Updating general varibles of neuron PSR
-                        PSR_per_freq_iw_tr[i] = PSR_per_freq_iw_tr[i] + list(PSR_iw_tr)
-                        PSR_per_freq_iw_st[i] = PSR_per_freq_iw_st[i] + list(PSR_iw_st)
-                        PSR_per_freq_mw_tr[i] = PSR_per_freq_mw_tr[i] + list(PSR_mw_tr)
-                        PSR_per_freq_mw_st[i] = PSR_per_freq_mw_st[i] + list(PSR_mw_st)
-                        PSR_per_freq_ew_tr[i] = PSR_per_freq_ew_tr[i] + list(PSR_ew_tr)
-                        PSR_per_freq_ew_st[i] = PSR_per_freq_ew_st[i] + list(PSR_ew_st)
-                        # """
-                        
+
                         # Separating ini, mid and end windows of synapse PSR
                         PSR_syn_iw_tr = PSR_aux_syn[mask_iw_tr].T
                         PSR_syn_iw_st = PSR_aux_syn[mask_iw_st].T
@@ -915,42 +1076,7 @@ class GC_prop_cons:
                         PSR_syn_mw_st = PSR_aux_syn[mask_mw_st].T
                         PSR_syn_ew_tr = PSR_aux_syn[mask_ew_tr].T
                         PSR_syn_ew_st = PSR_aux_syn[mask_ew_st].T
-                        """
-                        if PSR_syn_iw_tr.ndim == 2:
-                            # Updating general varibles of synapse PSR for AMPA
-                            PSR_syn_per_freq_iw_tr[i] = PSR_syn_per_freq_iw_tr[i] + list(PSR_syn_iw_tr[:, 0])
-                            PSR_syn_per_freq_iw_st[i] = PSR_syn_per_freq_iw_st[i] + list(PSR_syn_iw_st[:, 0])
-                            PSR_syn_per_freq_mw_tr[i] = PSR_syn_per_freq_mw_tr[i] + list(PSR_syn_mw_tr[:, 0])
-                            PSR_syn_per_freq_mw_st[i] = PSR_syn_per_freq_mw_st[i] + list(PSR_syn_mw_st[:, 0])
-                            PSR_syn_per_freq_ew_tr[i] = PSR_syn_per_freq_ew_tr[i] + list(PSR_syn_ew_tr[:, 0])
-                            PSR_syn_per_freq_ew_st[i] = PSR_syn_per_freq_ew_st[i] + list(PSR_syn_ew_st[:, 0])
-                            # Updating general varibles of synapse PSR for NMDA
-                            PSR_syn_b_per_freq_iw_tr[i] = PSR_syn_b_per_freq_iw_tr[i] + list(PSR_syn_iw_tr[:, 1])
-                            PSR_syn_b_per_freq_iw_st[i] = PSR_syn_b_per_freq_iw_st[i] + list(PSR_syn_iw_st[:, 1])
-                            PSR_syn_b_per_freq_mw_tr[i] = PSR_syn_b_per_freq_mw_tr[i] + list(PSR_syn_mw_tr[:, 1])
-                            PSR_syn_b_per_freq_mw_st[i] = PSR_syn_b_per_freq_mw_st[i] + list(PSR_syn_mw_st[:, 1])
-                            PSR_syn_b_per_freq_ew_tr[i] = PSR_syn_b_per_freq_ew_tr[i] + list(PSR_syn_ew_tr[:, 1])
-                            PSR_syn_b_per_freq_ew_st[i] = PSR_syn_b_per_freq_ew_st[i] + list(PSR_syn_ew_st[:, 1])
-                            # Updating min-max of synaptic contributions
-                            max_ = np.max(PSR_aux_syn, axis=0)
-                            if max_[0] > max_syn: max_syn = max_[0]
-                            if max_[1] > max_syn_b: max_syn_b = max_[1]
-                            min_ = np.min(PSR_aux_syn, axis=0)
-                            if min_[0] < min_syn: min_syn = min_[0]
-                            if min_[1] < min_syn_b: min_syn_b = min_[1]
-                        else:
-                            # Updating general varibles of synapse PSR
-                            PSR_syn_per_freq_iw_tr[i] = PSR_syn_per_freq_iw_tr[i] + list(PSR_syn_iw_tr)
-                            PSR_syn_per_freq_iw_st[i] = PSR_syn_per_freq_iw_st[i] + list(PSR_syn_iw_st)
-                            PSR_syn_per_freq_mw_tr[i] = PSR_syn_per_freq_mw_tr[i] + list(PSR_syn_mw_tr)
-                            PSR_syn_per_freq_mw_st[i] = PSR_syn_per_freq_mw_st[i] + list(PSR_syn_mw_st)
-                            PSR_syn_per_freq_ew_tr[i] = PSR_syn_per_freq_ew_tr[i] + list(PSR_syn_ew_tr)
-                            PSR_syn_per_freq_ew_st[i] = PSR_syn_per_freq_ew_st[i] + list(PSR_syn_ew_st)
-                            max_ = np.max(PSR_aux_syn)
-                            if max_ > max_syn: max_syn = max_
-                            min_ = np.min(PSR_aux_syn)
-                            if min_ < min_syn: min_syn = min_
-                        # """
+                        
                         # Updating min-max of synaptic contributions
                         max_ = np.max(PSR_aux_syn, axis=0)
                         min_ = np.min(PSR_aux_syn, axis=0)
@@ -977,241 +1103,402 @@ class GC_prop_cons:
                             # Updating min-max of synaptic contributions
                             if max_[sv] > max_syn[sv]: max_syn[sv] = max_[sv]
                             if min_[sv] < min_syn[sv]: min_syn[sv] = min_[sv]
-            
+                        # """
             # Entropy variables
             # Getting information theory analysis
+            # Entropy for input spikes (ts-tr based on neuron output)
             H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr = [], [], []
             H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st = [], [], []
             # Entropy for neuronal output
-            # H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr = [], [], []
-            # H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st = [], [], []
             H_SV_neu_iw_tr, H_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
             H_SV_neu_mw_tr, H_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
             H_SV_neu_ew_tr, H_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-
             # Entropy for synaptic output(s)
-            """
-            H_PSR_syn_iw_tr, H_PSR_syn_mw_tr, H_PSR_syn_ew_tr = [], [], []
-            H_PSR_syn_iw_st, H_PSR_syn_mw_st, H_PSR_syn_ew_st = [], [], []
-            H_PSR_syn_b_iw_tr, H_PSR_syn_b_mw_tr, H_PSR_syn_b_ew_tr = [], [], []
-            H_PSR_syn_b_iw_st, H_PSR_syn_b_mw_st, H_PSR_syn_b_ew_st = [], [], []
-            # """
             H_SV_syn_iw_tr, H_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
             H_SV_syn_mw_tr, H_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
             H_SV_syn_ew_tr, H_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
 
+            """
+            # ******************************************************************************************************
+            # ENTROPY COMPUTATION USING FREEDMAN DIACONIS RULE
+            # Entropy for input spikes (ts-tr based on neuron output)
+            Hfd_ISI_iw_tr, Hfd_ISI_mw_tr, Hfd_ISI_ew_tr = [], [], []
+            Hfd_ISI_iw_st, Hfd_ISI_mw_st, Hfd_ISI_ew_st = [], [], []
+            # Entropy for neuronal output
+            Hfd_SV_neu_iw_tr, Hfd_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            Hfd_SV_neu_mw_tr, Hfd_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            Hfd_SV_neu_ew_tr, Hfd_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            # Entropy for synaptic output(s)
+            Hfd_SV_syn_iw_tr, Hfd_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            Hfd_SV_syn_mw_tr, Hfd_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            Hfd_SV_syn_ew_tr, Hfd_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            # ******************************************************************************************************
+            # ENTROPY COMPUTATION USING SCOTT RULE
+            # Entropy for input spikes (ts-tr based on neuron output)
+            Hs_ISI_iw_tr, Hs_ISI_mw_tr, Hs_ISI_ew_tr = [], [], []
+            Hs_ISI_iw_st, Hs_ISI_mw_st, Hs_ISI_ew_st = [], [], []
+            # Entropy for neuronal output
+            Hs_SV_neu_iw_tr, Hs_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            Hs_SV_neu_mw_tr, Hs_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            Hs_SV_neu_ew_tr, Hs_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            # Entropy for synaptic output(s)
+            Hs_SV_syn_iw_tr, Hs_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            Hs_SV_syn_mw_tr, Hs_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            Hs_SV_syn_ew_tr, Hs_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            # ******************************************************************************************************
+            # ENTROPY COMPUTATION USING KNUTH RULE
+            # Entropy for input spikes (ts-tr based on neuron output)
+            Hk_ISI_iw_tr, Hk_ISI_mw_tr, Hk_ISI_ew_tr = [], [], []
+            Hk_ISI_iw_st, Hk_ISI_mw_st, Hk_ISI_ew_st = [], [], []
+            # Entropy for neuronal output
+            Hk_SV_neu_iw_tr, Hk_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            Hk_SV_neu_mw_tr, Hk_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            Hk_SV_neu_ew_tr, Hk_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            # Entropy for synaptic output(s)
+            Hk_SV_syn_iw_tr, Hk_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            Hk_SV_syn_mw_tr, Hk_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            Hk_SV_syn_ew_tr, Hk_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            # """
+
             # Histograms variables
-            """
-            # Histograms Input
-            bin_ISI_iw_tr, bin_ISI_mw_tr, bin_ISI_ew_tr = [], [], []
-            bin_ISI_iw_st, bin_ISI_mw_st, bin_ISI_ew_st = [], [], []
-            edge_ISI_iw_tr, edge_ISI_mw_tr, edge_ISI_ew_tr = [], [], []
-            edge_ISI_iw_st, edge_ISI_mw_st, edge_ISI_ew_st = [], [], []
+            # Histograms and edges for input spikes (ts-tr based on neuron output)
+            b_ISI_iw_tr, b_ISI_mw_tr, b_ISI_ew_tr = [], [], []
+            b_ISI_iw_st, b_ISI_mw_st, b_ISI_ew_st = [], [], []
+            e_ISI_iw_tr, e_ISI_mw_tr, e_ISI_ew_tr = [], [], []
+            e_ISI_iw_st, e_ISI_mw_st, e_ISI_ew_st = [], [], []
             # Histograms for neuronal output
-            bin_PSR_iw_tr, bin_PSR_mw_tr, bin_PSR_ew_tr = [], [], []
-            bin_PSR_iw_st, bin_PSR_mw_st, bin_PSR_ew_st = [], [], []
-            edge_PSR_iw_tr, edge_PSR_mw_tr, edge_PSR_ew_tr = [], [], []
-            edge_PSR_iw_st, edge_PSR_mw_st, edge_PSR_ew_st = [], [], []
-            # """
+            b_SV_neu_iw_tr, b_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            b_SV_neu_mw_tr, b_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            b_SV_neu_ew_tr, b_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            # Edges for neuronal output
+            e_SV_neu_iw_tr, e_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            e_SV_neu_mw_tr, e_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
+            e_SV_neu_ew_tr, e_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
             # Histograms for synaptic output(s)
-            """
-            bin_PSR_syn_iw_tr, bin_PSR_syn_mw_tr, bin_PSR_syn_ew_tr = [], [], []
-            bin_PSR_syn_iw_st, bin_PSR_syn_mw_st, bin_PSR_syn_ew_st = [], [], []
-            bin_PSR_syn_b_iw_tr, bin_PSR_syn_b_mw_tr, bin_PSR_syn_b_ew_tr = [], [], []
-            bin_PSR_syn_b_iw_st, bin_PSR_syn_b_mw_st, bin_PSR_syn_b_ew_st = [], [], []
-            edge_PSR_syn_iw_tr, edge_PSR_syn_mw_tr, edge_PSR_syn_ew_tr = [], [], []
-            edge_PSR_syn_iw_st, edge_PSR_syn_mw_st, edge_PSR_syn_ew_st = [], [], []
-            edge_PSR_syn_b_iw_tr, edge_PSR_syn_b_mw_tr, edge_PSR_syn_b_ew_tr = [], [], []
-            edge_PSR_syn_b_iw_st, edge_PSR_syn_b_mw_st, edge_PSR_syn_b_ew_st = [], [], []
-            # """
-            bin_SV_syn_iw_tr, bin_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            bin_SV_syn_mw_tr, bin_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            bin_SV_syn_ew_tr, bin_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            edge_SV_syn_iw_tr, edge_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            edge_SV_syn_mw_tr, edge_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            edge_SV_syn_ew_tr, edge_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            b_SV_syn_iw_tr, b_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            b_SV_syn_mw_tr, b_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            b_SV_syn_ew_tr, b_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            # Edges for synaptic output(s)
+            e_SV_syn_iw_tr, e_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            e_SV_syn_mw_tr, e_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
+            e_SV_syn_ew_tr, e_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
 
             # conductance of synaptic contributions to neuron model
             max_syn_contr = self.neuron_prop.max_syn_cont()
-            # bin_size_syn, bin_size_syn_b = max_syn - min_syn, max_syn_b - min_syn_b
-            bin_size_syn = np.array([max_syn[sv] - min_syn[sv] for sv in range(l_svs)])
-
+            bin_size = [(min_neu[sv], max_neu[sv]) for sv in range(l_sv)]
+            bin_size_syn = [(min_syn[sv], max_syn[sv]) for sv in range(l_svs)]
+            
+            # Plotting histograms 
+            plt_f = False
+            fig_n = [None for _ in range(l_sv)]
+            fig_s = [None for _ in range(l_svs)]
+            fig_I = None
+            ax_I = [None for i in range(1, 7)]
+            ax_n = [[None for i in range(1, 7)] for j in range(l_sv)]
+            ax_s = [[None for i in range(1, 7)] for j in range(l_svs)]
+            
+            # Iterating through all rates
             for i in range(num_freq_exp):
+                # Plotting histograms for each rate, state variable and window
+                if plt_f:
+                    if i == 0 or i == num_freq_exp - 1:
+                        fig_I = plt.figure(figsize=(15, 3.6))  # 15, 9
+                        ax_I = [fig_I.add_subplot(1, 6, i) for i in range(1, 7)]  # 25
+                        fig_I.suptitle('Histograms and entropy for different binning rules for frequency %d, Input ' %
+                                       (f_vector[i]), fontsize=20)
+                        fig_n = [plt.figure(figsize=(15, 3.6)) for _ in range(l_sv)]  # 15, 9
+                        ax_n = [[fig_n[j].add_subplot(1, 6, i) for i in range(1, 7)] for j in range(l_sv)]  # 25
+                        aux_title = 'Histograms and entropy for different binning rules for frequency %d, var %s'
+                        for n in range(l_sv): fig_n[n].suptitle(aux_title % (f_vector[i], names_neu_sv[n]), fontsize=20)
+                        fig_s = [plt.figure(figsize=(15, 3.6)) for _ in range(l_svs)]  # 15, 9
+                        aux_title = 'Histograms and entropy for different binning rules for frequency %d, var %s'
+                        ax_s = [[fig_s[j].add_subplot(1, 6, i) for i in range(1, 7)] for j in range(l_svs)]  # 25
+                        for n in range(l_svs): fig_s[n].suptitle(aux_title % (f_vector[i], names_syn_sv[n]),
+                                                                 fontsize=20)
                 # ******************************************************************************************************
                 # ENTROPY COMPUTATION USING FIXED BIN SIZE
+                # ******************************************************************************************************
                 # Entropy calculation for input
-                b_factor = 0.1 / f_vector[i]  # 10% of T
-                append_entropy(H_ISI_iw_tr, ISI_per_freq_iw_tr[i], b_factor)
-                append_entropy(H_ISI_iw_st, ISI_per_freq_iw_st[i], b_factor)
-                append_entropy(H_ISI_ew_tr, ISI_per_freq_ew_tr[i], b_factor)
-                append_entropy(H_ISI_ew_st, ISI_per_freq_ew_st[i], b_factor)
+                b_ = 0.1 / f_vector[i]  # 10% of T
+                append_entropy_ad_hoc(H_ISI_iw_tr, b_ISI_iw_tr, e_ISI_iw_tr, ISI_per_freq_iw_tr[i],
+                                      b_, plot=plt_f, ax=ax_I[0])
+                append_entropy_ad_hoc(H_ISI_iw_st, b_ISI_iw_st, e_ISI_iw_st, ISI_per_freq_iw_st[i],
+                                      b_, plot=plt_f, ax=ax_I[1])
+                append_entropy_ad_hoc(H_ISI_ew_tr, b_ISI_ew_tr, e_ISI_ew_tr, ISI_per_freq_ew_tr[i],
+                                      b_, plot=plt_f, ax=ax_I[4])
+                append_entropy_ad_hoc(H_ISI_ew_st, b_ISI_ew_st, e_ISI_ew_st, ISI_per_freq_ew_st[i],
+                                      b_, plot=plt_f, ax=ax_I[5])
                 b_factor = 0.1 / proportional_changes[i]  # 10% of T
-                append_entropy(H_ISI_mw_tr, ISI_per_freq_mw_tr[i], b_factor)
-                append_entropy(H_ISI_mw_st, ISI_per_freq_mw_st[i], b_factor)
+                append_entropy_ad_hoc(H_ISI_mw_tr, b_ISI_mw_tr, e_ISI_mw_tr, ISI_per_freq_mw_tr[i],
+                                      b_, plot=plt_f, ax=ax_I[2])
+                append_entropy_ad_hoc(H_ISI_mw_st, b_ISI_mw_tr, e_ISI_mw_tr, ISI_per_freq_mw_st[i],
+                                      b_,  plot=plt_f, ax=ax_I[3])
+
                 """
-                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_iw_tr[i], bin_size=bin_size)
-                H_ISI_iw_tr.append(H_)  # , bin_ISI_iw_tr.append(bins), edge_ISI_iw_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_iw_st[i], bin_size=bin_size)
-                H_ISI_iw_st.append(H_)  # , bin_ISI_iw_st.append(bins), edge_ISI_iw_st.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_ew_tr[i], bin_size=bin_size)
-                H_ISI_ew_tr.append(H_)  # , bin_ISI_ew_tr.append(bins), edge_ISI_ew_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_ew_st[i], bin_size=bin_size)
-                H_ISI_ew_st.append(H_)  # , bin_ISI_ew_st.append(bins), edge_ISI_ew_st.append(edges)
-                bin_size = 0.1 / proportional_changes[i]  # 10% of T
-                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_mw_tr[i], bin_size=bin_size)
-                H_ISI_mw_tr.append(H_)  # , bin_ISI_mw_tr.append(bins), edge_ISI_mw_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(ISI_per_freq_mw_st[i], bin_size=bin_size)
-                H_ISI_mw_st.append(H_)  # , bin_ISI_mw_st.append(bins), edge_ISI_mw_st.append(edges)
-                # """
-                
                 # Entropy calculations for state variables of neuronal responses
-                b_factor = 0.1e-3
-                for sv in range(l_sv):
-                    """
-                    append_entropy2(H_SV_neu_iw_tr[sv], bin_SV_neu_iw_tr[sv], edge_SV_neu_iw_tr[sv],
-                                   SV_neu_per_freq_iw_tr[sv][i], b_factor)
-                    append_entropy2(H_SV_neu_iw_st[sv], bin_SV_neu_iw_st[sv], edge_SV_neu_iw_st[sv],
-                                   SV_neu_per_freq_iw_st[sv][i], b_factor)
-                    append_entropy2(H_SV_neu_mw_tr[sv], bin_SV_neu_mw_tr[sv], edge_SV_neu_mw_tr[sv],
-                                   SV_neu_per_freq_mw_tr[sv][i], b_factor)
-                    append_entropy2(H_SV_neu_mw_st[sv], bin_SV_neu_mw_st[sv], edge_SV_neu_mw_st[sv],
-                                   SV_neu_per_freq_mw_st[sv][i], b_factor)
-                    append_entropy2(H_SV_neu_ew_tr[sv], bin_SV_neu_ew_tr[sv], edge_SV_neu_ew_tr[sv],
-                                   SV_neu_per_freq_ew_tr[sv][i], b_factor)
-                    append_entropy2(H_SV_neu_ew_st[sv], bin_SV_neu_ew_st[sv], edge_SV_neu_ew_st[sv],
-                                   SV_neu_per_freq_ew_st[sv][i], b_factor)
-                    # """
-                    append_entropy(H_SV_neu_iw_tr[sv], SV_neu_per_freq_iw_tr[sv][i], b_factor)
-                    append_entropy(H_SV_neu_iw_st[sv], SV_neu_per_freq_iw_st[sv][i], b_factor)
-                    append_entropy(H_SV_neu_mw_tr[sv], SV_neu_per_freq_mw_tr[sv][i], b_factor)
-                    append_entropy(H_SV_neu_mw_st[sv], SV_neu_per_freq_mw_st[sv][i], b_factor)
-                    append_entropy(H_SV_neu_ew_tr[sv], SV_neu_per_freq_ew_tr[sv][i], b_factor)
-                    append_entropy(H_SV_neu_ew_st[sv], SV_neu_per_freq_ew_st[sv][i], b_factor)
-                
-                """
-                bin_size = 0.1e-3  # 0.1mV
-                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_iw_tr[i], bin_size=bin_size)
-                H_PSR_iw_tr.append(H_)  # , bin_PSR_iw_tr.append(bins), edge_PSR_iw_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_iw_st[i], bin_size=bin_size)
-                H_PSR_iw_st.append(H_)  # , bin_PSR_iw_st.append(bins), edge_PSR_iw_st.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_mw_tr[i], bin_size=bin_size)
-                H_PSR_mw_tr.append(H_)  # , bin_PSR_mw_tr.append(bins), edge_PSR_mw_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_mw_st[i], bin_size=bin_size)
-                H_PSR_mw_st.append(H_)  # , bin_PSR_mw_st.append(bins), edge_PSR_mw_st.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_ew_tr[i], bin_size=bin_size)
-                H_PSR_ew_tr.append(H_)  # , bin_PSR_ew_tr.append(bins), edge_PSR_ew_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_per_freq_ew_st[i], bin_size=bin_size)
-                H_PSR_ew_st.append(H_)  # , bin_PSR_ew_st.append(bins), edge_PSR_ew_st.append(edges)
+                H_a = [H_SV_neu_iw_tr, H_SV_neu_iw_st, H_SV_neu_mw_tr, H_SV_neu_mw_st, H_SV_neu_ew_tr, H_SV_neu_ew_st]
+                b_a = [b_SV_neu_iw_tr, b_SV_neu_iw_st, b_SV_neu_mw_tr, b_SV_neu_mw_st, b_SV_neu_ew_tr, b_SV_neu_ew_st]
+                e_a = [e_SV_neu_iw_tr, e_SV_neu_iw_st, e_SV_neu_mw_tr, e_SV_neu_mw_st, e_SV_neu_ew_tr, e_SV_neu_ew_st]
+                dat_a = [SV_neu_per_freq_iw_tr, SV_neu_per_freq_iw_st, SV_neu_per_freq_mw_tr, SV_neu_per_freq_mw_st, 
+                SV_neu_per_freq_ew_tr, SV_neu_per_freq_ew_st]
+                entropy_sv(H_a, b_a, e_a, l_sv, bin_size, names_neu_sv, dat_a, i, plt_f, ax_n)
+
+                H_a = [H_SV_syn_iw_tr, H_SV_syn_iw_st, H_SV_syn_mw_tr, H_SV_syn_mw_st, H_SV_syn_ew_tr, H_SV_syn_ew_st]
+                b_a = [b_SV_syn_iw_tr, b_SV_syn_iw_st, b_SV_syn_mw_tr, b_SV_syn_mw_st, b_SV_syn_ew_tr, b_SV_syn_ew_st]
+                e_a = [e_SV_syn_iw_tr, e_SV_syn_iw_st, e_SV_syn_mw_tr, e_SV_syn_mw_st, e_SV_syn_ew_tr, e_SV_syn_ew_st]
+                dat_a = [SV_syn_per_freq_iw_tr, SV_syn_per_freq_iw_st, SV_syn_per_freq_mw_tr, SV_syn_per_freq_mw_st, 
+                SV_syn_per_freq_ew_tr, SV_syn_per_freq_ew_st]
+                entropy_sv(H_a, b_a, e_a, l_svs, bin_size, names_syn_sv, dat_a, i, plt_f, ax_n)
                 # """
+
+                # """
+                # Entropy calculations for state variables of neuronal responses
+                for sv in range(l_sv):
+                    r_d = bin_size[sv]
+                    b_ = 0.01 * (bin_size[sv][1] - bin_size[sv][0])  # max - min
+                    if names_neu_sv[sv] == 'v': b_ = 0.1e-3
+                    append_entropy_ad_hoc(H_SV_neu_iw_tr[sv], b_SV_neu_iw_tr[sv], e_SV_neu_iw_tr[sv],
+                                          SV_neu_per_freq_iw_tr[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_n[sv][0])
+                    append_entropy_ad_hoc(H_SV_neu_iw_st[sv], b_SV_neu_iw_st[sv], e_SV_neu_iw_st[sv],
+                                          SV_neu_per_freq_iw_st[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_n[sv][1])
+                    append_entropy_ad_hoc(H_SV_neu_mw_tr[sv], b_SV_neu_mw_tr[sv], e_SV_neu_mw_tr[sv],
+                                          SV_neu_per_freq_mw_tr[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_n[sv][2])
+                    append_entropy_ad_hoc(H_SV_neu_mw_st[sv], b_SV_neu_mw_st[sv], e_SV_neu_mw_st[sv],
+                                          SV_neu_per_freq_mw_st[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_n[sv][3])
+                    append_entropy_ad_hoc(H_SV_neu_ew_tr[sv], b_SV_neu_ew_tr[sv], e_SV_neu_ew_tr[sv],
+                                          SV_neu_per_freq_ew_tr[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_n[sv][4])
+                    append_entropy_ad_hoc(H_SV_neu_ew_st[sv], b_SV_neu_ew_st[sv], e_SV_neu_ew_st[sv],
+                                          SV_neu_per_freq_ew_st[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_n[sv][5])
                 
                 # Entropy calculations for state variables of synaptic responses
                 for sv in range(l_svs):
-                    b_factor = 0.01 * bin_size_syn[sv]
-                    """
-                    append_entropy2(H_SV_syn_iw_tr[sv], bin_SV_syn_iw_tr[sv], edge_SV_syn_iw_tr[sv],
-                                   SV_syn_per_freq_iw_tr[sv][i], b_factor)
-                    append_entropy2(H_SV_syn_iw_st[sv], bin_SV_syn_iw_st[sv], edge_SV_syn_iw_st[sv],
-                                   SV_syn_per_freq_iw_st[sv][i], b_factor)
-                    append_entropy2(H_SV_syn_mw_tr[sv], bin_SV_syn_mw_tr[sv], edge_SV_syn_mw_tr[sv],
-                                   SV_syn_per_freq_mw_tr[sv][i], b_factor)
-                    append_entropy2(H_SV_syn_mw_st[sv], bin_SV_syn_mw_st[sv], edge_SV_syn_mw_st[sv],
-                                   SV_syn_per_freq_mw_st[sv][i], b_factor)
-                    append_entropy2(H_SV_syn_ew_tr[sv], bin_SV_syn_ew_tr[sv], edge_SV_syn_ew_tr[sv],
-                                   SV_syn_per_freq_ew_tr[sv][i], b_factor)
-                    append_entropy2(H_SV_syn_ew_st[sv], bin_SV_syn_ew_st[sv], edge_SV_syn_ew_st[sv],
-                                   SV_syn_per_freq_ew_st[sv][i], b_factor)
-                    # """
-                    append_entropy(H_SV_syn_iw_tr[sv], SV_syn_per_freq_iw_tr[sv][i], b_factor)
-                    append_entropy(H_SV_syn_iw_st[sv], SV_syn_per_freq_iw_st[sv][i], b_factor)
-                    append_entropy(H_SV_syn_mw_tr[sv], SV_syn_per_freq_mw_tr[sv][i], b_factor)
-                    append_entropy(H_SV_syn_mw_st[sv], SV_syn_per_freq_mw_st[sv][i], b_factor)
-                    append_entropy(H_SV_syn_ew_tr[sv], SV_syn_per_freq_ew_tr[sv][i], b_factor)
-                    append_entropy(H_SV_syn_ew_st[sv], SV_syn_per_freq_ew_st[sv][i], b_factor)
-
-                """
-                # Entropy calculations for synaptic response
-                bin_size = 0.01 * bin_size_syn  # 1% of max. synaptic contribution
-                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_iw_tr[i], bin_size=bin_size)
-                H_PSR_syn_iw_tr.append(H_), bin_PSR_syn_iw_tr.append(bins), edge_PSR_syn_iw_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_iw_st[i], bin_size=bin_size)
-                H_PSR_syn_iw_st.append(H_), bin_PSR_syn_iw_st.append(bins), edge_PSR_syn_iw_st.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_mw_tr[i], bin_size=bin_size)
-                H_PSR_syn_mw_tr.append(H_), bin_PSR_syn_mw_tr.append(bins), edge_PSR_syn_mw_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_mw_st[i], bin_size=bin_size)
-                H_PSR_syn_mw_st.append(H_), bin_PSR_syn_mw_st.append(bins), edge_PSR_syn_mw_st.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_ew_tr[i], bin_size=bin_size)
-                H_PSR_syn_ew_tr.append(H_), bin_PSR_syn_ew_tr.append(bins), edge_PSR_syn_ew_tr.append(edges)
-                H_, bins, edges = H_entropy_dyn_bins(PSR_syn_per_freq_ew_st[i], bin_size=bin_size)
-                H_PSR_syn_ew_st.append(H_), bin_PSR_syn_ew_st.append(bins), edge_PSR_syn_ew_st.append(edges)
-                if PSR_syn_iw_tr.ndim == 2:
-                    # Entropy calculations for second synaptic response
-                    bin_size = 0.01 * bin_size_syn_b  # 1% of max. synaptic contribution
-                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_tr[i], bin_size=bin_size)
-                    H_PSR_syn_b_iw_tr.append(H_), bin_PSR_syn_b_iw_tr.append(bins), edge_PSR_syn_b_iw_tr.append(edges)
-                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_iw_st[i], bin_size=bin_size)
-                    H_PSR_syn_b_iw_st.append(H_), bin_PSR_syn_b_iw_st.append(bins), edge_PSR_syn_b_iw_st.append(edges)
-                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_tr[i], bin_size=bin_size)
-                    H_PSR_syn_b_mw_tr.append(H_), bin_PSR_syn_b_mw_tr.append(bins), edge_PSR_syn_b_mw_tr.append(edges)
-                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_mw_st[i], bin_size=bin_size)
-                    H_PSR_syn_b_mw_st.append(H_), bin_PSR_syn_b_mw_st.append(bins), edge_PSR_syn_b_mw_st.append(edges)
-                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_tr[i], bin_size=bin_size)
-                    H_PSR_syn_b_ew_tr.append(H_), bin_PSR_syn_b_ew_tr.append(bins), edge_PSR_syn_b_ew_tr.append(edges)
-                    H_, bins, edges = H_entropy_dyn_bins(PSR_syn_b_per_freq_ew_st[i], bin_size=bin_size)
-                    H_PSR_syn_b_ew_st.append(H_), bin_PSR_syn_b_ew_st.append(bins), edge_PSR_syn_b_ew_st.append(edges)
+                    b_ = 0.01 * (bin_size_syn[sv][1] - bin_size_syn[sv][0])  # max - min
+                    r_d = bin_size_syn[sv]
+                    append_entropy_ad_hoc(H_SV_syn_iw_tr[sv], b_SV_syn_iw_tr[sv], e_SV_syn_iw_tr[sv],
+                                          SV_syn_per_freq_iw_tr[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_s[sv][0])
+                    append_entropy_ad_hoc(H_SV_syn_iw_st[sv], b_SV_syn_iw_st[sv], e_SV_syn_iw_st[sv],
+                                          SV_syn_per_freq_iw_st[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_s[sv][1])
+                    append_entropy_ad_hoc(H_SV_syn_mw_tr[sv], b_SV_syn_mw_tr[sv], e_SV_syn_mw_tr[sv],
+                                          SV_syn_per_freq_mw_tr[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_s[sv][2])
+                    append_entropy_ad_hoc(H_SV_syn_mw_st[sv], b_SV_syn_mw_st[sv], e_SV_syn_mw_st[sv],
+                                          SV_syn_per_freq_mw_st[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_s[sv][3])
+                    append_entropy_ad_hoc(H_SV_syn_ew_tr[sv], b_SV_syn_ew_tr[sv], e_SV_syn_ew_tr[sv],
+                                          SV_syn_per_freq_ew_tr[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_s[sv][4])
+                    append_entropy_ad_hoc(H_SV_syn_ew_st[sv], b_SV_syn_ew_st[sv], e_SV_syn_ew_st[sv],
+                                          SV_syn_per_freq_ew_st[sv][i], b_, range_d=r_d, plot=plt_f, ax=ax_s[sv][5])
                 # """
+                """
+                # ******************************************************************************************************
+                # ENTROPY COMPUTATION USING FREEDMAN DIACONIS RULE
+                # ******************************************************************************************************
+                # Entropy calculation for input
+                
+                append_entropy(Hfd_ISI_iw_tr, ISI_per_freq_iw_tr[i], method='fd', plot=plt_f, ax=ax_I[6])
+                append_entropy(Hfd_ISI_iw_st, ISI_per_freq_iw_st[i], method='fd', plot=plt_f, ax=ax_I[7])
+                append_entropy(Hfd_ISI_ew_tr, ISI_per_freq_ew_tr[i], method='fd', plot=plt_f, ax=ax_I[10])
+                append_entropy(Hfd_ISI_ew_st, ISI_per_freq_ew_st[i], method='fd', plot=plt_f, ax=ax_I[11])
+                append_entropy(Hfd_ISI_mw_tr, ISI_per_freq_mw_tr[i], method='fd', plot=plt_f, ax=ax_I[8])
+                append_entropy(Hfd_ISI_mw_st, ISI_per_freq_mw_st[i], method='fd', plot=plt_f, ax=ax_I[9])
+
+                # Entropy calculations for state variables of neuronal responses
+                for sv in range(l_sv):
+                    min_max = bin_size[sv]
+                    append_entropy(Hfd_SV_neu_iw_tr[sv], SV_neu_per_freq_iw_tr[sv][i], range_d=min_max, method='fd', 
+                    plot=plt_f, ax=ax_n[sv][6])
+                    append_entropy(Hfd_SV_neu_iw_st[sv], SV_neu_per_freq_iw_st[sv][i], range_d=min_max, method='fd', 
+                    plot=plt_f, ax=ax_n[sv][7])
+                    append_entropy(Hfd_SV_neu_mw_tr[sv], SV_neu_per_freq_mw_tr[sv][i], range_d=min_max, method='fd', 
+                    plot=plt_f, ax=ax_n[sv][8])
+                    append_entropy(Hfd_SV_neu_mw_st[sv], SV_neu_per_freq_mw_st[sv][i], range_d=min_max, method='fd', 
+                    plot=plt_f, ax=ax_n[sv][9])
+                    append_entropy(Hfd_SV_neu_ew_tr[sv], SV_neu_per_freq_ew_tr[sv][i], range_d=min_max, method='fd', 
+                    plot=plt_f, ax=ax_n[sv][10])
+                    append_entropy(Hfd_SV_neu_ew_st[sv], SV_neu_per_freq_ew_st[sv][i], range_d=min_max, method='fd', 
+                    plot=plt_f, ax=ax_n[sv][11])
+
+                # Entropy calculations for state variables of synaptic responses
+                for sv in range(l_svs):
+                    if names_syn_sv[sv] != 'x_nmda':
+                        min_max = bin_size_syn[sv]
+                        append_entropy(Hfd_SV_syn_iw_tr[sv], SV_syn_per_freq_iw_tr[sv][i], range_d=min_max, 
+                        method='fd', plot=plt_f, ax=ax_s[sv][6])
+                        append_entropy(Hfd_SV_syn_iw_st[sv], SV_syn_per_freq_iw_st[sv][i], range_d=min_max, 
+                        method='fd', plot=plt_f, ax=ax_s[sv][7])
+                        append_entropy(Hfd_SV_syn_mw_tr[sv], SV_syn_per_freq_mw_tr[sv][i], range_d=min_max, 
+                        method='fd', plot=plt_f, ax=ax_s[sv][8])
+                        append_entropy(Hfd_SV_syn_mw_st[sv], SV_syn_per_freq_mw_st[sv][i], range_d=min_max, 
+                        method='fd', plot=plt_f, ax=ax_s[sv][9])
+                        append_entropy(Hfd_SV_syn_ew_tr[sv], SV_syn_per_freq_ew_tr[sv][i], range_d=min_max, 
+                        method='fd', plot=plt_f, ax=ax_s[sv][10])
+                        append_entropy(Hfd_SV_syn_ew_st[sv], SV_syn_per_freq_ew_st[sv][i], range_d=min_max, 
+                        method='fd', plot=plt_f, ax=ax_s[sv][11])
+                
+                # ******************************************************************************************************
+                # ENTROPY COMPUTATION USING SCOTT'S RULE
+                # ******************************************************************************************************
+                # Entropy calculation for input
+                append_entropy(Hs_ISI_iw_tr, ISI_per_freq_iw_tr[i], method='scott', plot=plt_f, ax=ax_I[12])
+                append_entropy(Hs_ISI_iw_st, ISI_per_freq_iw_st[i], method='scott', plot=plt_f, ax=ax_I[13])
+                append_entropy(Hs_ISI_ew_tr, ISI_per_freq_ew_tr[i], method='scott', plot=plt_f, ax=ax_I[16])
+                append_entropy(Hs_ISI_ew_st, ISI_per_freq_ew_st[i], method='scott', plot=plt_f, ax=ax_I[17])
+                append_entropy(Hs_ISI_mw_tr, ISI_per_freq_mw_tr[i], method='scott', plot=plt_f, ax=ax_I[14])
+                append_entropy(Hs_ISI_mw_st, ISI_per_freq_mw_st[i], method='scott', plot=plt_f, ax=ax_I[15])
+
+                # Entropy calculations for state variables of neuronal responses
+                for sv in range(l_sv):
+                    min_max = bin_size[sv]
+                    append_entropy(Hs_SV_neu_iw_tr[sv], SV_neu_per_freq_iw_tr[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_n[sv][12])
+                    append_entropy(Hs_SV_neu_iw_st[sv], SV_neu_per_freq_iw_st[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_n[sv][13])
+                    append_entropy(Hs_SV_neu_mw_tr[sv], SV_neu_per_freq_mw_tr[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_n[sv][14])
+                    append_entropy(Hs_SV_neu_mw_st[sv], SV_neu_per_freq_mw_st[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_n[sv][15])
+                    append_entropy(Hs_SV_neu_ew_tr[sv], SV_neu_per_freq_ew_tr[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_n[sv][16])
+                    append_entropy(Hs_SV_neu_ew_st[sv], SV_neu_per_freq_ew_st[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_n[sv][17])
+
+                # Entropy calculations for state variables of synaptic responses
+                for sv in range(l_svs):
+                    min_max = bin_size_syn[sv]
+                    append_entropy(Hs_SV_syn_iw_tr[sv], SV_syn_per_freq_iw_tr[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_s[sv][12])
+                    append_entropy(Hs_SV_syn_iw_st[sv], SV_syn_per_freq_iw_st[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_s[sv][13])
+                    append_entropy(Hs_SV_syn_mw_tr[sv], SV_syn_per_freq_mw_tr[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_s[sv][14])
+                    append_entropy(Hs_SV_syn_mw_st[sv], SV_syn_per_freq_mw_st[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_s[sv][15])
+                    append_entropy(Hs_SV_syn_ew_tr[sv], SV_syn_per_freq_ew_tr[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_s[sv][16])
+                    append_entropy(Hs_SV_syn_ew_st[sv], SV_syn_per_freq_ew_st[sv][i], range_d=min_max, 
+                    method='scott', plot=plt_f, ax=ax_s[sv][17])
+                # ******************************************************************************************************
+                # ENTROPY COMPUTATION USING KNUTH'S RULE
+                # ******************************************************************************************************
+                # Entropy calculation for input
+                append_entropy(Hk_ISI_iw_tr, ISI_per_freq_iw_tr[i], method='knuth', plot=plt_f, ax=ax_I[18])
+                append_entropy(Hk_ISI_iw_st, ISI_per_freq_iw_st[i], method='knuth', plot=plt_f, ax=ax_I[19])
+                append_entropy(Hk_ISI_ew_tr, ISI_per_freq_ew_tr[i], method='knuth', plot=plt_f, ax=ax_I[22])
+                append_entropy(Hk_ISI_ew_st, ISI_per_freq_ew_st[i], method='knuth', plot=plt_f, ax=ax_I[23])
+                append_entropy(Hk_ISI_mw_tr, ISI_per_freq_mw_tr[i], method='knuth', plot=plt_f, ax=ax_I[20])
+                append_entropy(Hk_ISI_mw_st, ISI_per_freq_mw_st[i], method='knuth', plot=plt_f, ax=ax_I[21])
+
+                # Entropy calculations for state variables of neuronal responses
+                for sv in range(l_sv):
+                    min_max = bin_size[sv]
+                    append_entropy(Hk_SV_neu_iw_tr[sv], SV_neu_per_freq_iw_tr[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_n[sv][18])
+                    append_entropy(Hk_SV_neu_iw_st[sv], SV_neu_per_freq_iw_st[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_n[sv][19])
+                    append_entropy(Hk_SV_neu_mw_tr[sv], SV_neu_per_freq_mw_tr[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_n[sv][20])
+                    append_entropy(Hk_SV_neu_mw_st[sv], SV_neu_per_freq_mw_st[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_n[sv][21])
+                    append_entropy(Hk_SV_neu_ew_tr[sv], SV_neu_per_freq_ew_tr[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_n[sv][22])
+                    append_entropy(Hk_SV_neu_ew_st[sv], SV_neu_per_freq_ew_st[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_n[sv][23])
+
+                # Entropy calculations for state variables of synaptic responses
+                for sv in range(l_svs):
+                    min_max = bin_size_syn[sv]
+                    append_entropy(Hk_SV_syn_iw_tr[sv], SV_syn_per_freq_iw_tr[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_s[sv][18])
+                    append_entropy(Hk_SV_syn_iw_st[sv], SV_syn_per_freq_iw_st[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_s[sv][19])
+                    append_entropy(Hk_SV_syn_mw_tr[sv], SV_syn_per_freq_mw_tr[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_s[sv][20])
+                    append_entropy(Hk_SV_syn_mw_st[sv], SV_syn_per_freq_mw_st[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_s[sv][21])
+                    append_entropy(Hk_SV_syn_ew_tr[sv], SV_syn_per_freq_ew_tr[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_s[sv][22])
+                    append_entropy(Hk_SV_syn_ew_st[sv], SV_syn_per_freq_ew_st[sv][i], range_d=min_max, 
+                    method='knuth', plot=plt_f, ax=ax_s[sv][23])
+                # """
+                if plt_f:
+                    for n in range(l_sv): fig_n[n].tight_layout()
+                    for n in range(l_svs): fig_s[n].tight_layout()
+                    fig_I.tight_layout()
+                    if plt_f: plt_f = False
             # ******************************************************************************************************
             # ENTROPY COMPUTATION USING FIXED BIN SIZE
-            # Entropies
+            # Entropies, histograms and edges - fixed bin size
             dr['H_ISI_tr'] = np.array([H_ISI_iw_tr, H_ISI_mw_tr, H_ISI_ew_tr])
             dr['H_ISI_st'] = np.array([H_ISI_iw_st, H_ISI_mw_st, H_ISI_ew_st])
-            # dr['H_PSR_tr'] = np.array([H_PSR_iw_tr, H_PSR_mw_tr, H_PSR_ew_tr])
-            # dr['H_PSR_st'] = np.array([H_PSR_iw_st, H_PSR_mw_st, H_PSR_ew_st])
-            # dr['H_PSR_syn_tr'] = np.array([H_PSR_syn_iw_tr, H_PSR_syn_mw_tr, H_PSR_syn_ew_tr])
-            # dr['H_PSR_syn_st'] = np.array([H_PSR_syn_iw_st, H_PSR_syn_mw_st, H_PSR_syn_ew_st])
+            dr['hist_ISI_tr'] = [b_ISI_iw_tr, b_ISI_mw_tr, b_ISI_ew_tr]
+            dr['hist_ISI_st'] = [b_ISI_iw_st, b_ISI_mw_st, b_ISI_ew_st]
+            dr['edge_ISI_tr'] = [e_ISI_iw_tr, e_ISI_mw_tr, e_ISI_ew_tr]
+            dr['edge_ISI_st'] = [e_ISI_iw_st, e_ISI_mw_st, e_ISI_ew_st]
             """
-            # Bins
-            dr['bin_ISI_tr'] = [bin_ISI_iw_tr, bin_ISI_mw_tr, bin_ISI_ew_tr]
-            dr['bin_ISI_st'] = [bin_ISI_iw_st, bin_ISI_mw_st, bin_ISI_ew_st]
-            dr['bin_PSR_tr'] = [bin_PSR_iw_tr, bin_PSR_mw_tr, bin_PSR_ew_tr]
-            dr['bin_PSR_st'] = [bin_PSR_iw_st, bin_PSR_mw_st, bin_PSR_ew_st]
-            dr['bin_PSR_syn_tr'] = [bin_PSR_syn_iw_tr, bin_PSR_syn_mw_tr, bin_PSR_syn_ew_tr]
-            dr['bin_PSR_syn_st'] = [bin_PSR_syn_iw_st, bin_PSR_syn_mw_st, bin_PSR_syn_ew_st]
-            # Edges
-            dr['edge_ISI_tr'] = [edge_ISI_iw_tr, edge_ISI_mw_tr, edge_ISI_ew_tr]
-            dr['edge_ISI_st'] = [edge_ISI_iw_st, edge_ISI_mw_st, edge_ISI_ew_st]
-            dr['edge_PSR_tr'] = [edge_PSR_iw_tr, edge_PSR_mw_tr, edge_PSR_ew_tr]
-            dr['edge_PSR_st'] = [edge_PSR_iw_st, edge_PSR_mw_st, edge_PSR_ew_st]
-            dr['edge_PSR_syn_tr'] = [edge_PSR_syn_iw_tr, edge_PSR_syn_mw_tr, edge_PSR_syn_ew_tr]
-            dr['edge_PSR_syn_st'] = [edge_PSR_syn_iw_st, edge_PSR_syn_mw_st, edge_PSR_syn_ew_st]
+            # Entropies - binning freedman-diaconis rule
+            dr['H_fd_ISI_tr'] = np.array([Hfd_ISI_iw_tr, Hfd_ISI_mw_tr, Hfd_ISI_ew_tr])
+            dr['H_fd_ISI_st'] = np.array([Hfd_ISI_iw_st, Hfd_ISI_mw_st, Hfd_ISI_ew_st])
+            # Entropies - binning scott's rule
+            dr['H_s_ISI_tr'] = np.array([Hs_ISI_iw_tr, Hs_ISI_mw_tr, Hs_ISI_ew_tr])
+            dr['H_s_ISI_st'] = np.array([Hs_ISI_iw_st, Hs_ISI_mw_st, Hs_ISI_ew_st])
+            # Entropies - binning knuth's rule
+            dr['H_k_ISI_tr'] = np.array([Hk_ISI_iw_tr, Hk_ISI_mw_tr, Hk_ISI_ew_tr])
+            dr['H_k_ISI_st'] = np.array([Hk_ISI_iw_st, Hk_ISI_mw_st, Hk_ISI_ew_st])
             # """
 
             # State variables of synaptic responses
             for sv in range(l_sv):
                 name_sv = names_neu_sv[sv]
+                # Entropies - fixed bin size
                 dr[f'H_{name_sv}_neu_tr'] = np.array([H_SV_neu_iw_tr[sv], H_SV_neu_mw_tr[sv], H_SV_neu_ew_tr[sv]])
                 dr[f'H_{name_sv}_neu_st'] = np.array([H_SV_neu_iw_st[sv], H_SV_neu_mw_st[sv], H_SV_neu_ew_st[sv]])
-                
+                # Histograms - fixed bin size
+                dr[f'hist_{name_sv}_neu_tr'] = [b_SV_neu_iw_tr[sv], b_SV_neu_mw_tr[sv], b_SV_neu_ew_tr[sv]]
+                dr[f'hist_{name_sv}_neu_st'] = [b_SV_neu_iw_st[sv], b_SV_neu_mw_st[sv], b_SV_neu_ew_st[sv]]
+                # Edges - fixed bin size
+                dr[f'edge_{name_sv}_neu_tr'] = [e_SV_neu_iw_tr[sv], e_SV_neu_mw_tr[sv], e_SV_neu_ew_tr[sv]]
+                dr[f'edge_{name_sv}_neu_st'] = [e_SV_neu_iw_st[sv], e_SV_neu_mw_st[sv], e_SV_neu_ew_st[sv]]
+                # min-max limits
+                dr[f'range_{name_sv}_neu'] = bin_size[sv]
+                """
+                # Entropies - binning freedman-diaconis rule
+                dr[f'H_fd_{name_sv}_neu_tr'] = np.array(
+                    [Hfd_SV_neu_iw_tr[sv], Hfd_SV_neu_mw_tr[sv], Hfd_SV_neu_ew_tr[sv]])
+                dr[f'H_fd_{name_sv}_neu_st'] = np.array(
+                    [Hfd_SV_neu_iw_st[sv], Hfd_SV_neu_mw_st[sv], Hfd_SV_neu_ew_st[sv]])
+                # Entropies - binning scott's rule
+                dr[f'H_k_{name_sv}_neu_tr'] = np.array([Hk_SV_neu_iw_tr[sv], Hk_SV_neu_mw_tr[sv], Hk_SV_neu_ew_tr[sv]])
+                dr[f'H_k_{name_sv}_neu_st'] = np.array([Hk_SV_neu_iw_st[sv], Hk_SV_neu_mw_st[sv], Hk_SV_neu_ew_st[sv]])
+                # Entropies - binning knuth's rule
+                dr[f'H_s_{name_sv}_neu_tr'] = np.array([Hs_SV_neu_iw_tr[sv], Hs_SV_neu_mw_tr[sv], Hs_SV_neu_ew_tr[sv]])
+                dr[f'H_s_{name_sv}_neu_st'] = np.array([Hs_SV_neu_iw_st[sv], Hs_SV_neu_mw_st[sv], Hs_SV_neu_ew_st[sv]])
+                # """
+
             # State variables of synaptic responses
             for sv in range(l_svs):
                 name_sv = names_syn_sv[sv]
+                # Entropies - fixed bin size
                 dr[f'H_{name_sv}_syn_tr'] = np.array([H_SV_syn_iw_tr[sv], H_SV_syn_mw_tr[sv], H_SV_syn_ew_tr[sv]])
                 dr[f'H_{name_sv}_syn_st'] = np.array([H_SV_syn_iw_st[sv], H_SV_syn_mw_st[sv], H_SV_syn_ew_st[sv]])
-            """
-            if PSR_syn_iw_tr.ndim == 2:
-                # Entropies
-                dr['H_PSR_syn_b_tr'] = np.array([H_PSR_syn_b_iw_tr, H_PSR_syn_b_mw_tr, H_PSR_syn_b_ew_tr])
-                dr['H_PSR_syn_b_st'] = np.array([H_PSR_syn_b_iw_st, H_PSR_syn_b_mw_st, H_PSR_syn_b_ew_st])
-                # Bins
-                # dr['bin_PSR_syn_b_tr'] = [bin_PSR_syn_b_iw_tr, bin_PSR_syn_b_mw_tr, bin_PSR_syn_b_ew_tr]
-                # dr['bin_PSR_syn_b_st'] = [bin_PSR_syn_b_iw_st, bin_PSR_syn_b_mw_st, bin_PSR_syn_b_ew_st]
-                # Edges
-                # dr['edge_PSR_syn_b_tr'] = [edge_PSR_syn_b_iw_tr, edge_PSR_syn_b_mw_tr, edge_PSR_syn_b_ew_tr]
-                # dr['edge_PSR_syn_b_st'] = [edge_PSR_syn_b_iw_st, edge_PSR_syn_b_mw_st, edge_PSR_syn_b_ew_st]
-            # """
-
-            # Saving bin_size computation min-max limits
-            # dr['H_PSR_syn_max_contr'] = [[min_syn, max_syn]]
-            # if PSR_syn_iw_tr.ndim == 2: dr['H_PSR_syn_max_contr'].append([min_syn_b, max_syn_b])
+                # Histograms - fixed bin size
+                dr[f'hist_{name_sv}_syn_tr'] = [b_SV_syn_iw_tr[sv], b_SV_syn_mw_tr[sv], b_SV_syn_ew_tr[sv]]
+                dr[f'hist_{name_sv}_syn_st'] = [b_SV_syn_iw_st[sv], b_SV_syn_mw_st[sv], b_SV_syn_ew_st[sv]]
+                # Edges - fixed bin size
+                dr[f'edge_{name_sv}_syn_tr'] = [e_SV_syn_iw_tr[sv], e_SV_syn_mw_tr[sv], e_SV_syn_ew_tr[sv]]
+                dr[f'edge_{name_sv}_syn_st'] = [e_SV_syn_iw_st[sv], e_SV_syn_mw_st[sv], e_SV_syn_ew_st[sv]]
+                # min-max limits
+                dr[f'range_{name_sv}_syn'] = bin_size_syn[sv]
+                """
+                # Entropies - binning freedman-diaconis rule
+                dr[f'H_fd_{name_sv}_syn_tr'] = np.array(
+                    [Hfd_SV_syn_iw_tr[sv], Hfd_SV_syn_mw_tr[sv], Hfd_SV_syn_ew_tr[sv]])
+                dr[f'H_fd_{name_sv}_syn_st'] = np.array(
+                    [Hfd_SV_syn_iw_st[sv], Hfd_SV_syn_mw_st[sv], Hfd_SV_syn_ew_st[sv]])
+                # Entropies - binning scott's rule
+                dr[f'H_k_{name_sv}_syn_tr'] = np.array([Hk_SV_syn_iw_tr[sv], Hk_SV_syn_mw_tr[sv], Hk_SV_syn_ew_tr[sv]])
+                dr[f'H_k_{name_sv}_syn_st'] = np.array([Hk_SV_syn_iw_st[sv], Hk_SV_syn_mw_st[sv], Hk_SV_syn_ew_st[sv]])
+                # Entropies - binning knuth's rule
+                dr[f'H_s_{name_sv}_syn_tr'] = np.array([Hs_SV_syn_iw_tr[sv], Hs_SV_syn_mw_tr[sv], Hs_SV_syn_ew_tr[sv]])
+                dr[f'H_s_{name_sv}_syn_st'] = np.array([Hs_SV_syn_iw_st[sv], Hs_SV_syn_mw_st[sv], Hs_SV_syn_ew_st[sv]])
+                # """
             # """
             # ##########################################################################################################
 

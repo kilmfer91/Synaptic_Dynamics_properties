@@ -1227,46 +1227,6 @@ def avg_f(vec):
     return np.median(vec, axis=0)
 
 
-def get_info_arrays(dr_gain, dr_filt, lbl_hI_tr, lbl_hI_st, lbl_h_tr, lbl_h_st,
-                    lbl_h_s_tr, lbl_h_s_st, lbl_h_sb_tr, lbl_h_sb_st, fig_syn_b):
-    # Information theory analysis for Inputs (ISI)
-    H_i_tr, H_m_tr, H_e_tr = dr_gain[lbl_hI_tr[0]][0, :], dr_gain[lbl_hI_tr[0]][1, :], dr_gain[lbl_hI_tr[0]][2, :]
-    H_i_st, H_m_st, H_e_st = dr_gain[lbl_hI_st[0]][0, :], dr_gain[lbl_hI_st[0]][1, :], dr_gain[lbl_hI_st[0]][2, :]
-    aux_HI = [H_i_tr, H_m_tr, H_e_tr, H_i_st, H_m_st, H_e_st]
-    # Information theory analysis for neurons - fixed bin size
-    H_iw_tr, H_mw_tr, H_ew_tr = dr_gain[lbl_h_tr[0]][0, :], dr_gain[lbl_h_tr[0]][1, :], dr_gain[lbl_h_tr[0]][2, :]
-    H_iw_st, H_mw_st, H_ew_st = dr_gain[lbl_h_st[0]][0, :], dr_gain[lbl_h_st[0]][1, :], dr_gain[lbl_h_st[0]][2, :]
-    aux_H = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
-    H_iw_tr, H_mw_tr, H_ew_tr = dr_filt[lbl_h_tr[0]][0, :], dr_filt[lbl_h_tr[0]][1, :], dr_filt[lbl_h_tr[0]][2, :]
-    H_iw_st, H_mw_st, H_ew_st = dr_filt[lbl_h_st[0]][0, :], dr_filt[lbl_h_st[0]][1, :], dr_filt[lbl_h_st[0]][2, :]
-    aux_det_H = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
-    # Information theory analysis for synapses - fixed bin size
-    H_iw_tr, H_mw_tr, H_ew_tr = (dr_gain[lbl_h_s_tr[0]][0, :], dr_gain[lbl_h_s_tr[0]][1, :],
-                                 dr_gain[lbl_h_s_tr[0]][2, :])
-    H_iw_st, H_mw_st, H_ew_st = (dr_gain[lbl_h_s_st[0]][0, :], dr_gain[lbl_h_s_st[0]][1, :],
-                                 dr_gain[lbl_h_s_st[0]][2, :])
-    aux_H_s = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
-    H_iw_tr, H_mw_tr, H_ew_tr = (dr_filt[lbl_h_s_tr[0]][0, :], dr_filt[lbl_h_s_tr[0]][1, :],
-                                 dr_filt[lbl_h_s_tr[0]][2, :])
-    H_iw_st, H_mw_st, H_ew_st = (dr_filt[lbl_h_s_st[0]][0, :], dr_filt[lbl_h_s_st[0]][1, :],
-                                 dr_filt[lbl_h_s_st[0]][2, :])
-    aux_det_H_s = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
-    if fig_syn_b:
-        H_iw_tr, H_mw_tr, H_ew_tr = (dr_gain[lbl_h_sb_tr[0]][0, :], dr_gain[lbl_h_sb_tr[0]][1, :],
-                                     dr_gain[lbl_h_sb_tr[0]][2, :])
-        H_iw_st, H_mw_st, H_ew_st = (dr_gain[lbl_h_sb_st[0]][0, :], dr_gain[lbl_h_sb_st[0]][1, :],
-                                     dr_gain[lbl_h_sb_st[0]][2, :])
-        aux_H_sb = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
-        H_iw_tr, H_mw_tr, H_ew_tr = (dr_filt[lbl_h_sb_tr[0]][0, :], dr_filt[lbl_h_sb_tr[0]][1, :],
-                                     dr_filt[lbl_h_sb_tr[0]][2, :])
-        H_iw_st, H_mw_st, H_ew_st = (dr_filt[lbl_h_sb_st[0]][0, :], dr_filt[lbl_h_sb_st[0]][1, :],
-                                     dr_filt[lbl_h_sb_st[0]][2, :])
-        aux_det_H_sb = [H_iw_tr, H_mw_tr, H_ew_tr, H_iw_st, H_mw_st, H_ew_st]
-
-        return aux_HI, aux_H, aux_det_H, aux_H_s, aux_det_H_s, aux_H_sb, aux_det_H_sb
-    return aux_HI, aux_H, aux_det_H, aux_H_s, aux_det_H_s, None, None
-
-
 def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g, norm_neuron=True, min_n=None,
                             max_n=None, plot_filt=False):
     # var_ = ['st_mid_prop_max', 'st_mid_prop_min', 'mtr_mid_prop_max', 'mtr_mid_prop_min',
@@ -1353,19 +1313,83 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
     return axb_
 
 
-def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2, norm_neuron, titles, markers, alphas):
+def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, norm_neuron, titles, markers,
+                        alphas, c_g, plot_filt=False, ode='n'):
+    for n in range(len(name_state_vars)):
+        f_vec = dr_filt['initial_frequencies']
+        c_f = ['tab:red', 'tab:blue']
+        l_f = ['Amp', 'Med']
+        ls = ['-', '-']
+        wins = [['ini', 'mid'], ['mid', 'end']]
+        shift = [0, 7]
+        aux = ''
+        if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
+
+        for i in range(len(wins)):
+            win1, win2 = wins[i]
+            k = shift[i]
+            a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron,
+                                         ode=ode)
+            Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
+
+            # Auxiliary arrays
+            aux_gain = np.copy(G_mi_st[:-1])  # Selecting only amplitude, variability and median
+            aux_gain_tr = np.copy(G_mi_tr[:-1])  # Selecting only amplitude, variability and median
+            aux_filt = np.copy(Eff_i_st[:-1])[[0, 2], :]  # Selecting only amplitude and median
+            aux_filt_tr = np.copy(Eff_i_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
+            n_sto_tr_time = tr_time
+
+            # Plotting Entropy - stationary states (synaptic filtering and gain control)
+            axs[n][0 + k].plot(f_vec, Eff_i_st[3], alpha=alphas[1], label="st - " + str(gain), c=c_g)
+            # Plotting Entropy - transitory states (synaptic filtering and gain control)
+            axs[n][1 + k].plot(f_vec, G_mi_st[3], alpha=alphas[0], label="tr - " + str(gain), c=c_g)
+
+            if plot_filt:
+                # Time to reach steady-state and filtering property
+                # Transition time
+                axs[n][2 + k].plot(f_vec, avg_f(n_sto_tr_time), alpha=alphas[1], c='black')
+                axs[n][2 + k].fill_between(f_vec, np.quantile(n_sto_tr_time, 0.01, axis=0),
+                                     np.quantile(n_sto_tr_time, 0.99, axis=0), color='black', alpha=0.1)
+
+                # Plotting filtering property
+                for j in range(2):
+                    axs[n][3 + k].plot(f_vec, avg_f(aux_filt[j]), alpha=alphas[1], c=c_f[j], label="st-" + l_f[j],
+                                 linestyle=ls[j])
+                    axs[n][3 + k].fill_between(f_vec, np.quantile(aux_filt[j], 0.1, axis=0),
+                                         np.quantile(aux_filt[j], 0.9, axis=0), color=c_f[j], alpha=0.1)
+                for j in range(2):
+                    axs[n][3 + k].plot(f_vec, avg_f(aux_filt_tr[j]), c=c_f[j], label="tr-" + l_f[j], linestyle=ls[j])
+                    axs[n][3 + k].fill_between(f_vec, np.quantile(aux_filt_tr[j], 0.1, axis=0),
+                                         np.quantile(aux_filt_tr[j], 0.9, axis=0), color=c_f[j], alpha=0.1)
+
+            # Plotting Proportional changes of rate for Amplitude, Variability, Median
+            for j in range(3):
+                axs[n][j + k + 4].plot(f_vec, avg_f(aux_gain[j]), alpha=alphas[1], c=c_g, label="st-" + str(gain))
+                axs[n][j + k + 4].fill_between(f_vec, np.quantile(aux_gain[j], 0.1, axis=0),
+                                         np.quantile(aux_gain[j], 0.9, axis=0), color=c_g, alpha=0.1)
+            for j in range(3):
+                axs[n][j + k + 4].plot(f_vec, avg_f(aux_gain_tr[j]), alpha=alphas[0], label="tr-" + str(gain), c=c_g)
+                axs[n][j + k + 4].fill_between(f_vec, np.quantile(aux_gain_tr[j], 0.01, axis=0),
+                                         np.quantile(aux_gain_tr[j], 0.99, axis=0), color=c_g, alpha=0.1)
+
+
+def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2, norm_neuron, titles, markers, alphas,
+                       ode='n'):
     for n in range(len(name_state_vars)):
         aux = ''
         if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
-        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron)
-        Eff_i_st, G_mi_st, G_mi_tr, Eff_det_i_st, G_det_mi_st, G_det_mi_tr = a
+        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron, ode=ode)
+        Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
+
         i = 0
         for j in range(int(len(titles) / 2)):
             # STATIONARY COMPONENT
             aux_gain = np.copy(G_mi_st[j])
             aux_filt = np.copy(Eff_i_st[j])
-            aux_det_gain = np.copy(G_det_mi_st[j])[0, :]
-            aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+            if G_det_mi_st[j].ndim == 2: aux_det_gain = np.copy(G_det_mi_st[j])[0, :]
+            else: aux_det_gain = np.copy(G_det_mi_st[j])
+            if Eff_det_i_st[j].ndim == 2: aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+            else: aux_det_filt = np.copy(Eff_det_i_st[j])
             # if n_model == 'HH': aux_gain *= 1e3, aux_filt *= 1e3, aux_det_gain *= 1e3, aux_det_filt *= 1e3
 
             # Deterministic plots
@@ -1375,17 +1399,23 @@ def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2,
             # ax_[n][j].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
 
             # Stochastic plots
-            axs[n][j].scatter(avg_f(aux_filt), avg_f(aux_gain), marker=markers[i], alpha=alphas[i])
-            axs[n][j].plot(avg_f(aux_filt), avg_f(aux_gain), alpha=alphas[i], label=gain)
+            x, y = avg_f(aux_filt), avg_f(aux_gain)
+            if 'Entropy' in titles[j]: x, y = aux_filt, aux_gain
+            axs[n][j].scatter(x, y, marker=markers[i], alpha=alphas[i])
+            axs[n][j].plot(x, y, alpha=alphas[i], label=gain)
             # if i == 0: ax_[n][j].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
             #                                np.quantile(aux_gain, 0.9, axis=0), color=cols_[j], alpha=0.1)
-            axs[n][j].scatter(avg_f(aux_filt)[0], avg_f(aux_gain)[0], c='black')
+            axs[n][j].scatter(x[0], y[0], c='black')
 
             # TRANSITORY COMPONENT
             aux_gain = np.copy(G_mi_tr[j])
             aux_filt = np.copy(Eff_i_st[j])
-            aux_det_gain = np.copy(G_det_mi_tr[j])[0, :]
-            aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+            # aux_det_gain = np.copy(G_det_mi_tr[j])[0, :]
+            # aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+            if G_det_mi_tr[j].ndim == 2: aux_det_gain = np.copy(G_det_mi_tr[j])[0, :]
+            else: aux_det_gain = np.copy(G_det_mi_tr[j])
+            if Eff_det_i_st[j].ndim == 2: aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+            else: aux_det_filt = np.copy(Eff_det_i_st[j])
 
             # Deterministic plots
             # if i_g == 0: ax_[n][j + 3].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
@@ -1394,17 +1424,41 @@ def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2,
             # ax_[n][j + 3].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
 
             # Stochastic plots
-            axs[n][j + 3].scatter(avg_f(aux_filt), avg_f(aux_gain), marker=markers[i], alpha=alphas[i])
-            axs[n][j + 3].plot(avg_f(aux_filt), avg_f(aux_gain), alpha=alphas[i], label=gain)
+            x, y = avg_f(aux_filt), avg_f(aux_gain)
+            if 'Entropy' in titles[j]: x, y = aux_filt, aux_gain
+            axs[n][j + 4].scatter(x, y, marker=markers[i], alpha=alphas[i])
+            axs[n][j + 4].plot(x, y, alpha=alphas[i], label=gain)
             # if i == 0: ax_[n][j + 3].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
             #                                    np.quantile(aux_gain, 0.9, axis=0), color=cols_[j], alpha=0.1)
-            axs[n][j + 3].scatter(avg_f(aux_filt)[0], avg_f(aux_gain)[0], c='black')
+            axs[n][j + 4].scatter(x[0], y[0], c='black')
 
 
-def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=True, min_n=None, max_n=None):
+def adjust_freq_portraits(ax, x_label, y_label, title, xlims=None, ylims=None, xscale='linear'):
+    ax.set_xlabel(x_label, color='gray')
+    ax.set_ylabel(y_label, color='gray')
+    if xlims is not None: ax.set_xlim(xlims)
+    if ylims is not None: ax.set_ylim(ylims)
+    ax.set_title(title, color="black", alpha=0.7)
+    ax.grid()
+    ax.set_xscale(xscale)
+
+
+def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=True, min_n=None, max_n=None, ode='n'):
     min_n = None if min_n is None else min_n
     max_n = None if max_n is None else max_n
 
+    # FOR INFORMATION THEORY ARRAYS
+    # Getting indices for Entropy arrays
+    H_pos1, H_pos2 = 0, 1
+    if win2 == 'end': H_pos1, H_pos2 = 1, 2
+    # altering prefix for H
+    pH = prefix
+    if prefix == '': pH = 'v_'
+    # auxiliar name for H
+    auxH = 'neu_'
+    if ode == 's': auxH = 'syn_'
+
+    # Obtaining variables of statistical descriptors for each window
     p = prefix
     var_ = [p + 'st_' + win2 + '_prop_max', p + 'st_' + win2 + '_prop_min',
             p + 'mtr_' + win2 + '_prop_max', p + 'mtr_' + win2 + '_prop_min',
@@ -1423,6 +1477,7 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     n_sto_m_tr_amp = norm_array(dr_[var_[2]] - dr_[var_[3]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_st_amp = norm_array(dr_[var_[4]] - dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_st_min = norm_array(dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_min = norm_array(dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_tr_amp = norm_array(dr_[var_[6]] - dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_m_st_var = norm_array(dr_[var_[8]] - dr_[var_[9]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_m_tr_var = norm_array(dr_[var_[10]] - dr_[var_[11]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
@@ -1433,19 +1488,31 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     n_sto_i_st_med = norm_array(dr_[var_[18]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_tr_med = norm_array(dr_[var_[19]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
 
+    # For Entropy arrays
+    H_st = dr_['H_' + pH + auxH + 'st'][H_pos1:H_pos2 + 1, :]
+    H_tr = dr_['H_' + pH + auxH + 'tr'][H_pos1:H_pos2 + 1, :]
+    H_i_st = H_st[0, :]
+    H_i_tr = H_tr[0, :]
+    GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
+    GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
+
     # Sets
     Eff_i_st_amp = n_sto_i_st_amp
-    Eff_i_st_med = n_sto_i_st_med - n_sto_i_st_min
+    Eff_i_st_med = n_sto_i_st_med - n_sto_i_tr_min
     Eff_i_st_var = n_sto_i_st_var
-    Eff_i_st = [Eff_i_st_amp, Eff_i_st_var, Eff_i_st_med]
+    Eff_i_st = [Eff_i_st_amp, Eff_i_st_var, Eff_i_st_med, H_i_st]
+    Eff_i_tr_amp = n_sto_i_tr_amp
+    Eff_i_tr_med = n_sto_i_tr_med - n_sto_i_tr_min
+    Eff_i_tr_var = n_sto_i_tr_var
+    Eff_i_tr = [Eff_i_tr_amp, Eff_i_tr_var, Eff_i_tr_med, H_i_tr]
     G_mi_st_amp = n_sto_m_st_amp - n_sto_i_st_amp
     G_mi_st_med = n_sto_m_st_med - n_sto_i_st_med
     G_mi_st_var = n_sto_m_st_var - n_sto_i_st_var
-    G_mi_st = [G_mi_st_amp, G_mi_st_var, G_mi_st_med]
+    G_mi_st = [G_mi_st_amp, G_mi_st_var, G_mi_st_med, GH_mi_st]
     G_mi_tr_amp = n_sto_m_tr_amp - n_sto_i_st_amp
     G_mi_tr_med = n_sto_m_tr_med - n_sto_i_st_med
     G_mi_tr_var = n_sto_m_tr_var - n_sto_i_st_var
-    G_mi_tr = [G_mi_tr_amp, G_mi_tr_var, G_mi_tr_med]
+    G_mi_tr = [G_mi_tr_amp, G_mi_tr_var, G_mi_tr_med, GH_mi_tr]
 
     # For deterministic arrays
     dr_ = dr_filt
@@ -1453,6 +1520,7 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     n_sto_m_tr_amp = norm_array(dr_[var_[2]] - dr_[var_[3]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_st_amp = norm_array(dr_[var_[4]] - dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_st_min = norm_array(dr_[var_[5]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
+    n_sto_i_tr_min = norm_array(dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_tr_amp = norm_array(dr_[var_[6]] - dr_[var_[7]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_m_st_var = norm_array(dr_[var_[8]] - dr_[var_[9]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_m_tr_var = norm_array(dr_[var_[10]] - dr_[var_[11]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
@@ -1463,21 +1531,33 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     n_sto_i_st_med = norm_array(dr_[var_[18]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
     n_sto_i_tr_med = norm_array(dr_[var_[19]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
 
+    # For Entropy arrays
+    H_st = dr_['H_' + pH + auxH + 'st'][H_pos1:H_pos2 + 1, :]
+    H_tr = dr_['H_' + pH + auxH + 'tr'][H_pos1:H_pos2 + 1, :]
+    H_i_st = H_st[0, :]
+    H_i_tr = H_tr[0, :]
+    GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
+    GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
+
     # Sets
     Eff_i_st_amp = n_sto_i_st_amp
     Eff_i_st_med = n_sto_i_st_med - n_sto_i_st_min
     Eff_i_st_var = n_sto_i_st_var
-    Eff_det_i_st = [Eff_i_st_amp, Eff_i_st_var, Eff_i_st_med]
+    Eff_det_i_st = [Eff_i_st_amp, Eff_i_st_var, Eff_i_st_med, H_i_st]
+    Eff_i_tr_amp = n_sto_i_tr_amp
+    Eff_i_tr_med = n_sto_i_tr_med - n_sto_i_tr_min
+    Eff_i_tr_var = n_sto_i_tr_var
+    Eff_det_i_tr = [Eff_i_tr_amp, Eff_i_tr_var, Eff_i_tr_med, H_i_tr]
     G_mi_st_amp = n_sto_m_st_amp - n_sto_i_st_amp
     G_mi_st_med = n_sto_m_st_med - n_sto_i_st_med
     G_mi_st_var = n_sto_m_st_var - n_sto_i_st_var
-    G_det_mi_st = [G_mi_st_amp, G_mi_st_var, G_mi_st_med]
+    G_det_mi_st = [G_mi_st_amp, G_mi_st_var, G_mi_st_med, GH_mi_st]
     G_mi_tr_amp = n_sto_m_tr_amp - n_sto_i_st_amp
     G_mi_tr_med = n_sto_m_tr_med - n_sto_i_st_med
     G_mi_tr_var = n_sto_m_tr_var - n_sto_i_st_var
-    G_det_mi_tr = [G_mi_tr_amp, G_mi_tr_var, G_mi_tr_med]
+    G_det_mi_tr = [G_mi_tr_amp, G_mi_tr_var, G_mi_tr_med, GH_mi_tr]
 
-    return Eff_i_st, G_mi_st, G_mi_tr, Eff_det_i_st, G_det_mi_st, G_det_mi_tr
+    return Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr
 
 
 def organise_keys_dr_gc(sufix):

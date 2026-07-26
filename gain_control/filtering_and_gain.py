@@ -12,11 +12,9 @@ from gain_control.utils_gc import *
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-name_n_state_variables = ['v', 'm', 'h', 'n']  #  ['v']  #
-name_syn_state_variables = ['s_ampa', 's_nmda', 'x_nmda', 'xd']  # ['R', 'U', 'epsc']  #
-s_model = 'DoornSTF'
+s_model = 'DoornSTD'
 n_model = "HH"
-ind = 7
+ind = 0
 run_experiment = False
 save_figs = False
 imputations = True
@@ -57,51 +55,39 @@ filt_dict_loaded = False
 # Titles graphs
 title = "Model " + s_model + ', ind ' + str(ind)
 if n_model == 'LIF': title += r', $\tau_{lif}$ ' + str(tau_lif) + "ms"
-if len(gain_v) == 1:
-    title += ', gain ' + str(int(gain_v[0] * 100)) + '%'
-else:
-    title += ', multiple gains'
+if len(gain_v) == 1: title += ', gain ' + str(int(gain_v[0] * 100)) + '%'
+else: title += ', multiple gains'
 
 # ""
 # Plot
-lbl = ['st_mid_prop']
-lbl2 = ['st_ini_prop']
-lbl_syn = ['syn_st_mid_prop']
-lbl2_syn = ['syn_st_ini_prop']
-lbl_synb = ['syn_b_st_mid_prop']
-lbl2_synb = ['syn_b_st_ini_prop']
-lbl_h_tr = ['H_v_neu_tr']
-lbl_h_st = ['H_v_neu_st']
-lbl_hI_tr = ['H_ISI_tr']
-lbl_hI_st = ['H_ISI_st']
-lbl_h_s_tr = ['H_epsc_syn_tr'] if s_model == 'TM' else ['H_s_ampa_syn_tr']
-lbl_h_s_st = ['H_epsc_syn_st'] if s_model == 'TM' else ['H_s_ampa_syn_st']
-lbl_h_sb_tr = ['H_PSR_syn_b_tr'] if s_model == 'TM' else ['H_x_nmda_syn_tr']
-lbl_h_sb_st = ['H_PSR_syn_b_st'] if s_model == 'TM' else ['H_x_nmda_syn_st']
-titles_H = ['ini win.', 'mid win.', 'end win.', 'st-ini win.', 'st-mid win.', 'st-end win.']
-titles_H_syn = ['AMPA ini win.', 'AMPA mid win.', 'AMPA end win.', 'NMDA ini win.', 'NMDA mid win.', 'NMDA end win.']
-labels_H = ['tr-', 'tr-', 'tr-', 'st-', 'st-', 'st-']
-st_lbl = ['_max',  '_q95', '_q90', '_med', '_min', '_q5', '_q10', '_mean']
 title_mp = ['Amplitude in steady-state', 'Varibility in steady-state', 'Median in steady-state',
-            'Amplitude in transition-state', 'Varibility in transition-state', 'Median in transition-state']
+            'Entropy in steady-state', 'Amplitude in transitory-state', 'Varibility in transitory-state',
+            'Median in transitory-state', 'Entropy in transitory-state']
 x_label_ax_p = [r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)', r'$E_{ff_{i,st}}^{med}$ (mV)',
-               r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)', r'$E_{ff_{i,st}}^{med}$ (mV)']
+                r'$H_{i,st}$ (bits)', r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)',
+                r'$E_{ff_{i,st}}^{med}$ (mV)', r'$H_{i,st}$ (bits)']
 y_label_ax_p = [r'$G_{m-i,st}^{amp} (mV)$', r'$G_{m-i,st}^{var} (mV)$', r'$G_{m-i,st}^{med} (mV)$',
-               r'$G_{m-i,tr}^{amp} (mV)$', r'$G_{m-i,tr}^{var} (mV)$', r'$G_{m-i,tr}^{med} (mV)$']
+                r'$GH_{m-i,st}$ (bits)', r'$G_{m-i,tr}^{amp} (mV)$', r'$G_{m-i,tr}^{var} (mV)$',
+                r'$G_{m-i,tr}^{med} (mV)$', r'$GH_{m-i,tr}$ (bits)']
 x_label_ax_n = [r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)', r'$E_{ff_{m,st}}^{med}$ (mV)',
-               r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)', r'$E_{ff_{m,st}}^{med}$ (mV)']
+                r'$H_{m,st}$ (bits)', r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)',
+                r'$E_{ff_{m,st}}^{med}$ (mV)', r'$H_{m,st}$ (bits)']
 y_label_ax_n = [r'$G_{e-m,st}^{amp} (mV)$', r'$G_{e-m,st}^{var} (mV)$', r'$G_{e-m,st}^{med} (mV)$',
-               r'$G_{e-m,tr}^{amp} (mV)$', r'$G_{e-m,tr}^{var} (mV)$', r'$G_{e-m,tr}^{med} (mV)$']
-[r'$E_{ff_{%s}}$', r'$E_{ff{var_{%s}}}$', r'$E_{ff{med_{%s}}}$']
-t_ = [r'$G_{m-i,tr}(r,\delta)$ and $G_{m-i,st}(r,\delta)$', r'$G_{e-m,tr}(r,\delta)$ and $G_{e-m,st}(r,\delta)$']
-cols_ = ['tab:red', 'tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:olive', 'tab:green', 'tab:orange']
+                r'$GH_{e-m,st}$ (bits)', r'$G_{e-m,tr}^{amp} (mV)$', r'$G_{e-m,tr}^{var} (mV)$',
+                r'$G_{e-m,tr}^{med} (mV)$', r'$GH_{e-m,tr}$ (bits)']
+title_freqres = ['H - filtering', 'H - Gain-control', 'Transitory time', 'Synaptic Filtering', 'GC - amp', 'GC - var',
+            'GC - med']
+ylabel_axb = ["Entropy (bits)", "Entropy (bits)", "Time (s)", "Mem. pot. (mV)", "Mem. pot. (mV)", "Mem. pot. (mV)",
+              "Mem. pot. (mV)"]
 c_g = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
        'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
 
-axb_s, figEntropySyn, aux_H_sb, axb_, ax_, alphas, markers, axb_sb = None, None, None, None, None, None, None, None
-st_lbl_b, xl_neu, xl_syn, xl_syb, ax_s, ax_sb, ax_hI, ax_h, ax_h, ax_hs = [None for _ in range(10)]
+name_n_state_variables, name_syn_state_variables = None, None
+ax_f, ax_fs, alphas, markers = None, None, None, None
+xl_neu, xl_syn, xl_syb, ax_s, ax_sb, ax_hI, ax_h, ax_h, ax_hs = [None for _ in range(9)]
 figNeur_pos_gc, figNeur_neg_gc, figSynapse, figCompPropNeuron, figCompPropSyn = None, None, None, None, None
 figSynapseb, figCompPropSynb, figEntropyInput, figEntropy, ax_p, ax_n = None, None, None, None, None, None
+figSyn_pos_gc, figSyn_neg_gc, ax_sp, ax_sn = None, None, None, None
 
 if plot_figs:
     plt.rcParams['figure.constrained_layout.use'] = True
@@ -109,59 +95,59 @@ if plot_figs:
     dr_gain_control_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_lif, True,
                                          imputations, 0.1, n_noise=n_noise)
     if os.path.isfile(path_vars + dr_gain_control_file) and not filt_dict_loaded:
+        # Name state variables
+        dr_filt = loadObject(dr_gain_control_file, path_vars)
+        name_n_state_variables = dr_filt['name_neuron_state_variables']
+        name_syn_state_variables = dr_filt['name_syn_state_variables']
+
+        # Positive changes of rate - Neuron
         figNeur_pos_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_n_state_variables))]  # 6.5, 5
         title_ = 'Frequency portrait for short-term depression - %s(t) - positive changes of rate'
         for j in range(len(name_n_state_variables)):
             figNeur_pos_gc[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
-        ax_p = [[figNeur_pos_gc[i].add_subplot(2, 3, j + 1) for j in range(len(title_mp))] for i in
+        ax_p = [[figNeur_pos_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
                range(len(name_n_state_variables))]
+
+        # Positive changes of rate - Synapse
+        figSyn_pos_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_syn_state_variables))]  # 6.5, 5
+        title_ = 'Frequency portrait for short-term depression - %s(t) - positive changes of rate'
+        for j in range(len(name_syn_state_variables)):
+            figSyn_pos_gc[j].suptitle(title_ % name_syn_state_variables[j], fontsize=22)
+        ax_sp = [[figSyn_pos_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
+               range(len(name_syn_state_variables))]
+
+        # Negative changes of rate - neuron
         figNeur_neg_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_n_state_variables))]  # 6.5, 5
         title_ = 'Frequency portrait for short-term depression - %s(t) - negative changes of rate'
         for j in range(len(name_n_state_variables)):
             figNeur_neg_gc[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
-        ax_n = [[figNeur_neg_gc[i].add_subplot(2, 3, j + 1) for j in range(len(title_mp))] for i in
+        ax_n = [[figNeur_neg_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
                range(len(name_n_state_variables))]
 
-    # figNeuron = plt.figure(figsize=(15, 8))  # 6.5, 5
-    # plt.suptitle(title + ". Mem. pot.")
-    # ax_ = [figNeuron.add_subplot(2, 3, j + 1) for j in range(len(title_mp))]
+        # Negative changes of rate - Synapse
+        figSyn_neg_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_syn_state_variables))]  # 6.5, 5
+        title_ = 'Frequency portrait for short-term depression - %s(t) - negative changes of rate'
+        for j in range(len(name_syn_state_variables)):
+            figSyn_neg_gc[j].suptitle(title_ % name_syn_state_variables[j], fontsize=22)
+        ax_sn = [[figSyn_neg_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
+                 range(len(name_syn_state_variables))]
 
-    # Synaptic filtering vs. Gain-Control for Synapse A
-    figSynapse = plt.figure(figsize=(15, 8))  # 6.5, 5
-    plt.suptitle(title + ". Synapse")
-    ax_s = [figSynapse.add_subplot(2, 4, j + 1) for j in range(len(st_lbl))]
-    # figEntropyInput = plt.figure(figsize=(15, 4))
-    # plt.suptitle(title + ". Information Theory (Input)")
-    # ax_hI = [figEntropyInput.add_subplot(1, 3, j + 1) for j in range(3)]
+        # Frequency responses - neuron
+        figCompPropNeuron = [plt.figure(figsize=(20, 7)) for _ in range(len(name_n_state_variables))]  # (20, 3.6)
+        title_ = 'Neuron - Frequency responses for %s(t) - positive and negative changes of rate'
+        for j in range(len(name_n_state_variables)):
+            figCompPropNeuron[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
+        ax_f = [[figCompPropNeuron[i].add_subplot(2, 7, j + 1) for j in range(14)] for i in
+                range(len(name_n_state_variables))]
 
-    # Synaptic entropy in frequency for Input
-    figEntropyInput = plt.figure(figsize=(15, 4))
-    plt.suptitle(title + ". Information Theory (Input)")
-    ax_hI = [figEntropyInput.add_subplot(1, 3, j + 1) for j in range(3)]
-
-    # Synaptic entropy in frequency for Neuron
-    figEntropy = plt.figure(figsize=(15, 4))
-    plt.suptitle(title + ". Information Theory (Neuron)")
-    ax_h = [figEntropy.add_subplot(1, 3, j + 1) for j in range(3)]
-
-    # Synaptic entropy in frequency for Synapse(s)
-    figEntropySyn = plt.figure(figsize=(15, 8))
-    plt.suptitle(title + ". Information Theory (Synapses) ")
-
-    # Plots of computational properties vs rates
-    st_lbl_b = ['H - filtering', 'H - Gain-control', 'Transition time', 'Synaptic Filtering', 'GC - amp', 'GC - var',
-                'GC - med']
-    # Neuron
-    figCompPropNeuron = plt.figure(figsize=(20, 3.6))  # 15, 8
-    plt.suptitle(title + ". Neuron v(t)", fontsize=23)
-    axb_ = [figCompPropNeuron.add_subplot(1, 7, j + 1) for j in range(7)]  # [0, 1, 4, 5, 6, 7, 8]]
-    figCompPropSyn = plt.figure(figsize=(20, 3.6))  # 15, 8
-    aux_t = ""
-    if n_model == "HH": aux_t = ". AMPA synapse"
-    if n_model == "LIF": aux_t = ". Synapse"
-    plt.suptitle(title + aux_t, fontsize=23)
-    axb_s = [figCompPropSyn.add_subplot(1, 7, j + 1) for j in range(7)]  # [0, 1, 4, 5, 6, 7, 8, 9]]
-
+        # Frequency responses - synapse
+        figCompPropSyn = [plt.figure(figsize=(20, 7)) for _ in range(len(name_syn_state_variables))]  # (20, 3.6)
+        title_ = 'Synapse - Frequency responses for %s(t) - positive and negative changes of rate'
+        for j in range(len(name_syn_state_variables)):
+            figCompPropSyn[j].suptitle(title_ % name_syn_state_variables[j], fontsize=22)
+        ax_fs = [[figCompPropSyn[i].add_subplot(2, 7, j + 1) for j in range(14)] for i in
+                 range(len(name_syn_state_variables))]
+    
     alpha = 0.3
     markers = ['+', '*']
     alphas = [1.0, 0.5]
@@ -202,9 +188,6 @@ for gain in gain_v:
         description = dr_filt['description']
         seeds = dr_filt['seeds']
         total_realizations = dr_filt['t_realizations']
-        # filt_dict_loaded = True
-        # lif_params2, syn_params, lif_params, name_params = dr_filt['lif_params2'], dr_filt['syn_params'],
-        # dr_filt['lif_params'], dr_filt['name_params']
 
         # Name state variables
         name_n_state_variables = dr_filt['name_neuron_state_variables']
@@ -215,30 +198,6 @@ for gain in gain_v:
 
     f_vec = dr_gain['initial_frequencies']
     f_vecD = dr_filt['initial_frequencies']
-    # **********************************************************************************************************
-    # For Entropy analysis
-    if plot_figs:
-        # Setting figure for synaptic entropy in case there are one or two synapses
-        if not fig_syn_b:
-            if 'H_PSR_syn_b_tr' in dr_gain.keys():
-                # Synaptic filtering vs. Gain-Control for Synapse B
-                ax_hs = [figEntropySyn.add_subplot(2, 3, j + 1) for j in range(6)]
-                fig_syn_b = True
-                figSynapseb = plt.figure(figsize=(15, 8))  # 6.5, 5
-                plt.suptitle(title + ". Synapse B")
-                ax_sb = [figSynapseb.add_subplot(2, 4, j + 1) for j in range(len(st_lbl))]
-                # Plots of computational properties vs rates
-                figCompPropSynb = plt.figure(figsize=(25, 3.6))  # 6.5, 5
-                plt.suptitle(title + ". NMDA synapse", fontsize=23)
-                axb_sb = [figCompPropSynb.add_subplot(1, 8, j + 1) for j in range(8)]  # [0, 1, 4, 5, 6, 7, 8, 9]]
-
-            else:
-                ax_hs = [figEntropySyn.add_subplot(1, 3, j + 1) for j in range(3)]
-
-    # Getting arrays of Synaptic Information
-    a = get_info_arrays(dr_gain, dr_filt, lbl_hI_tr, lbl_hI_st, lbl_h_tr, lbl_h_st, lbl_h_s_tr, lbl_h_s_st,
-                        lbl_h_sb_tr, lbl_h_sb_st, fig_syn_b)
-    aux_HI, aux_H, aux_det_H, aux_H_s, aux_det_H_s, aux_H_sb, aux_det_H_sb = a
 
     # ******************************************************************************************************************
     # Plots 1
@@ -249,197 +208,31 @@ for gain in gain_v:
             # For Membrane potential analysis
             var_ = organise_keys_dr_gc(sufix='')
             # Plotting properties
-            axb_ = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, axb_, dr_['time_transition'], min_n=min_n,
-                                       max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
+            ax_f = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, ax_f, dr_['time_transition'], min_n=min_n,
+                                           max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
         else:
-            for name_ in dr_['name_neuron_state_variables']:
-                var_ = organise_keys_dr_gc(sufix=name_ + '_')
-                if name_ == 'v':
-                    var_ = organise_keys_dr_gc(sufix='')
-                    # Plotting properties
-                    axb_ = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, axb_, dr_['time_transition'], min_n=min_n,
-                                                   max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
+            # Plotting Frequency response of properties - neuron
+            plot_freq_responses(name_n_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_f,
+                                norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='n')
+            # Plotting Frequency response of properties - synapse
+            plot_freq_responses(name_syn_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_fs,
+                                norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='s')
 
-        if 'name_syn_state_variables' not in dr_:
-            # For Synaptic analysis
-            var_ = organise_keys_dr_gc(sufix='syn_')
-            # Plotting properties
-            axb_s = plot_properties_in_freq(dr_, var_, f_vec, aux_H_s, gain, axb_s, dr_['time_transition_syn'],
-                                        c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=False)
-
-            # For Synaptic analysis (second synapse)
-            var_ = organise_keys_dr_gc(sufix='syn_b_')
-            # Plotting properties
-            if fig_syn_b:
-                axb_sb = plot_properties_in_freq(dr_, var_, f_vec, aux_H_sb, gain, axb_sb,
-                                                 dr_['time_transition_syn_b'], c_g=c_g[i_g], plot_filt=i_g == 0,
-                                                 norm_neuron=False)
     # **********************************************************************************************************
     # Plots 2
 
     if plot_figs:
-        # **********************************************************************************************************
-        # For Membrane potential analysis
-        #
+        # For Neuron analysis
         plot_freq_portrait(name_n_state_variables, dr_filt, dr_gain, gain, ax_p, 'ini', 'mid',
-                           norm_neuron, title_mp, markers, alphas)
+                           norm_neuron, title_mp, markers, alphas, ode='n')  # , H_filt, H_gain)
         plot_freq_portrait(name_n_state_variables, dr_filt, dr_gain, gain, ax_n, 'mid', 'end',
-                           norm_neuron, title_mp, markers, alphas)
+                           norm_neuron, title_mp, markers, alphas, ode='n')
 
-        """
-        for i in [0]:  # range(len(lbl)):
-            for j in range(len(st_lbl)):
-                # **********************************************************************************************************
-                # For Membrane potential analysis
-                n_sto_m_st = norm_array(dr_gain[lbl[i] + st_lbl[j]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-                n_sto_i_st = norm_array(dr_gain[lbl2[i] + st_lbl[j]], compute_norm=norm_neuron, min_n=min_n,max_n=max_n)
-                n_det_m_st = norm_array(dr_filt[lbl[i] + st_lbl[j]], compute_norm=norm_neuron, min_n=min_n, max_n=max_n)
-                n_det_i_st = norm_array(dr_filt[lbl2[i] + st_lbl[j]], compute_norm=norm_neuron, min_n=min_n,max_n=max_n)
-                aux_gain = np.copy(n_sto_m_st - n_sto_i_st)
-                aux_filt = np.copy(n_sto_i_st)
-                aux_det_gain = np.copy(n_det_m_st - n_det_i_st)[0, :]
-                aux_det_filt = np.copy(n_det_i_st[0, :])
-                # if n_model == 'HH':
-                #     aux_gain *= 1e3
-                #     aux_filt *= 1e3
-                #     aux_det_gain *= 1e3
-                #     aux_det_filt *= 1e3
-
-                # Deterministic plots
-                if i_g == 0:
-                    ax_[j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
-                else:
-                    ax_[j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
-                ax_[j].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
-                ax_[j].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
-                
-                # Stochastic plots
-                ax_[j].scatter(avg_f(aux_filt), avg_f(aux_gain), marker=markers[i], alpha=alphas[i])
-                ax_[j].plot(avg_f(aux_filt), avg_f(aux_gain), alpha=alphas[i], label=gain)
-                if i == 0: ax_[j].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
-                                               np.quantile(aux_gain, 0.9, axis=0), color=cols_[j], alpha=0.1)
-                ax_[j].scatter(avg_f(aux_filt)[0], avg_f(aux_gain)[0], c='black')
-
-                # **********************************************************************************************************
-                # For synaptic contributions
-                # First synapse
-                aux_gain = np.copy(dr_gain[lbl_syn[i] + st_lbl[j]] - dr_gain[lbl2_syn[i] + st_lbl[j]])
-                aux_filt = np.copy(dr_gain[lbl2_syn[i] + st_lbl[j]])
-                aux_det_gain = np.copy(dr_filt[lbl_syn[i] + st_lbl[j]] - dr_filt[lbl2_syn[i] + st_lbl[j]])[0, :]
-                aux_det_filt = np.copy(dr_filt[lbl2_syn[i] + st_lbl[j]][0, :])
-                # if n_model == 'HH':
-                #     aux_gain *= 1e3
-                #     aux_filt *= 1e3
-                #     aux_det_gain *= 1e3
-                #     aux_det_filt *= 1e3
-
-                # Deterministic plots
-                if i_g == 0:
-                    ax_s[j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
-                else:
-                    ax_s[j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
-                ax_s[j].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
-                ax_s[j].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
-                # Stochastic plots
-                ax_s[j].scatter(avg_f(aux_filt), avg_f(aux_gain), marker=markers[i], alpha=alphas[i])
-                ax_s[j].plot(avg_f(aux_filt), avg_f(aux_gain), alpha=alphas[i], label=gain)
-                if i == 0: ax_s[j].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
-                                               np.quantile(aux_gain, 0.9, axis=0), color=cols_[j], alpha=0.1)
-                ax_s[j].scatter(avg_f(aux_filt)[0], avg_f(aux_gain)[0], c='black')
-
-                if fig_syn_b:
-                    # First synapse
-                    aux_gain = np.copy(dr_gain[lbl_synb[i] + st_lbl[j]] - dr_gain[lbl2_synb[i] + st_lbl[j]])
-                    aux_filt = np.copy(dr_gain[lbl2_synb[i] + st_lbl[j]])
-                    aux_det_gain = np.copy(dr_filt[lbl_synb[i] + st_lbl[j]] - dr_filt[lbl2_synb[i] + st_lbl[j]])[0, :]
-                    aux_det_filt = np.copy(dr_filt[lbl2_synb[i] + st_lbl[j]][0, :])
-                    # if n_model == 'HH':
-                    #     aux_gain *= 1e3
-                    #     aux_filt *= 1e3
-                    #     aux_det_gain *= 1e3
-                    #     aux_det_filt *= 1e3
-
-                    # Deterministic plots
-                    if i_g == 0:
-                        ax_sb[j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
-                    else:
-                        ax_sb[j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
-                    ax_sb[j].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
-                    ax_sb[j].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
-                    # Stochastic plots
-                    ax_sb[j].scatter(avg_f(aux_filt), avg_f(aux_gain), marker=markers[i], alpha=alphas[i])
-                    ax_sb[j].plot(avg_f(aux_filt), avg_f(aux_gain), alpha=alphas[i], label=gain)
-                    if i == 0: ax_sb[j].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
-                                                    np.quantile(aux_gain, 0.9, axis=0), color=cols_[j], alpha=0.1)
-                    ax_sb[j].scatter(avg_f(aux_filt)[0], avg_f(aux_gain)[0], c='black')
-
-                # **********************************************************************************************************
-                # Information theory analysis
-                if j < 3:
-                    # FOR INPUTS
-                    # Stochastic - transition
-                    ax_hI[j].plot(f_vec, aux_HI[j], c=c_g[i_g], marker=markers[0], label=labels_H[i_g] + str(gain))
-                    ax_hI[j].scatter(f_vec[0], aux_HI[j][0], c='black')
-                    # Stochastic - stationary
-                    ax_hI[j].plot(f_vec, aux_HI[j + 3], c=c_g[i_g + 3], marker=markers[0],
-                                 label=labels_H[i_g + 3] + str(gain))
-                    ax_hI[j].scatter(f_vec[0], aux_HI[j + 3][0], c='black')
-                    # FOR NEURON
-                    # For only one computation of entropy (# bins fixed if only one, or fix bin size if two entropies)
-                    # Stochastic - transition
-                    ax_h[j].plot(f_vec, aux_H[j], c=c_g[i_g], marker=markers[0], label=labels_H[i_g] + str(gain))
-                    ax_h[j].scatter(f_vec[0], aux_H[j][0], c='black')
-                    # Stochastic - stationary
-                    ax_h[j].plot(f_vec, aux_H[j + 3], c=c_g[i_g + 3], marker=markers[0],
-                                 label=labels_H[i_g + 3] + str(gain))
-                    ax_h[j].scatter(f_vec[0], aux_H[j + 3][0], c='black')
-                    # Deterministic - transition
-                    ax_h[j].plot(f_vecD, aux_det_H[j][:len(aux_det_filt)], marker=markers[1], c=c_g[i_g], alpha=0.4)  
-                                 # ,label=str(gain) + " (det)")
-                    ax_h[j].scatter(f_vec[0], aux_det_H[j][0], c='gray')
-                    # Deterministic - stationary
-                    ax_h[j].plot(f_vecD, aux_det_H[j + 3][:len(aux_det_filt)], marker=markers[1], c=c_g[i_g + 3], 
-                                 alpha=0.4)  # label=str(gain) + " (det)")
-                    ax_h[j].scatter(f_vecD[0], aux_det_H[j + 3][0], c='gray')
-
-                    # FOR SYNAPSES
-                    # For only one computation of entropy (# bins fixed if only one, or fix bin size if two entropies)
-                    # Stochastic - transition
-                    ax_hs[j].plot(f_vec, aux_H_s[j], c=c_g[i_g], marker=markers[0], label=labels_H[i_g] + str(gain))
-                    ax_hs[j].scatter(f_vec[0], aux_H_s[j][0], c='black')
-                    # Stochastic - stationary
-                    ax_hs[j].plot(f_vec, aux_H_s[j + 3], c=c_g[i_g + 3], marker=markers[0],
-                                 label=labels_H[i_g + 3] + str(gain))
-                    ax_hs[j].scatter(f_vec[0], aux_H_s[j + 3][0], c='black')
-                    # Deterministic - transition
-                    ax_hs[j].plot(f_vecD, aux_det_H_s[j][:len(aux_det_filt)], marker=markers[1], c=c_g[i_g], alpha=0.4)  
-                                  # , label=str(gain) + " (det)")
-                    ax_hs[j].scatter(f_vecD[0], aux_det_H_s[j][0], c='gray')
-                    # Deterministic - stationary
-                    ax_hs[j].plot(f_vecD, aux_det_H_s[j + 3][:len(aux_det_filt)], marker=markers[1], c=c_g[i_g + 3],
-                                  alpha=0.4)  # , label=str(gain) + " (det)")
-                    ax_hs[j].scatter(f_vecD[0], aux_det_H_s[j + 3][0], c='gray')
-        
-
-                if 3 <= j < 6 and fig_syn_b:
-                    # FOR SECOND SYNAPSE
-                    # For only one computation of entropy (# bins fixed if only one, or fix bin size if two entropies)
-                    # Stochastic - transition
-                    ax_hs[j].plot(f_vec, aux_H_sb[j-3], c=c_g[i_g], marker=markers[0], label=labels_H[i_g] + str(gain))
-                    ax_hs[j].scatter(f_vec[0], aux_H_sb[j-3][0], c='black')
-                    # Stochastic - stationary
-                    ax_hs[j].plot(f_vec, aux_H_sb[j], c=c_g[i_g + 3], marker=markers[0],
-                                 label=labels_H[i_g] + str(gain))
-                    ax_hs[j].scatter(f_vec[0], aux_H_sb[j][0], c='black')
-                    # Deterministic - transition
-                    ax_hs[j].plot(f_vecD, aux_det_H_sb[j-3][:len(aux_det_filt)], marker=markers[1], c=c_g[i_g], 
-                                  alpha=0.4)  # label=str(gain) + " (det)")
-                    ax_hs[j].scatter(f_vecD[0], aux_det_H_sb[j-3][0], c='gray')
-                    # Deterministic - stationary
-                    ax_hs[j].plot(f_vecD, aux_det_H_sb[j][:len(aux_det_filt)], marker=markers[1], c=c_g[i_g + 3], 
-                                  alpha=0.4)  # label=str(gain) + " (det)")
-                    ax_hs[j-3].scatter(f_vecD[0], aux_det_H_sb[j][0], c='gray')
-        # """
+        # For synapse analysis
+        plot_freq_portrait(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sp, 'ini', 'mid',
+                           norm_neuron, title_mp, markers, alphas, ode='s')  # , H_filt, H_gain)
+        plot_freq_portrait(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sn, 'mid', 'end',
+                           norm_neuron, title_mp, markers, alphas, ode='s')
     i_g += 1
 
 # For PhD Figure "methodology - Frequency portrait"
@@ -540,194 +333,57 @@ path_save = (folder_plots + s_model + '_ind_' + str(ind) + '_' + str(len(gain_v)
 # ind = 10
 if plot_figs:
     sizeF = 20
-    for j in range(8):
-        # For Computational properties vs. rate
-        # axb_[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
-        # axb_s[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
-        if j < 2:
-            axb_[j].set_ylabel("Entropy (bits)", color='gray', fontsize=sizeF)
-            axb_s[j].set_ylabel("Entropy (bits)", color='gray', fontsize=sizeF)
-            if fig_syn_b: axb_sb[j].set_ylabel("Entropy (bits)", color='gray', fontsize=sizeF)
-        elif j == 2:
-            axb_[j].set_ylabel("Time (s)", color='gray', fontsize=sizeF)
-            axb_s[j].set_ylabel("Time (s)", color='gray', fontsize=sizeF)
-            if fig_syn_b: axb_sb[j].set_ylabel("Time (s)", color='gray', fontsize=sizeF)
-        else:
-            axb_[j].set_ylabel("Mem. pot. (mV)", color='gray', fontsize=sizeF)
-            axb_s[j].set_ylabel("Syn. strength", color='gray', fontsize=sizeF)
-            if fig_syn_b: axb_sb[j].set_ylabel("Syn. strength", color='gray', fontsize=sizeF)
-        axb_[j].set_title(st_lbl_b[j], c="gray", fontsize=sizeF)
-        axb_[j].grid()
-        axb_[j].set_xscale('log')
-        axb_[j].set_ylim(xl_neu[ind][0][j], xl_neu[ind][1][j])
-        # axb_s[j].set_title(st_lbl_b[j], c="gray", fontsize=sizeF)
-        axb_s[j].grid()
-        axb_s[j].set_xscale('log')
-        axb_s[j].set_ylim(xl_syn[ind][0][j], xl_syn[ind][1][j])
-        if fig_syn_b:
-            # axb_sb[j].set_title(st_lbl_b[j], c="gray", fontsize=sizeF)
-            axb_sb[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
-            axb_sb[j].grid()
-            axb_sb[j].set_xscale('log')
-            if n_model == "HH": axb_sb[j].set_ylim(xl_syb[ind][0][j], xl_syb[ind][1][j])
-        else:
-            axb_s[j].set_xlabel("Rate (Hz)", color='gray', fontsize=sizeF)
-
     # Neuronal state variables
     for n in range(len(name_n_state_variables)):
         for j in range(len(title_mp)):
+            # xl, yl = (xlims[0][j], xlims[1][j]), (ylims[0][j], ylims[1][j])
             # Synaptic filtering vs. Gain-Control for Neuron - positive change of rate
-            ax_p[n][j].set_xlabel(x_label_ax_p[j], color='gray')
-            ax_p[n][j].set_ylabel(y_label_ax_p[j], color='gray')
-            # if n_model != 'HH':
-            #     ax_p[n][j].set_ylim(ylims[0][j], ylims[1][j])
-            #     ax_p[n][j].set_xlim(xlims[0][j], xlims[1][j])
-            # ax_[j].set_ylim(ylims)
-            # ax_[j].set_title(st_lbl[j][1:], c="gray")
-            ax_p[n][j].set_title(title_mp[j], color="black", alpha=0.7)
-            ax_p[n][j].grid()
+            adjust_freq_portraits(ax_p[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
 
             # Synaptic filtering vs. Gain-Control for Neuron - negative change of rate
-            ax_n[n][j].set_xlabel(x_label_ax_n[j], color='gray')
-            ax_n[n][j].set_ylabel(y_label_ax_n[j], color='gray')
-            # if n_model != 'HH':
-            #     ax_n[n][j].set_ylim(ylims[0][j], ylims[1][j])
-            #     ax_n[n][j].set_xlim(xlims[0][j], xlims[1][j])
-            # ax_[j].set_ylim(ylims)
-            # ax_[j].set_title(st_lbl[j][1:], c="gray")
-            ax_n[n][j].set_title(title_mp[j], color="black", alpha=0.7)
-            ax_n[n][j].grid()
+            adjust_freq_portraits(ax_n[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
 
-            # Synaptic filtering vs. Gain-Control for Synapse A
-            ax_s[j].set_xlabel("Synaptic filtering (mV)", color='gray')
-            ax_s[j].set_ylabel("Gain-Control (mV)", color='gray')
-            if n_model != 'HH':
-                ax_s[j].set_ylim(ylims_s[0][j], ylims_s[1][j])
-                # ax_s[j].set_xlim(xlims[0][j], xlims[1][j])
-            ax_s[j].set_title(st_lbl[j][1:], c="gray")
-            ax_s[j].grid()
-            # Synaptic filtering vs. Gain-Control for Synapse B
-            if fig_syn_b:
-                ax_sb[j].set_xlabel("Synaptic filtering (mV)", color='gray')
-                ax_sb[j].set_ylabel("Gain-Control (mV)", color='gray')
-                if n_model != 'HH':
-                    ax_sb[j].set_ylim(ylims_s[0][j], ylims_s[1][j])
-                    # ax_sb[j].set_xlim(xlims[0][j], xlims[1][j])
-                ax_sb[j].set_title(st_lbl[j][1:], c="gray")
-                ax_sb[j].grid()
+            # Synaptic filtering vs. Gain-Control for Synapse - positive change of rate
+            adjust_freq_portraits(ax_sp[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
 
-            # Information theory analysis
-            if j < 3:
-                # INPUT
-                ax_hI[j].set_xlabel("Rate (Hz)", color='gray')
-                ax_hI[j].set_ylabel("H (bits)", color='gray')
-                ax_hI[j].set_ylim((-0.1, 6.7))
-                ax_hI[j].set_title(titles_H[j], c="gray")
-                ax_hI[j].grid()
-                ax_hI[j].set_xscale('log')
-                # NEURON
-                ax_h[j].set_xlabel("Rate (Hz)", color='gray')
-                ax_h[j].set_ylabel("H (bits)", color='gray')
-                # if n_model != 'HH':
-                #     ax_h[j].set_ylim(ylims_s[0][j], ylims_s[1][j])
-                ax_h[j].set_ylim((-0.1, 6.7))
-                ax_h[j].set_title(titles_H[j], c="gray")
-                ax_h[j].grid()
-                ax_h[j].set_xscale('log')
-                # SYNAPSE
-                ax_hs[j].set_xlabel("Rate (Hz)", color='gray')
-                ax_hs[j].set_ylabel("H (bits)", color='gray')
-                if n_model != 'HH':
-                    ax_hs[j].set_ylim(ylims_s[0][j], ylims_s[1][j])
-                    # ax_hs[j].set_xlim(xlims[0][j], xlims[1][j])
-                ax_hs[j].set_ylim((-0.1, 6.7))
-                ax_hs[j].set_title(titles_H_syn[j], c="gray")
-                ax_hs[j].grid()
-                ax_hs[j].set_xscale('log')
-            if 3 <= j < 6 and fig_syn_b:
-                ax_hs[j].set_xlabel("Rate (Hz)", color='gray')
-                ax_hs[j].set_ylabel("H (bits)", color='gray')
-                if n_model != 'HH':
-                    ax_hs[j].set_ylim(ylims_s[0][j], ylims_s[1][j])
-                ax_hs[j].set_title(titles_H_syn[j], c="gray")
-                ax_hs[j].grid()
-                ax_hs[j].set_ylim((-0.1, 6.7))
-                ax_hs[j].set_xscale('log')
+            # Synaptic filtering vs. Gain-Control for Synapse - negative change of rate
+            adjust_freq_portraits(ax_sn[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
+
+        for j in range(len(title_freqres)):
+            # Frequency responses of properties for positive changes of rate
+            adjust_freq_portraits(ax_f[n][j], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log')
+            # Frequency responses of properties for negative changes of rate
+            adjust_freq_portraits(ax_f[n][j + 7], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log')
 
     # Synaptic filtering vs. Gain-Control for Neuron
-    print("")
     for n in range(len(name_n_state_variables)):
-        ax_p[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.,
+        ax_p[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
                                                 title='gain factor')
-        ax_n[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.,
+        ax_n[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
                                                    title='gain factor')
-    # figNeuron.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-    # Synaptic filtering vs. Gain-Control for Synapse A
-    ax_s[int(len(st_lbl) / 2) - 1].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    # figSynapse.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-    # Plots of computational properties vs rates. Neuron
-    axb_[3].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 1
-    axb_[6].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 7
-    # figCompPropNeuron.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-    # Plots of computational properties vs rates. Synapse A
-    axb_s[3].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 1
-    axb_s[6].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 7
-    # figCompPropSyn.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-
-    # Synaptic filtering vs. Gain-Control for Synapse B
-    if fig_syn_b:
-        # Synaptic filtering vs. Gain-Control for Synapse B
-        ax_sb[int(len(st_lbl) / 2) - 1].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-        # figSynapseb.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-        # Plots of computational properties vs rates. Synapse B
-        axb_sb[3].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 1
-        axb_sb[6].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 7
-        # figCompPropSynb.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-
-    # Synaptic entropy in frequency for Neuron
-    ax_h[2].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    # figEntropy.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-    # Synaptic entropy in frequency for Input
-    ax_hI[2].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    # figEntropyInput.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
-    # Synaptic entropy in frequency for Synapses
-    ax_hs[2].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    # figEntropySyn.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+        ax_sp[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
+                                                   title='gain factor')
+        ax_sn[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
+                                                   title='gain factor')
+        
+        # Plots of computational properties vs rates. Neuron
+        ax_f[n][3].legend(bbox_to_anchor=(1.1, 0.1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 1
+        ax_f[n][6].legend(bbox_to_anchor=(1.1, 0.2), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 7
 
 if plot_figs and save_figs:
     for j in range(len(name_n_state_variables)):
-        figNeur_pos_gc[j].savefig(path_save + "_freq_portrait_neuron_pos.png", format='png')
-        figNeur_neg_gc[j].savefig(path_save + "_freq_portrait_neuron_neg.png", format='png')
-
-    # figSynapse.savefig(path_save + "_filt_vs_gc_synapse.png", format='png')
-    # figCompPropNeuron.savefig(path_save + "_filt_entropy_gc_vs_rate_neuron.png", format='png')
-    # figCompPropSyn.savefig(path_save + "_filt_entropy_gc_vs_rate_synapse.png", format='png')
-    # if fig_syn_b:
-    #     figSynapseb.savefig(path_save + "_filt_vs_gc_synase_b.png", format='png')
-    #     figCompPropSynb.savefig(path_save + "_filt_entropy_gc_vs_rate_synase_b.png", format='png')
-    # figEntropyInput.savefig(path_save + "_information_input.png", format='png')
-    # figEntropy.savefig(path_save + "_information_neuron.png", format='png')
-    # figEntropySyn.savefig(path_save + "_information_synapses.png", format='png')
+        n = name_n_state_variables[j]
+        figNeur_pos_gc[j].savefig(path_save + "_freq_portrait_neuron_" + n + "_pos.png", format='png')
+        figNeur_neg_gc[j].savefig(path_save + "_freq_portrait_neuron_" + n + "_neg.png", format='png')
+        figCompPropNeuron[j].savefig(path_save + "_freq_responses_neuron_" + n + ".png", format='png')
+    for j in range(len(name_syn_state_variables)):
+        n = name_syn_state_variables[j]
+        figSyn_pos_gc[j].savefig(path_save + "_freq_portrait_synapse_" + n + "_pos.png", format='png')
+        figSyn_neg_gc[j].savefig(path_save + "_freq_portrait_synapse_" + n + "_neg.png", format='png')
 # """
 
-# PLOT OF CHARACTERISTICS FOR INI, MID, AND END WINDOWS. SPLIT BY PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
+# Figure PhD thesis (methodology / metrics temporal filtering)
 """
-# Steady-state
-# lbl = ['st_ini_prop', 'st_mid_prop', 'st_end_prop', 'st_ini_fix', 'st_mid_fix', 'st_end_fix']
-# st_lbl = ['_mean', '_med', '_max', '_min', '_q10', '_q90', '_q5', '_q95']
-# cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:olive', 'tab:olive']
-# title = ("Steady-state: " + description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif * 1e3) + "ms, gain " +
-#          str(int(gain * 100)) + "%. Neuronal response")
-# path_save = folder_plots + dr_gain_control_file + '_windows_statistics.png'
-# plot_features_windows_prop_fix(initial_frequencies, dr_gain, lbl, st_lbl, cols, title, path_save, save_figs)
-# Transition-state
-# For considering proportional and constant change of rates
-# lbl = ['mtr_ini_prop', 'mtr_mid_prop', 'mtr_end_prop', 'mtr_ini_fix', 'mtr_mid_fix', 'mtr_end_fix']
-# title = ("Transition-state: " + description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif * 1e3) + "ms, gain " +
-#          str(int(gain * 100)) + "%. Neuronal response")
-# path_save = folder_plots + dr_gain_control_file + '_windows_statistics.png'
-# plot_features_windows_prop_fix(initial_frequencies, dr_gain, lbl, st_lbl, cols, title, path_save, save_figs)
-
 # For Neuron responses: Stationary and transitory states
 lbl = ['mtr_ini_prop', 'mtr_mid_prop', 'mtr_end_prop']
 lbl2 = ['st_ini_prop', 'st_mid_prop', 'st_end_prop']
@@ -766,10 +422,10 @@ plot_features_tr_st_3windows(f_vec, dr_gain, lbl, lbl2, st_lbl, legends, cols, t
 # Figure PhD thesis (methodology / metrics temporal filtering)
 dr = dr_gain
 sg1 = [dr['mtr_ini_prop_max'] - dr['mtr_ini_prop_min'], dr['mtr_ini_prop_q90'] - dr['mtr_ini_prop_q10'],
-       dr['syn_mtr_ini_prop_med']]
+       dr['mtr_ini_prop_med']]
 sg2 = [dr['st_ini_prop_max'] - dr['st_ini_prop_min'], dr['st_ini_prop_q90'] - dr['st_ini_prop_q10'],
        dr['st_ini_prop_med'] - dr['st_ini_prop_min']]
-# sg1 = [dr['syn_mtr_ini_prop_max'] - dr['syn_mtr_ini_prop_min'], dr['syn_mtr_ini_prop_q90'] - dr['syn_mtr_ini_prop_q10'],
+# sg1 = [dr['syn_mtr_ini_prop_max'] - dr['syn_mtr_ini_prop_min'], dr['syn_mtr_ini_prop_q90']-dr['syn_mtr_ini_prop_q10'],
 #       dr['syn_mtr_ini_prop_med']]
 # sg2 = [dr['syn_st_ini_prop_max'] - dr['syn_st_ini_prop_min'], dr['syn_st_ini_prop_q90'] - dr['syn_st_ini_prop_q10'],
 #       dr['syn_st_ini_prop_med']]
@@ -821,8 +477,10 @@ eff_e_st = [dr['%s_%s_prop_max' % (prefix[1], prefix_mid[2])] - dr['%s_%s_prop_m
             dr['%s_%s_prop_q90' % (prefix[1], prefix_mid[2])] - dr['%s_%s_prop_q10' % (prefix[1], prefix_mid[2])],
             dr['%s_%s_prop_med' % (prefix[1], prefix_mid[2])]]
 f_ = 1  # f_vec
-pc_m_i = [(eff_m_tr[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_tr))] + [(eff_m_st[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_st))]
-pc_e_m = [(eff_e_tr[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_tr))] + [(eff_e_st[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_st))]
+pc_m_i = [(eff_m_tr[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_tr))] + [(eff_m_st[i] - eff_i_st[i]) * f_ 
+                                                                             for i in range(len(eff_m_st))]
+pc_e_m = [(eff_e_tr[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_tr))] + [(eff_e_st[i] - eff_m_st[i]) * f_ 
+                                                                             for i in range(len(eff_e_st))]
 title = "Frequency responses for Proportional Changes (short-term "
 title += "facilitation)" if ind == 8 else "depression)"
 y_label = r"$E_{psp}$ (mV)"
@@ -858,8 +516,10 @@ eff_e_st = [dr['%s_%s_prop_max' % (prefix[1], prefix_mid[2])], dr['%s_%s_prop_mi
             dr['%s_%s_prop_q90' % (prefix[1], prefix_mid[2])], dr['%s_%s_prop_q10' % (prefix[1], prefix_mid[2])],
             dr['%s_%s_prop_med' % (prefix[1], prefix_mid[2])]]
 f_ = 1  # f_vec
-pc_m_i = [(eff_m_tr[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_tr))] + [(eff_m_st[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_st))]
-pc_e_m = [(eff_e_tr[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_tr))] + [(eff_e_st[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_st))]
+pc_m_i = [(eff_m_tr[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_tr))] + [(eff_m_st[i] - eff_i_st[i]) * f_ 
+                                                                             for i in range(len(eff_m_st))]
+pc_e_m = [(eff_e_tr[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_tr))] + [(eff_e_st[i] - eff_m_st[i]) * 
+                                                                             f_ for i in range(len(eff_e_st))]
 cols_ = ['tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:blue',
          'tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:blue']
 legends = [r'$PC_{%s,tr}^\mathrm{max}$', r'$PC_{%s,tr}^\mathrm{min}$', r'$PC_{%s,tr}^\mathrm{q90}$',

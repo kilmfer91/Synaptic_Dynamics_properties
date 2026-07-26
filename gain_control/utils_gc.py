@@ -404,19 +404,216 @@ def update_tr_st_trackers(conds, tr_st_array, window_length, num_slid_wins, slid
 
 
 # Compact helper
-def append_entropy2(target_H, target_bin, target_edge, data, bin_size):
-    H_, bins, edges = H_entropy_dyn_bins(data, bin_size=bin_size)
+def append_entropy(target_H, data, bin_size=None, bin_edges=None, method=None, range_d=None, plot=False, ax=None):
+    H_, bins, edges = H_entropy_dyn_bins(
+        data,
+        bin_edges=bin_edges,
+        bin_size=bin_size,
+        range_d=range_d,
+        plot=plot,
+        method=method,
+        ax=ax
+    )
     target_H.append(H_)
-    # target_bin.append(bins)
-    # target_edge.append(edges)
+    return H_, bins, edges
 
 
-def append_entropy(target_H, data, bin_size):
-    H_, bins, edges = H_entropy_dyn_bins(data, bin_size=bin_size)
+def H_entropy_dyn_bins(data, bin_edges=None, bin_size=None, range_d=None, plot=False, method=None, ax=None):
+    data = np.asarray(data)
+    data = data[np.isfinite(data)]
+
+    if data.size == 0:
+        return np.nan, np.array([]), np.array([])
+
+    if bin_edges is None:
+        if method == "fd":
+            bin_edges = freedman_diaconis_edges(data, range_d=range_d)
+        elif method == "scott":
+            bin_edges = scott_edges(data, range_d=range_d)
+        elif method == "knuth":
+            bin_edges = knuth_edges(data, range_d=range_d)
+        else:
+            if range_d is None:
+                data_min, data_max = data.min(), data.max()
+            else:
+                data_min, data_max = range_d
+
+            if bin_size is None:
+                raise ValueError("Provide bin_edges, bin_size, or method.")
+
+            if data_max == data_min:
+                bin_edges = np.array([data_min - 0.5, data_max + 0.5])
+            else:
+                num_bins = max(1, int(np.ceil((data_max - data_min) / bin_size)))
+                bin_edges = np.linspace(data_min, data_max, num_bins + 1)
+
+    if len(bin_edges) == 2: bin_edges = np.sort(bin_edges)
+
+    # Shannon entropy for dynamic # of bins and fixed bin size
+    H_, hist_, edges_ = binned_entropy(data, n_bins=bin_edges)
+
+    if plot:
+        ax.hist(data, density=False, bins=bin_edges)  # density=False would make counts
+        # ax.set_ylabel('Probability')
+        # ax.set_xlabel('Data')
+        ax.set_title('%s, H=%.3f' % (method, H_))
+
+    return H_, hist_, edges_
+
+
+def binned_entropy(values, n_bins=20):
+    values = np.asarray(values).ravel()
+    values = values[np.isfinite(values)]
+
+    if values.size == 0:
+        return np.nan, np.array([]), np.array([])
+
+    hist, edges = np.histogram(values, bins=n_bins, density=False)
+    if hist.sum() == 0:
+        return np.nan, hist, edges
+
+    p = hist / hist.sum()
+    p = p[p > 0]
+    return -np.sum(p * np.log2(p)), hist, edges
+
+
+def freedman_diaconis_edges(x, range_d=None):
+    x = np.asarray(x).ravel()
+    x = x[np.isfinite(x)]
+    if x.size == 0:
+        return np.array([0.0, 1.0])
+    if x.size == 1:
+        return np.array([x[0] - 0.5, x[0] + 0.5])
+
+    if range_d is None:
+        data_min, data_max = x.min(), x.max()
+    else:
+        data_min, data_max = range_d
+
+    if data_max == data_min:
+        return np.array([data_min - 0.5, data_max + 0.5])
+
+    q25, q75 = np.percentile(x, [25, 75])
+    iqr = q75 - q25
+    if iqr == 0:
+        nbins = max(1, int(np.ceil(np.sqrt(x.size))))
+    else:
+        h = 2.0 * iqr * x.size ** (-1 / 3)
+        if h <= 0:
+            nbins = max(1, int(np.ceil(np.sqrt(x.size))))
+        else:
+            nbins = max(1, int(np.ceil((data_max - data_min) / h)))
+    return np.linspace(data_min, data_max, nbins + 1)
+
+
+def scott_edges(x, range_d=None):
+    x = np.asarray(x).ravel()
+    x = x[np.isfinite(x)]
+    if x.size == 0:
+        return np.array([0.0, 1.0])
+    if x.size == 1:
+        return np.array([x[0] - 0.5, x[0] + 0.5])
+
+    if range_d is None:
+        data_min, data_max = x.min(), x.max()
+    else:
+        data_min, data_max = range_d
+
+    if data_max == data_min:
+        return np.array([data_min - 0.5, data_max + 0.5])
+
+    sigma = np.std(x, ddof=1)
+
+    if sigma == 0:
+        nbins = max(1, int(np.ceil(np.sqrt(x.size))))
+    else:
+        h = 3.5 * sigma * x.size ** (-1 / 3)
+        if h <= 0:
+            nbins = max(1, int(np.ceil(np.sqrt(x.size))))
+        else:
+            nbins = max(1, int(np.ceil((data_max - data_min) / h)))
+    return np.linspace(data_min, data_max, nbins + 1)
+
+
+def knuth_score(x, m, range_d=None):
+    x = np.asarray(x).ravel()
+    x = x[np.isfinite(x)]
+    n = x.size
+    if n == 0 or m < 1:
+        return -np.inf
+
+    hist, _ = np.histogram(x, bins=m, range=range_d)
+
+    return (
+        n * np.log(m)
+        + np.math.lgamma(m / 2)
+        - m * np.math.lgamma(0.5)
+        - np.math.lgamma(n + m / 2)
+        + np.sum([np.math.lgamma(c + 0.5) for c in hist])
+    )
+
+
+def knuth_edges(x, range_d=None, m_min=1, m_max=None):
+    x = np.asarray(x).ravel()
+    x = x[np.isfinite(x)]
+    if x.size == 0:
+        return np.array([0.0, 1.0])
+    if x.size == 1:
+        return np.array([x[0] - 0.5, x[0] + 0.5])
+
+    if range_d is None:
+        data_min, data_max = x.min(), x.max()
+    else:
+        data_min, data_max = range_d
+
+    if data_max == data_min:
+        return np.array([data_min - 0.5, data_max + 0.5])
+
+    if m_max is None:
+        m_max = min(max(2, int(np.sqrt(x.size)) * 4), x.size)
+
+    scores = np.array([knuth_score(x, m, range_d) for m in range(m_min, m_max + 1)])
+    best_m = np.argmax(scores) + m_min
+    # return np.histogram_bin_edges(x, bins=best_m)
+    return np.linspace(data_min, data_max, best_m + 1)
+
+
+# """
+def entropy_sv(H_, b_, e_, l_sv, bin_size, names, data, i, plot, ax):
+    """
+    # Entropy calculations for state variables
+    :param H_:
+    :param b_:
+    :param e_:
+    :param l_sv:
+    :param bin_size:
+    :param names:
+    :param data:
+    :param i:
+    :param plot:
+    :param ax:
+    :return:
+    """
+    for sv in range(l_sv):
+        r_d = bin_size[sv]
+        b = 0.01 * (bin_size[sv][1] - bin_size[sv][0])  # max - min
+        if names[sv] == 'v': b = 0.1e-3
+        append_entropy_ad_hoc(H_[0][sv], b_[0][sv], e_[0][sv], data[0][sv][i], b, range_d=r_d, plot=plot, ax=ax[sv][0])
+        append_entropy_ad_hoc(H_[1][sv], b_[1][sv], e_[1][sv], data[1][sv][i], b, range_d=r_d, plot=plot, ax=ax[sv][1])
+        append_entropy_ad_hoc(H_[2][sv], b_[2][sv], e_[2][sv], data[2][sv][i], b, range_d=r_d, plot=plot, ax=ax[sv][2])
+        append_entropy_ad_hoc(H_[3][sv], b_[3][sv], e_[3][sv], data[3][sv][i], b, range_d=r_d, plot=plot, ax=ax[sv][3])
+        append_entropy_ad_hoc(H_[4][sv], b_[4][sv], e_[4][sv], data[4][sv][i], b, range_d=r_d, plot=plot, ax=ax[sv][4])
+        append_entropy_ad_hoc(H_[5][sv], b_[5][sv], e_[5][sv], data[5][sv][i], b, range_d=r_d, plot=plot, ax=ax[sv][5])
+
+
+def append_entropy_ad_hoc(target_H, target_b, target_e, data, bin_size, plot=False, ax=None, range_d=None):
+    H_, hist, edges = H_entropy_dyn_bins_ad_hoc(data, bin_size=bin_size, range_d=range_d, plot=plot, ax=ax)
     target_H.append(H_)
+    target_b.append(hist)
+    target_e.append(edges)
 
 
-def H_entropy_dyn_bins(data, bin_size=0.01, range_d=None, plot=False):
+def H_entropy_dyn_bins_ad_hoc(data, bin_size=0.01, range_d=None, plot=True, ax=None):
     """
     Compute Shannon entropy of data using histogram with dynamic number of bins.
 
@@ -430,6 +627,7 @@ def H_entropy_dyn_bins(data, bin_size=0.01, range_d=None, plot=False):
     range_d : tuple, optional
         (min, max) bounds for histogram. If None, uses data.min() and data.max().
     plot : bool, optional
+    ax: matplotlib.axes, optional
     Returns
     -------
     H : float
@@ -453,21 +651,28 @@ def H_entropy_dyn_bins(data, bin_size=0.01, range_d=None, plot=False):
     num_bins = int(np.ceil((data_max - data_min) / bin_size))
     bin_edges = np.linspace(data_min, data_max, num_bins + 1)
 
-    if plot:
-        plt.figure()
-        plt.hist(data, density=False, bins=bin_edges)  # density=False would make counts
-        plt.ylabel('Probability')
-        plt.xlabel('Data')
-
     # Shannon entropy for dynamic # of bins and fixed bin size
-    return binned_entropy(data, n_bins=bin_edges)
+    H_, hist_, edges_ = binned_entropy_ad_hoc(data, n_bins=bin_edges)
+
+    if plot:
+        if ax is None:
+            fig = plt.figure(figsize=(3, 3))
+            ax = fig.add_subplot(1, 1, 1)
+        ax.hist(data, density=False, bins=bin_edges)  # density=False would make counts
+        # ax.set_ylabel('Probability')
+        # ax.set_xlabel('Data')
+        ax.set_title('fix, H=%.3f' % H_)
+        if range_d is not None: ax.set_xlim(range_d)
+
+    return H_, hist_, edges_
 
 
-def binned_entropy(values, n_bins=20):
+def binned_entropy_ad_hoc(values, n_bins=20):
     hist, edges = np.histogram(values, bins=n_bins, density=False)
     p = hist / hist.sum()
     p = p[p > 0]
     return -np.sum(p * np.log2(p)), hist, edges
+# """
 
 
 def detect_spikes(Input: np.ndarray) -> np.ndarray:

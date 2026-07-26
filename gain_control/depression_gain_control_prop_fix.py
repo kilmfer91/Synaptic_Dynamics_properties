@@ -6,16 +6,16 @@ s_model = 'DoornSTF'        # Synaptic model to use: TM, MSSM, or Doorn variatio
 n_model = "HH"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
 ind = 7                     # Index to recover params of a given synaptic and neuron model (See table below)
 sfreq = 10e3                # Sampling frequency of the simulation  16.8KHz
-max_freq = 1201             # Maximum baseline rate of the experiment  3701
+max_freq = 31  # 1201             # Maximum baseline rate of the experiment  3701
 tau_m_lif = 30               # If LIF neuron is used, this specifies the time constant (in milliseconds)
-max_t = 24                   # Time of simulation (in seconds)
+max_t = 6                   # Time of simulation (in seconds)
 folder_vars = "../gain_control/variables/high_freq_30k_2/"  # Folder to save results
 folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # COMBINATION OF SYNAPTIC AND NEURON MODELS (INDICES)
 # DoornSTD + HH
-# (Ind 0) DoornSTD - healthy patient (Doorn 2023)  # 15 seconds
+# (Ind 0) DoornSTD - healthy patient (Doorn 2023)  # 12 seconds? increase to 18
 # (Ind 1) DoornSTD a  (Doorn 2024)  # 6 seconds
 # (Ind 2 and 3) DoornSTD strong STD (b and c)  (Doorn 2024)
 # (Ind 4 and 5) DoornSTD + Asynchronous release (low and high) (Doorn 2024)
@@ -33,12 +33,12 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = True            # Save results in folders
+save_vars = False            # Save results in folders
 force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
 stoch_input = True          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 profiling = False           # Whether to run cProfile analysis
 
-plot_ind_memPot = True     # Plot temporal dynamics
+plot_ind_memPot = False     # Plot temporal dynamics
 save_figs = False           # Save temporal dynamics in folders
 
 dyn_synapse = True          # Use Synaptic Dynamics or a simple static synapse (a weight)
@@ -50,8 +50,8 @@ filtering_tr = False        # Use filtering to detect time of steady-state
 cutoff_filt = 5             # Cut-off frequency of the filter if used
 threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
-total_realizations = 104    # Number of stochastic realisations if activated  104
-num_realizations = 8        # Number of parallel realisations                 8
+total_realizations = 33    # Number of stochastic realisations if activated  104
+num_realizations = 3        # Number of parallel realisations                 8
 # **********************************************************************************************************************
 # Time conditions
 # max_t = 6                               # Time of simulation (in seconds)
@@ -87,8 +87,8 @@ for gain in gain_v:
     # if not gc_prop_cons.stoch_input:
     print("Loading/computing deterministic experiments")
     file_name = gc_prop_cons.get_folder_file_name(s_model, n_model, gain, ind, tau_n=tau_m_lif)
-    file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
     gc_prop_cons.models_creation()
+    file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
     dr = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded),
                           plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
                           th_percentage=threshold_per, filtering=filtering_tr, cutoff=cutoff_filt, profiling=profiling)
