@@ -2,20 +2,20 @@ from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
 gain_v = [0.1]              # Vector of gains
-s_model = 'DoornSTF'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
+s_model = 'DoornSTD'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
 n_model = "HH"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
-ind = 7                     # Index to recover params of a given synaptic and neuron model (See table below)
+ind = 0                     # Index to recover params of a given synaptic and neuron model (See table below)
 sfreq = 10e3                # Sampling frequency of the simulation  16.8KHz
-max_freq = 31  # 1201             # Maximum baseline rate of the experiment  3701
+max_freq = 1201             # Maximum baseline rate of the experiment  3701
 tau_m_lif = 30               # If LIF neuron is used, this specifies the time constant (in milliseconds)
-max_t = 6                   # Time of simulation (in seconds)
+max_t = 18                   # Time of simulation (in seconds)
 folder_vars = "../gain_control/variables/high_freq_30k_2/"  # Folder to save results
 folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # COMBINATION OF SYNAPTIC AND NEURON MODELS (INDICES)
 # DoornSTD + HH
-# (Ind 0) DoornSTD - healthy patient (Doorn 2023)  # 12 seconds? increase to 18
+# (Ind 0) DoornSTD - healthy patient (Doorn 2023)  # 18 seconds
 # (Ind 1) DoornSTD a  (Doorn 2024)  # 6 seconds
 # (Ind 2 and 3) DoornSTD strong STD (b and c)  (Doorn 2024)
 # (Ind 4 and 5) DoornSTD + Asynchronous release (low and high) (Doorn 2024)
@@ -33,7 +33,7 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = False            # Save results in folders
+save_vars = True            # Save results in folders
 force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
 stoch_input = True          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 profiling = False           # Whether to run cProfile analysis
@@ -50,8 +50,8 @@ filtering_tr = False        # Use filtering to detect time of steady-state
 cutoff_filt = 5             # Cut-off frequency of the filter if used
 threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
-total_realizations = 33    # Number of stochastic realisations if activated  104
-num_realizations = 3        # Number of parallel realisations                 8
+total_realizations = 104    # Number of stochastic realisations if activated  104
+num_realizations = 8        # Number of parallel realisations                 8
 # **********************************************************************************************************************
 # Time conditions
 # max_t = 6                               # Time of simulation (in seconds)
