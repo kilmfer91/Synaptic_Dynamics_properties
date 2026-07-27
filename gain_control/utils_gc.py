@@ -59,8 +59,10 @@ def get_neuron_params(n_model, tau_m, ind, y_lim_ind_plot=False, num_syn=1, num_
             if tau_m == 10 and num_syn == 1: y_lim_memPot = [-70.05, -69]
             if tau_m == 30 and num_syn == 1: y_lim_memPot = [-70.05, -69.5]
 
-        n_params = {'V_threshold': np.array([-55 for _ in range(n)]), 'V_reset': np.array([-70 for _ in range(n)]),  # 'V_threshold': np.array([-55 for _ in range(n)])
-                    'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]), 'g_L': np.array([7.5e-2 for _ in range(n)]), # 'g_L': np.array([2.7e-2 for _ in range(n)])
+        n_params = {'V_threshold': np.array([-55 for _ in range(n)]), 'V_reset': np.array([-70 for _ in range(n)]),
+                    # 'V_threshold': np.array([-55 for _ in range(n)])
+                    'tau_m': np.array([tau_m * 1e-3 for _ in range(n)]), 'g_L': np.array([7.5e-2 for _ in range(n)]),
+                    # 'g_L': np.array([2.7e-2 for _ in range(n)])
                     'V_init': np.array([-70 for _ in range(n)]), 'V_equilibrium': np.array([-70 for _ in range(n)]),
                     't_refractory': np.array([0.01 for _ in range(n)]), 'y_lim_plot': y_lim_memPot}
     if n_model == "HH":
@@ -226,15 +228,15 @@ def get_params_stp(name_model, ind):
         description = "DoornSTD " + str(ind) + ", Control net, (Breaking the burst)"
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d',
                        'U', 'S']
-        syn_params = [0.0e-3,   # mV
-                      0.0e-3,   # mV
-                      2e-3,     # s
-                      2e-3,     # s
-                      100e-3,   # s
-                      0.5,      # Hz (0.5kHz)
-                      813e-3,   # s - STD recovery
-                      15e-3,    # unitless - STD release probability
-                      1.65      # unitless - overall strength
+        syn_params = [0.0e-3,  # mV
+                      0.0e-3,  # mV
+                      2e-3,  # s
+                      2e-3,  # s
+                      100e-3,  # s
+                      0.5,  # Hz (0.5kHz)
+                      813e-3,  # s - STD recovery
+                      15e-3,  # unitless - STD release probability
+                      1.65  # unitless - overall strength
                       ]
     #  From paper "Breaking the burst" - Doorn, et al., 2024
     if name_model == "DoornSTD" and ind == 1:
@@ -304,6 +306,34 @@ def get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_n, stoc
     return file_name
 
 
+def models_creation_gc_sin(s_model, n_model, s_params, neuron_params, sim_params, n_neu=1, n_syn=1):
+    stp_prop = None
+    neuron_prop = None
+
+    # Creating STP models for proportional rate change
+    if s_model == "MSSM": stp_prop = MSSM_model(n_syn=n_syn)
+    if s_model == "TM": stp_prop = TM_model(n_syn=n_syn)
+    if s_model == "DoornSTD": stp_prop = DoornSTD_model(n_syn=n_syn)
+    if s_model == "DoornSTF": stp_prop = DoornSTF_model(n_syn=n_syn)
+    if s_model == "DoornAsyn": stp_prop = DoornAsyn_model(n_syn=n_syn)
+
+    assert stp_prop is not None, "Cannot set stp_model"
+
+    # Setting initial conditions
+    stp_prop.set_model_params(s_params)
+    stp_prop.set_simulation_params(sim_params)
+
+    # Creating Neuron models for proportional rate change
+    if n_model == "LIF": neuron_prop = LIF_model(n_neu=n_neu)
+    elif n_model == "HH": neuron_prop = HH_AHP_model(n_neu=n_neu)
+    assert n_model is not None, "Cannot set neuron model"
+
+    neuron_prop.set_model_params(neuron_params)
+    neuron_prop.set_simulation_params(sim_params)
+
+    return stp_prop, neuron_prop
+
+
 def static_synapse(lif, Input, g):
     # Number of samples
     L = Input.shape[1]
@@ -323,32 +353,73 @@ def static_synapse(lif, Input, g):
     # mssm.compute_output_spike_event(spike_range, mssm.get_output())
 
 
-def model_stp(mssm, lif, params, Input, lif_n=None):
+def model_stp(stp_model, n_model, params, Input, lif_n=None):
     # Update parameters and initial conditions
-    mssm.set_model_params(params)
+    stp_model.set_model_params(params)
 
     # Number of samples
     L = Input.shape[1]
 
     # Num neurons and synapses
-    num_syn = mssm.n_syn
-    num_neu = lif.n_neurons
+    num_syn = stp_model.n_syn
+    num_neu = n_model.n_neurons
+
+    # Creating connectiviy matrix
+    id_mat = np.eye(num_neu)
+    id_rep = np.tile(np.eye(num_syn), num_neu).T
+    connectivity = np.repeat(id_mat, num_syn, axis=0)
 
     # Running model
+    """
     for it in range(L):
         # Evaluating TM model
-        mssm.evaluate_model_euler(Input[:, it], it)
+        stp_model.evaluate_model_euler(Input[:, it], it)
         # Evaluating change in LIF neuron - membrane potential
-        I_args = [mssm.get_output()[:, it]]
-        lif.update_state(it, None, False, I_args)
+        I_args = [stp_model.get_output()[:, it]]
+        n_model.update_state(it, None, False, I_args)
 
         if lif_n is not None:
-            I_args = [mssm.N[:, it]]
+            I_args = [stp_model.N[:, it]]
             lif_n.update_state(it, None, False, I_args)
+    # """
+
+    it = 0
+    while it < L:  # for it in range(L):
+        # Evaluating Synaptic model
+        stp_model.evaluate_model_euler(Input[:, it], it)
+
+        # Converting model output into matrix alike
+        stp_output = stp_model.get_output()
+        I_args = []
+
+        if stp_output.ndim == 3:
+            # stp_output shape: (K, n_syn, L)
+            for k in range(stp_output.shape[0]):
+                # aux_input = np.resize(np.repeat(stp_output[k, :, it], num_neu), (num_syn * num_neu, num_neu))
+                aux_input = np.resize(np.repeat(stp_output[k, :, it], num_neu), (num_syn * num_neu, num_neu))
+                c = aux_input * connectivity
+                aux_2 = np.matmul(c.T, id_rep).T
+                aux_3 = np.sum(aux_2.reshape(num_neu, -1), axis=1)  # [n_neu]
+                I_args.append(aux_3)  # shape: (n_syn, L)
+            I_args.append(0)  # I_args.append(I_ext)
+
+        elif stp_output.ndim == 2:
+            # stp_output shape: (n_syn, L)
+            # aux_input = np.resize(np.repeat(stp_output[:, it], num_neu), (num_syn * num_neu, num_neu))
+            aux_input = np.resize(np.repeat(stp_output[:, it], num_neu), (num_syn * num_neu, num_neu))
+            c = aux_input * connectivity
+            aux_2 = np.matmul(c.T, id_rep).T
+            I_args.append(aux_2)
+
+        # Evaluating change in LIF neuron - membrane potential
+        seed = None
+        n_model.update_state(it, None, False, I_args)
+
+        it += 1
 
     # Computing output spike event in the last ISI
     it = L
-    lif.membrane_potential[0, -1] = lif.membrane_potential[0, -2]
+    n_model.membrane_potential[0, -1] = n_model.membrane_potential[0, -2]
     if lif_n is not None:
         lif_n.membrane_potential[0, -1] = lif_n.membrane_potential[0, -2]
     # spike_range = (mssm.time_spike_events[-1], it)
@@ -545,11 +616,11 @@ def knuth_score(x, m, range_d=None):
     hist, _ = np.histogram(x, bins=m, range=range_d)
 
     return (
-        n * np.log(m)
-        + np.math.lgamma(m / 2)
-        - m * np.math.lgamma(0.5)
-        - np.math.lgamma(n + m / 2)
-        + np.sum([np.math.lgamma(c + 0.5) for c in hist])
+            n * np.log(m)
+            + np.math.lgamma(m / 2)
+            - m * np.math.lgamma(0.5)
+            - np.math.lgamma(n + m / 2)
+            + np.sum([np.math.lgamma(c + 0.5) for c in hist])
     )
 
 
@@ -672,6 +743,8 @@ def binned_entropy_ad_hoc(values, n_bins=20):
     p = hist / hist.sum()
     p = p[p > 0]
     return -np.sum(p * np.log2(p)), hist, edges
+
+
 # """
 
 
@@ -786,75 +859,6 @@ def model_stp_parallel(stp_model, n_model, params, Input, seeds=None, use_noise=
     epsilon = [1e-1, 1e-2, 1e-2, 2e-3, 2e-3, 3e-3, 4e-3, 3e-3, 4e-3]
     # epsilon_min_max = [1e1, 1e0, 1e0, 2e-1, 2e-1, 2e-1, 3e-1, 2e-1, 4e-1]
     epsilon_min_max = [1e1, 1e0, 1e0, 5e-2, 5e-2, 1e-1, 1e-1, 2e-1, 2e-1]
-
-    # ******************************************************************************************************************
-    # slid_win = SlidingWindowTransitoryAnalyser(n_model, Input, seeds, L, window_length, sliding_step, num_tail_wins,
-    #                                            num_slid_wins, epsilon, epsilon_min_max, c_tol_dev, plot=False,
-    #                                            verbose=True)
-    # ******************************************************************************************************************
-    """
-    # Sliding windows
-    t_vec = n_model.time_vector[:len_windows + 1] * 1e3  # to ms
-    windows = sliding_window_indices(t_ms=t_vec, win_len_ms=window_length, step_ms=sliding_step)
-    num_windows = len(windows)
-    counter_slid_win = 0
-    # suprathreshold statistics
-    supra_rate = np.zeros((num_neu, num_windows))
-    supra_mean_ISI = np.zeros((num_neu, num_windows))
-    supra_std_ISI = np.zeros((num_neu, num_windows))
-    # Subthreshold statistics
-    sub_mean_v = np.zeros((num_neu, num_windows))
-    sub_median_v = np.zeros((num_neu, num_windows))
-    sub_q5_v = np.zeros((num_neu, num_windows))
-    sub_q10_v = np.zeros((num_neu, num_windows))
-    sub_q90_v = np.zeros((num_neu, num_windows))
-    sub_q95_v = np.zeros((num_neu, num_windows))
-    sub_min_v = np.zeros((num_neu, num_windows))
-    sub_max_v = np.zeros((num_neu, num_windows))
-
-    # Auxiliar figure to plot dynamic of statistical descriptors
-    # num_stat_des = 11
-    # colors = ['black', 'yellow', 'green', 'tab:orange', 'tab:blue', 'tab:olive', 'tab:green', 'tab:green'
-    #           , 'tab:olive', 'tab:red', 'tab:red']
-    # titles = ['rate', r'ISI($\mu$)', r'ISI($\sigma$)', r'V($\mu$)', r'V(med)', r'V($q_5$)', r'V($q_{10}$)',
-    #           r'V($q_{90}$)', r'V($q_{95}$)', r'V(min)', r'V(max)']
-    # bias_plot = [5, 0.04, 0.012, 0.004, 0.004, 0.004, 0.004, 0.01, 0.01, 0.004, 0.04]
-    # c_tol_dev = [1, 1, 1, 1, 1, 1, 1, 1.5, 1.5, 1, 1.5]
-    # epsilon = [1e-1, 1e-2, 1e-2, 2e-3, 2e-3, 2e-3, 2e-3, 2e-3, 4e-3, 2e-3, 4e-3]
-    # epsilon_min_max = [1e1, 1e0, 1e0, 2e-1, 2e-1, 2e-1, 2e-1, 3e-1, 4e-1, 2e-1, 4e-1]
-
-    # Auxiliar variables to compute maxi and mini in sliding windows
-    maxi_v_supra = np.array([[-np.inf for _ in range(num_neu)] for _ in range(num_stat_des_supra)])
-    mini_v_supra = np.array([[np.inf for _ in range(num_neu)] for _ in range(num_stat_des_supra)])
-    maxi_v_sub = np.array([[-np.inf for _ in range(num_neu)] for _ in range(num_stat_des_sub)])
-    mini_v_sub = np.array([[np.inf for _ in range(num_neu)] for _ in range(num_stat_des_sub)])
-
-    # Transition times
-    # Saving first time tr_st_time, how many times and last time tr_st_time
-    supra_mini_maxi = np.zeros((3, 3, num_neu))
-    sub_mini_maxi = np.zeros((3, 3, num_neu))
-    supra_rel_cha = np.zeros((3, 3, num_neu))
-    sub_rel_cha = np.zeros((3, 3, num_neu))
-    supra_tol_dev = np.zeros((3, 3, num_neu))
-    sub_tol_dev = np.zeros((3, 3, num_neu))
-    counter_stim_win = 0
-    # len_stimuli_windows = np.array([[[0, int(L / 3), 0, len_windows],
-    #                                 [int(L / 3), int(2 * L / 3), 0, len_windows],
-    #                                 [int(2 * L / 3), L, 0, len_windows]] for _ in range(num_neu)])
-    len_stimuli_windows = np.array([[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]] for _ in range(num_neu)])
-    tr_st_3_cond = np.zeros((2, num_neu))
-
-    # Auxiliar plot
-    fig_stat = plt.figure(figsize=[12, 4])
-    ax = []
-    for i in range(num_stat_des):
-        ax.append(plt.subplot(int(np.ceil(num_stat_des / 5)), 5, i + 1))
-        ax[i].set_title(titles[i], c='gray')
-        ax[i].grid()
-        ax[i].set_xlim(0, 100)  # num_windows)
-    fig_stat.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
-    # ******************************************************************************************************************
-    # """
 
     # Running model
     flex_t = 0
@@ -1116,10 +1120,12 @@ def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisso
         assert isinstance(seeds, list), "seeds must be a list"
         seed = np.random.choice(seeds)
     seed_print = []
-    Input_test = np.array([[]])
     L = len(modulation_signal)
+    # Input_test = np.array([[]])
+    Input_test2 = np.zeros((num_realizations, L))
     i = 0
-    while Input_test.shape[1] < L:
+    # while Input_test.shape[1] < L:
+    while i < L:
         if poisson:
             if seeds is not None:
                 seed = np.random.choice(seeds)
@@ -1141,15 +1147,14 @@ def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisso
             if i == 0: aux_s = np.roll(aux_s, 1)
             desired_len_aux_s = np.where(aux_s == 1)[1][-1]
             aux_s = aux_s[:, :desired_len_aux_s]
-        #
-        if i == 0:
-            Input_test = aux_s
-        else:
-            # Input_test = np.concatenate((Input_test, aux_s))
-            Input_test = np.hstack((Input_test, aux_s))
+
+        # if i == 0: Input_test = aux_s
+        # else: Input_test = np.hstack((Input_test, aux_s))
+        Input_test2[:, i: i + desired_len_aux_s] = aux_s
         i += desired_len_aux_s
     # print(seed_print)
-    return Input_test[:, :L]
+
+    return Input_test2[:, :L]
 
 
 def get_time_series_statistics_of_transitions(time_series, f_vector, prop_rates, dt, th_percentage=1e-2):
@@ -1235,7 +1240,7 @@ def get_transition_time_from_2_signals(signal1, signal2, dt, th_percentage=1e-5,
     mask_thr = np.repeat(np.reshape(thresholds, (shapes_diff[0], 1)), shapes_diff[1], axis=1)
     # If filtering is activated, apply the thresholds on the filtered signals
     # if filtering:
-        # assert sfreq is not None, "sfreq must be given"
+    # assert sfreq is not None, "sfreq must be given"
     #     ini_minus_end_windows = lowpass(ini_minus_end_windows, cutoff, 1 / dt)
     # find indices where the difference is bigger than 0.1% of maximum
     ind_tr = np.where(ini_minus_end_windows > mask_thr)
@@ -1373,7 +1378,8 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
 
     # For suprathreshold regime
     st_ISI_pi, tr_ISI_pi, st_ISI_pm, tr_ISI_pm, st_ISI_pe, tr_ISI_pe = [[] for _ in range(6)]
-    st_num_spike_pi, tr_num_spike_pi, st_num_spike_pm, tr_num_spike_pm, st_num_spike_pe, tr_num_spike_pe = [0 for _ in range(6)]
+    st_num_spike_pi, tr_num_spike_pi, st_num_spike_pm, tr_num_spike_pm, st_num_spike_pe, tr_num_spike_pe = [0 for _ in
+                                                                                                            range(6)]
 
     # Getting statistics for transition and steady-state components of mid window if time_transition is provided
     if t_transition_mid_win is not None:
@@ -1533,8 +1539,8 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
             if ind_spikes_gen is not None:
                 # Get ISI and number of spikes in stationary regime of ini window
                 IS, NS = get_ISI_num_spikes_i_m_e_windows(ind_spikes_gen, r, int(Le_time_win / dt),
-                                                                              int((Le_time_win + th_tr_a[r]) / dt),
-                                                                              sim_params['sfreq'])
+                                                          int((Le_time_win + th_tr_a[r]) / dt),
+                                                          sim_params['sfreq'])
                 tr_ISI_pm = tr_ISI_pm + list(IS)
                 tr_num_spike_pm += NS
             # **************************************************************************************************
@@ -1611,7 +1617,7 @@ def stat_tr_slid(signals, win_r, win_l):
         res.append(signal[:, win_r[0]:win_r[1] - win_l])
     return res
 
-    
+
 def statistics_signal(signal, axis=0):
     # mean, median, q5, q10, 190, 195, min, max
     return (np.mean(signal, axis=axis), np.median(signal, axis=axis), np.quantile(signal, 0.05, axis=axis),

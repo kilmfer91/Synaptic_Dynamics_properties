@@ -503,8 +503,8 @@ class GC_prop_cons:
                     # Getting masks of interspike intervals (to compute spike responses for each state variable)
                     spike_mask = detect_spikes(cons_input)
                     edges_syn = spike_edges_from_mask(spike_mask)
-                    syn_spike_masks = [build_interval_masks_from_edges(edges_syn[s], L)
-                                       for s in range(self.stp_prop.n_syn)]
+                    # syn_spike_masks = [build_interval_masks_from_edges(edges_syn[s], L)
+                    #                    for s in range(self.stp_prop.n_syn)]
 
                     # Running synapse-neuron model
                     model_stp_parallel(self.stp_prop, self.neuron_prop, stp_params, cons_input, n_seeds, n_noise,

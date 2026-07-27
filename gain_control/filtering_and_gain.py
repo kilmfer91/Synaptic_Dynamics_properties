@@ -12,9 +12,9 @@ from gain_control.utils_gc import *
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-s_model = 'DoornSTD'
-n_model = "HH"
-ind = 0
+s_model = 'MSSM'
+n_model = "LIF"
+ind = 7
 run_experiment = False
 save_figs = False
 imputations = True
