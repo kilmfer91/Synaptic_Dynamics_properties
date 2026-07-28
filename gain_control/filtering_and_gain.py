@@ -14,7 +14,7 @@ from gain_control.utils_gc import *
 # (Experiment 6) freq. response decay around 10Hz
 s_model = 'MSSM'
 n_model = "LIF"
-ind = 7
+ind = 4
 run_experiment = False
 save_figs = False
 imputations = True

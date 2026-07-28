@@ -370,19 +370,31 @@ def model_stp(stp_model, n_model, params, Input, lif_n=None):
     connectivity = np.repeat(id_mat, num_syn, axis=0)
 
     # Running model
-    """
+    # """
+    ini_loop_time = time.time()
     for it in range(L):
         # Evaluating TM model
         stp_model.evaluate_model_euler(Input[:, it], it)
-        # Evaluating change in LIF neuron - membrane potential
-        I_args = [stp_model.get_output()[:, it]]
+        I_args = []
+        stp_output = stp_model.get_output()
+        if stp_output.ndim == 3:
+            # stp_output shape: (K, n_syn, L)
+            I_args = [np.sum(stp_model.get_output()[0, :, it]), np.sum(stp_model.get_output()[1, :, it]), 0]
+        elif stp_output.ndim == 2:
+            # Evaluating change in LIF neuron - membrane potential
+            I_args = [stp_model.get_output()[:, it]]
+
         n_model.update_state(it, None, False, I_args)
 
         if lif_n is not None:
             I_args = [stp_model.N[:, it]]
             lif_n.update_state(it, None, False, I_args)
+        # if it % 1000 == 0:
+        #     print_time(m_time() - ini_loop_time, "model_stp(), it %d" % it)
+        #     ini_loop_time = time.time()
     # """
 
+    """
     it = 0
     while it < L:  # for it in range(L):
         # Evaluating Synaptic model
@@ -416,6 +428,7 @@ def model_stp(stp_model, n_model, params, Input, lif_n=None):
         n_model.update_state(it, None, False, I_args)
 
         it += 1
+    # """
 
     # Computing output spike event in the last ISI
     it = L
@@ -1625,10 +1638,12 @@ def statistics_signal(signal, axis=0):
             np.quantile(signal, 0.95, axis=axis), np.min(signal, axis=axis), np.max(signal, axis=axis))
 
 
-def aux_statistics_sin(mp_signal, coff, sfreq):
+def aux_statistics_sin(mp_signal, coff, sfreq, min_imp, max_imp):
     low_pass_mempot = lowpass(mp_signal, coff, sfreq)
     high_pass_mempot = highpass(mp_signal, coff, sfreq)
+
     dt = 1 / sfreq
+
     pos_mempot = None
     mem_pot_low_filt = None
     mem_pot_high_filt = None

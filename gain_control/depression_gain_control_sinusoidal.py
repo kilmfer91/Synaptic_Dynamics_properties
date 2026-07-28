@@ -3,14 +3,14 @@ import cProfile, pstats, tracemalloc, os, psutil
 
 # ******************************************************************************************************************
 # Depression using the MSSM
-s_model = 'DoornSTD'
-n_model = 'HH'
+s_model = 'TM'
+n_model = 'LIF'
 
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) slow-decay frequency response
-ind = 0
+ind = 4
 tau_m = 30
-max_freq = 1200
+max_freq = 500
 
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
@@ -27,7 +27,7 @@ num_syn = 200
 dict_results = {}
 folder_vars = "../gain_control/variables/high_freq_30k_2/"  # Folder to save results
 file_name = None
-save_vars = True
+save_vars = False
 num_realisations = 100
 aux_ = [[] for _ in range(num_realisations)]
 SNR, P_signal, P_noise, gc_metric = aux_.copy(), aux_.copy(), aux_.copy(), aux_.copy()
@@ -50,7 +50,7 @@ if ind == 7: out_ylim_min, out_ylim_max, description_2 = -60, 400, r'Facilitatio
 if ind == 8: out_ylim_min, out_ylim_max, description_2 = -70, -20, r'Diff. signaling synapse from Tsodyks, et al. ($\tau_m$ ' + str (tau_m) + 'ms)'
 
 # time conditions
-max_t, min_imp, max_imp, sfreq = 15, 0.0, 10, 10e3
+max_t, min_imp, max_imp, sfreq = 10.2, 0.2, 10.2, 10e3
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)
 L = time_vector.shape[0]
@@ -65,10 +65,12 @@ syn_params, description, name_params = get_params_stp(s_model, ind)
 s_params = dict(zip(name_params, syn_params))
 # Neuron model
 neuron_params = get_neuron_params(n_model=n_model, tau_m=tau_m, ind=ind, y_lim_ind_plot=True, num_syn=1)
-# **********************************************************************************************************************
+
+# Reducing synaptic strength of neurotransmitters in case of Doorn models
+if 'g_nmda' in neuron_params: neuron_params['g_nmda'] = neuron_params['g_nmda'] * 5e-2
+if 'g_ampa' in neuron_params: neuron_params['g_ampa'] = neuron_params['g_ampa'] * 5e-2
 
 # Creating STP and neuron models
-
 stp_model, neuron_model = models_creation_gc_sin(s_model, n_model, s_params, neuron_params, sim_params,
                                                  n_neu=1, n_syn=num_syn)
 # stp_model = MSSM_model(n_syn=num_syn)
@@ -80,7 +82,9 @@ stp_model, neuron_model = models_creation_gc_sin(s_model, n_model, s_params, neu
 # Creating simple depression model
 s_dep = Simple_Depression(n_syn=num_syn)
 s_dep.set_simulation_params(sim_params)
+# **********************************************************************************************************************
 
+# **********************************************************************************************************************
 # Frequency ranges for Frequency response of efficacy
 # range_f = [10, 20, 30, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]  # [i for i in range(10, 801, 10)]
 # [i for i in range(1, 11, 1)] + [i for i in range(15, 101, 5)] + [i for i in range(100, 501, 50)]
@@ -102,27 +106,23 @@ else:
 # range_f2, range_f3, range_f4 = [], [] , []
 f_vector = np.array(range_f + range_f2 + range_f3 + range_f4)
 loop_frequencies = np.array(f_vector)
+# **********************************************************************************************************************
 
-# ******************************************************************************************************************
-# LIF MODEL
-# neuron_model = LIF_model(n_neu=1)  # (n_neu=100)
-# lif_params = get_neuron_params(n_model=n_model, tau_m=tau_m, ind=ind, y_lim_ind_plot=True, num_syn=1)
-
-# neuron_model.set_model_params(lif_params)
-# neuron_model.set_simulation_params(sim_params)
-
+# **********************************************************************************************************************
 # Params for sinusoidal envelope of input stimuli
 mean_rates, max_oscils, fix_rates = [], [], []
 delta = 0.5
 
 if gaincontrol_sinusoidal:
-    # mean_rates = [[50, 10, 50], [300, 10, 300]]  # [[10, 10, 10], [20, 10, 20], [50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]
-    # max_oscils = [[25,  5,  5], [150,  5,  5]]  # [[5, 5,  5],  [10, 5,  5],   [25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]  #
-    # fix_rates = [[10, 50, 10], [10, 300, 10]]  # [[10, 10, 10], [10, 20, 10],  [10, 50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]  #
+    # mean_rates = [[50, 10, 50], [300, 10, 300], [1000, 10, 1000]]  # [[10, 10, 10], [20, 10, 20], [50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]
+    # max_oscils = [[25,  5,  5], [150,  5,  5], [500, 5, 5]]  # [[5, 5,  5],  [10, 5,  5],   [25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]  #
+    # fix_rates = [[10, 50, 10], [10, 300, 10], [10, 1000, 10]]  # [[10, 10, 10], [10, 20, 10],  [10, 50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]  #
     for i in f_vector:
         mean_rates.append([i, 10, i])
         max_oscils.append([i - i*delta, 5, 5])
         fix_rates.append([10, i, 10])
+# **********************************************************************************************************************
+
 
 # Results variable
 res_per_reali = np.zeros((10, 3, len(mean_rates)))  # statistical descriptors, num. scenarios, num. ref rate
@@ -174,8 +174,10 @@ if os.path.isfile(folder_vars + file_name):
         plt.xscale('log')
 
 if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
+    ini_sin_time = m_time()
     for reali in range(num_realisations):
         ind_exp = 0
+        ini_reali_time = m_time()
         while ind_exp < len(mean_rates):  # len(mean_rates): # for ind_exp in range(len(mean_rates)):
             ini_loop_time = m_time()
             mean_rate = mean_rates[ind_exp]
@@ -219,16 +221,18 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
 
                 # Filtering membrane potential, lowpass for getting the sinusoidal trend, high pass for the variance without
                 # seasonality
-                coff = 1
-                res_per_reali[:, i, ind_exp], lp_mp, hp_mp = aux_statistics_sin(neuron_model.membrane_potential[0, :], coff, sfreq)
+                # coff = 1
+                # res_per_reali[:, i, ind_exp], lp_mp, hp_mp = aux_statistics_sin(neuron_model.membrane_potential[0, :], coff, sfreq, min_imp, max_imp)
 
                 # """
                 # ******************************************************************************************************************
                 # Plot for the PhD Thesis
                 if i == 0:  # Only for high rate signal
                     mp_signal = neuron_model.membrane_potential[0, :]
-                    mem_pot_low_filt = lp_mp[int(5 / dt): int(15 / dt)]
-                    mem_pot_high_filt = hp_mp[int(5 / dt): int(15 / dt)]
+                    low_pass_mempot = lowpass(mp_signal, 1, sfreq)
+                    high_pass_mempot = highpass(mp_signal, 1, sfreq)
+                    mem_pot_low_filt = low_pass_mempot[int(min_imp / dt): int(max_imp / dt)]
+                    mem_pot_high_filt = high_pass_mempot[int(min_imp / dt): int(max_imp / dt)]
                     hp_mp_q90, hp_mp_q10 = np.quantile(mem_pot_high_filt, q=0.9), np.quantile(mem_pot_high_filt, q=0.1)
                     lp_mp_max, lp_mp_min = np.max(mem_pot_low_filt), np.min(mem_pot_low_filt)
 
@@ -251,7 +255,7 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                     und_var[reali].append(variability)
                     gc_metric[reali].append(limit_gc)
 
-                    aux_ = file_name + ". Realisation %s, rate %d, SNR %.2fdB-GC met. %.2f-amp %.2f-var %.2f" % (reali, f_vector[ind_exp], SNR_, limit_gc, amplitude, variability)
+                    aux_ = file_name + ". Realisation %s, rate %d, SNR %.2fdB, GC met. %.2f, amp %.2f, var %.2f" % (reali, f_vector[ind_exp], SNR_, limit_gc, amplitude, variability)
                     print_time(m_time() - ini_loop_time, aux_)
 
                     if plots_phd:
@@ -260,13 +264,13 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                         ax_v = fig_filters.add_subplot(2, 1, 1)
                         ax_s = fig_filters.add_subplot(2, 2, 3)
                         ax_n = fig_filters.add_subplot(2, 2, 4)
-                        ax_v.plot(time_vector[int(5 / dt): int(15 / dt)], mp_signal[int(5 / dt): int(15 / dt)], color='tab:blue')
-                        ax_s.plot(time_vector[int(5 / dt): int(15 / dt)], mem_pot_low_filt - np.mean(mp_signal[int(5 / dt): int(15 / dt)]), color='black')
-                        ax_n.plot(time_vector[int(5 / dt): int(15 / dt)], mem_pot_high_filt, color='gray')
-                        ax_n.plot([5, 15], [hp_mp_q90, hp_mp_q90], color='tab:green', label='q90')
-                        ax_n.plot([5, 15], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--', label='q10')
-                        ax_s.plot([5, 15], [hp_mp_q90, hp_mp_q90], color='tab:green')
-                        ax_s.plot([5, 15], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--')
+                        ax_v.plot(time_vector[int(min_imp / dt): int(max_imp / dt)], mp_signal[int(min_imp / dt): int(max_imp / dt)], color='tab:blue')
+                        ax_s.plot(time_vector[int(min_imp / dt): int(max_imp / dt)], mem_pot_low_filt - np.mean(mp_signal[int(min_imp / dt): int(max_imp / dt)]), color='black')
+                        ax_n.plot(time_vector[int(min_imp / dt): int(max_imp / dt)], mem_pot_high_filt, color='gray')
+                        ax_n.plot([min_imp, max_imp], [hp_mp_q90, hp_mp_q90], color='tab:green', label='q90')
+                        ax_n.plot([min_imp, max_imp], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--', label='q10')
+                        ax_s.plot([min_imp, max_imp], [hp_mp_q90, hp_mp_q90], color='tab:green')
+                        ax_s.plot([min_imp, max_imp], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--')
                         ax_s.set_ylim([-1., 2.])
                         ax_n.set_ylim([-1., 2.])
                         ax_v.set_ylim([-66, -62.9])
@@ -289,8 +293,8 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
 
                 if i == 0:
                     output_mp_esann = np.copy(neuron_model.membrane_potential[0, :])
-                    output_mp_low_filt_esann = np.copy(lp_mp)
-                    output_mp_high_filt_esann = np.copy(hp_mp)
+                    output_mp_low_filt_esann = np.copy(low_pass_mempot)
+                    output_mp_high_filt_esann = np.copy(high_pass_mempot)
 
                 # Plots
                 if plots_net:
@@ -321,6 +325,7 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
             # print_time(m_time() - ini_loop_time, "Experiment " + str(ind_exp) + ":" + time_desc)
 
             ind_exp += 1
+        print_time(m_time() - ini_reali_time, file_name)
 
     # Saving final dictionary if file does not exist
     if not os.path.isfile(folder_vars + file_name):
@@ -336,6 +341,7 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
         dict_results['gc_metric'] = gc_metric
         if save_vars:
             saveObject(dict_results, file_name, folder_vars)
+    print_time(m_time() - ini_sin_time, "Total time for " + file_name)
 
 # if plots_net: plot_gc_sin_statistics(res_per_reali, mean_rates)
 
