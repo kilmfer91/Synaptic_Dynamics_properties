@@ -25,14 +25,16 @@ num_syn = 200
 
 # Results
 dict_results = {}
-folder_vars = "../gain_control/variables/high_freq_30k_2/"  # Folder to save results
+folder_vars = "../gain_control/variables/high_freq_10k/"  # Folder to save results
 file_name = None
-save_vars = False
+save_vars = True
 num_realisations = 100
 aux_ = [[] for _ in range(num_realisations)]
-SNR, P_signal, P_noise, gc_metric = aux_.copy(), aux_.copy(), aux_.copy(), aux_.copy()
-und_amp, und_amp_max, und_amp_min = aux_.copy(), aux_.copy(), aux_.copy()
-und_q10, und_q90, und_var = aux_.copy(), aux_.copy(), aux_.copy()
+P_signal, P_noise = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
+SNR, gc_metric = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
+und_amp, und_amp_max = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
+und_q10, und_amp_min = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
+und_q90, und_var = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
 
 # Profiling
 profiling = True
@@ -50,7 +52,7 @@ if ind == 7: out_ylim_min, out_ylim_max, description_2 = -60, 400, r'Facilitatio
 if ind == 8: out_ylim_min, out_ylim_max, description_2 = -70, -20, r'Diff. signaling synapse from Tsodyks, et al. ($\tau_m$ ' + str (tau_m) + 'ms)'
 
 # time conditions
-max_t, min_imp, max_imp, sfreq = 10.2, 0.2, 10.2, 10e3
+max_t, min_imp, max_imp, sfreq = 15, 5, 15, 10e3  # 10.2, 0.2, 10.2, 10e3  #
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)
 L = time_vector.shape[0]

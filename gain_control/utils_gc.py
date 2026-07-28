@@ -389,7 +389,7 @@ def model_stp(stp_model, n_model, params, Input, lif_n=None):
         if lif_n is not None:
             I_args = [stp_model.N[:, it]]
             lif_n.update_state(it, None, False, I_args)
-        # if it % 1000 == 0:
+        # if it % 10000 == 0:
         #     print_time(m_time() - ini_loop_time, "model_stp(), it %d" % it)
         #     ini_loop_time = time.time()
     # """
