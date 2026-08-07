@@ -1224,7 +1224,7 @@ def plot_gain_filtering(dr_gain, dr_filt, lbl, lbl2, st_lbl, cols_, title, path_
 
 
 def avg_f(vec):
-    return np.median(vec, axis=0)
+    return np.mean(vec, axis=0)
 
 
 def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g, norm_neuron=True, min_n=None,
@@ -1315,62 +1315,242 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
 
 def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, norm_neuron, titles, markers,
                         alphas, c_g, plot_filt=False, ode='n'):
+    f_vec = dr_filt['initial_frequencies']
+    c_f = ['tab:red', 'tab:olive', 'tab:blue']
+    c_gc = ['tab:orange', 'tab:green']
+    l_f = ['Amp', 'Med']
+    ls = ['dashdot', 'dashed', 'dotted']
+    wins = [['ini', 'mid'], ['mid', 'end']]
+    # shift = [0, 7]
+    aux = ''
+    map_gain_shift = {0.1: 0, 0.5: 7, 1.0: 14}
+    k = map_gain_shift[gain]
     for n in range(len(name_state_vars)):
-        f_vec = dr_filt['initial_frequencies']
-        c_f = ['tab:red', 'tab:blue']
-        l_f = ['Amp', 'Med']
-        ls = ['-', '-']
-        wins = [['ini', 'mid'], ['mid', 'end']]
-        shift = [0, 7]
-        aux = ''
         if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
 
-        for i in range(len(wins)):
-            win1, win2 = wins[i]
-            k = shift[i]
-            a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron,
-                                         ode=ode)
-            Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
+        # Positive changes of rate
+        win1, win2 = wins[0]
+        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron,
+                                     ode=ode)
+        pEff_i_st, pEff_i_tr, pG_mi_st, pG_mi_tr, _, _, _, _ = a
 
-            # Auxiliary arrays
-            aux_gain = np.copy(G_mi_st[:-1])  # Selecting only amplitude, variability and median
-            aux_gain_tr = np.copy(G_mi_tr[:-1])  # Selecting only amplitude, variability and median
-            aux_filt = np.copy(Eff_i_st[:-1])[[0, 2], :]  # Selecting only amplitude and median
-            aux_filt_tr = np.copy(Eff_i_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
-            n_sto_tr_time = tr_time
+        # Auxiliary arrays
+        paux_gain = np.copy(pG_mi_st[:-1])  # Selecting only amplitude, variability and median
+        paux_gain_tr = np.copy(pG_mi_tr[:-1])  # Selecting only amplitude, variability and median
+        paux_filt = np.copy(pEff_i_st[:-1])[[0, 2], :]  # Selecting only amplitude and median
+        paux_filt_tr = np.copy(pEff_i_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
+        n_sto_tr_time = tr_time
 
-            # Plotting Entropy - stationary states (synaptic filtering and gain control)
-            axs[n][0 + k].plot(f_vec, Eff_i_st[3], alpha=alphas[1], label="st - " + str(gain), c=c_g)
-            # Plotting Entropy - transitory states (synaptic filtering and gain control)
-            axs[n][1 + k].plot(f_vec, G_mi_st[3], alpha=alphas[0], label="tr - " + str(gain), c=c_g)
+        # Negative changes of rate
+        win1, win2 = wins[1]
+        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron,
+                                     ode=ode)
+        nEff_m_st, nEff_m_tr, nG_em_st, nG_em_tr, _, _, _, _ = a
 
-            if plot_filt:
-                # Time to reach steady-state and filtering property
-                # Transition time
-                axs[n][2 + k].plot(f_vec, avg_f(n_sto_tr_time), alpha=alphas[1], c='black')
-                axs[n][2 + k].fill_between(f_vec, np.quantile(n_sto_tr_time, 0.01, axis=0),
-                                     np.quantile(n_sto_tr_time, 0.99, axis=0), color='black', alpha=0.1)
+        # Auxiliary arrays
+        naux_gain = np.copy(nG_em_st[:-1])  # Selecting only amplitude, variability and median
+        naux_gain_tr = np.copy(nG_em_tr[:-1])  # Selecting only amplitude, variability and median
+        naux_filt = np.copy(nEff_m_st[:-1])[[0, 2], :]  # Selecting only amplitude and median
+        naux_filt_tr = np.copy(nEff_m_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
 
-                # Plotting filtering property
-                for j in range(2):
-                    axs[n][3 + k].plot(f_vec, avg_f(aux_filt[j]), alpha=alphas[1], c=c_f[j], label="st-" + l_f[j],
-                                 linestyle=ls[j])
-                    axs[n][3 + k].fill_between(f_vec, np.quantile(aux_filt[j], 0.1, axis=0),
-                                         np.quantile(aux_filt[j], 0.9, axis=0), color=c_f[j], alpha=0.1)
-                for j in range(2):
-                    axs[n][3 + k].plot(f_vec, avg_f(aux_filt_tr[j]), c=c_f[j], label="tr-" + l_f[j], linestyle=ls[j])
-                    axs[n][3 + k].fill_between(f_vec, np.quantile(aux_filt_tr[j], 0.1, axis=0),
-                                         np.quantile(aux_filt_tr[j], 0.9, axis=0), color=c_f[j], alpha=0.1)
+        # Only for end window
+        win1, win2 = wins[1][1], wins[1][1]  # "end", "end"
+        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron,
+                                     ode=ode)
+        nEff_e_st, nEff_e_tr, _, _, _, _, _, _ = a
 
-            # Plotting Proportional changes of rate for Amplitude, Variability, Median
-            for j in range(3):
-                axs[n][j + k + 4].plot(f_vec, avg_f(aux_gain[j]), alpha=alphas[1], c=c_g, label="st-" + str(gain))
-                axs[n][j + k + 4].fill_between(f_vec, np.quantile(aux_gain[j], 0.1, axis=0),
-                                         np.quantile(aux_gain[j], 0.9, axis=0), color=c_g, alpha=0.1)
-            for j in range(3):
-                axs[n][j + k + 4].plot(f_vec, avg_f(aux_gain_tr[j]), alpha=alphas[0], label="tr-" + str(gain), c=c_g)
-                axs[n][j + k + 4].fill_between(f_vec, np.quantile(aux_gain_tr[j], 0.01, axis=0),
-                                         np.quantile(aux_gain_tr[j], 0.99, axis=0), color=c_g, alpha=0.1)
+        # Auxiliary arrays
+        eaux_filt = np.copy(nEff_e_st[:-1])[[0, 2], :]  # Selecting only amplitude and median
+        eaux_filt_tr = np.copy(nEff_e_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
+
+        # 1 temporal filtering
+        # Positive changes - ini window
+        axs[n][0 + k].plot(f_vec, avg_f(paux_filt[0]), alpha=alphas[0], c=c_f[0], label=r"$st_{i}$ ",
+                           linestyle=ls[0])
+        axs[n][0 + k].fill_between(f_vec, np.quantile(paux_filt[0], 0.1, axis=0),
+                                   np.quantile(paux_filt[0], 0.9, axis=0), color=c_f[0], alpha=0.1)
+        # Negative changes - mid window
+        axs[n][0 + k].plot(f_vec, avg_f(naux_filt[0]), alpha=alphas[0], c=c_f[1], label="$st_{m}$ ",
+                           linestyle=ls[1])
+        axs[n][0 + k].fill_between(f_vec, np.quantile(naux_filt[0], 0.1, axis=0),
+                                   np.quantile(naux_filt[0], 0.9, axis=0), color=c_f[1], alpha=0.1)
+        # end window
+        axs[n][0 + k].plot(f_vec, avg_f(eaux_filt[0]), alpha=alphas[0], c=c_f[2], label="$st_{e}$ ",
+                           linestyle=ls[2])
+        axs[n][0 + k].fill_between(f_vec, np.quantile(eaux_filt[0], 0.1, axis=0),
+                                   np.quantile(eaux_filt[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
+
+        # 2 Transient dynamics
+        # Positive changes - ini window
+        axs[n][1 + k].plot(f_vec, avg_f(paux_filt_tr[0]), alpha=alphas[0], c=c_f[0], label="$tr_{i}$ ",
+                           linestyle=ls[0])
+        axs[n][1 + k].fill_between(f_vec, np.quantile(paux_filt_tr[0], 0.1, axis=0),
+                                   np.quantile(paux_filt_tr[0], 0.9, axis=0), color=c_f[0], alpha=0.1)
+        # Negative changes - mid window
+        axs[n][1 + k].plot(f_vec, avg_f(naux_filt_tr[0]), alpha=alphas[0], c=c_f[1], label="$tr_{m}$ ",
+                           linestyle=ls[1])
+        axs[n][1 + k].fill_between(f_vec, np.quantile(naux_filt_tr[0], 0.1, axis=0),
+                                   np.quantile(naux_filt_tr[0], 0.9, axis=0), color=c_f[1], alpha=0.1)
+        # Negative changes - end window
+        axs[n][1 + k].plot(f_vec, avg_f(eaux_filt_tr[0]), alpha=alphas[0], c=c_f[2], label="$tr_{e}$ ",
+                           linestyle=ls[2])
+        axs[n][1 + k].fill_between(f_vec, np.quantile(eaux_filt_tr[0], 0.1, axis=0),
+                                   np.quantile(eaux_filt_tr[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
+
+        # 3 Synaptic information - Entropy (stationary regime)
+        # Positive changes - ini window
+        axs[n][2 + k].plot(f_vec, pEff_i_st[3], alpha=alphas[0], label=r"$st_{i}$ ", c=c_f[0],
+                           linestyle=ls[0])
+        # Negative changes - mid window
+        axs[n][2 + k].plot(f_vec, nEff_m_st[3], alpha=alphas[0], label=r"$st_{m}$ ", c=c_f[1],
+                           linestyle=ls[1])
+        # Negative changes - end window
+        axs[n][2 + k].plot(f_vec, nEff_e_st[3], alpha=alphas[0], label=r"$st_{e}$ ", c=c_f[2],
+                           linestyle=ls[2])
+
+        # 4 Synaptic information - Entropy (transitory regime)
+        # Positive changes - ini window
+        axs[n][3 + k].plot(f_vec, pEff_i_tr[3], alpha=alphas[0], label="$tr_{i}$ ", c=c_f[0],
+                           linestyle=ls[0])
+        # Negative changes - mid window
+        axs[n][3 + k].plot(f_vec, nEff_m_tr[3], alpha=alphas[0], label="$tr_{m}$ ", c=c_f[1],
+                           linestyle=ls[1])
+        # Negative changes - mid window
+        axs[n][3 + k].plot(f_vec, nEff_e_tr[3], alpha=alphas[0], label="$tr_{e}$ ", c=c_f[2],
+                           linestyle=ls[2])
+
+        # 5 Gain control - Amplitude (tr - st)
+        # Positive changes - ini to mid windows
+        axs[n][4 + k].plot(f_vec, avg_f(paux_gain_tr[0]), alpha=alphas[0], c='tab:orange',
+                           label=r"$tr_m-st_i$", linestyle=ls[0])
+        axs[n][4 + k].fill_between(f_vec, np.quantile(paux_gain_tr[0], 0.1, axis=0),
+                                   np.quantile(paux_gain_tr[0], 0.9, axis=0), color='tab:orange', alpha=0.1)
+        # Negative changes - mid to end windows
+        axs[n][4 + k].plot(f_vec, avg_f(naux_gain_tr[0]), alpha=alphas[1], c='tab:green',
+                           label=r"$tr_e-st_m$", linestyle=ls[1])
+        axs[n][4 + k].fill_between(f_vec, np.quantile(naux_gain_tr[0], 0.1, axis=0),
+                                   np.quantile(naux_gain_tr[0], 0.9, axis=0), color='tab:green', alpha=0.1)
+
+        # 6 Gain control - Median (tr - st)
+        # Positive changes - ini to mid windows
+        axs[n][5 + k].plot(f_vec, avg_f(paux_gain_tr[2]), alpha=alphas[0], c='tab:orange',
+                           label=r"$tr_m-st_i$ ", linestyle=ls[0])
+        axs[n][5 + k].fill_between(f_vec, np.quantile(paux_gain_tr[2], 0.1, axis=0),
+                                   np.quantile(paux_gain_tr[2], 0.9, axis=0), color='tab:orange', alpha=0.1)
+        # Negative changes - mid to end windows
+        axs[n][5 + k].plot(f_vec, avg_f(naux_gain_tr[2]), alpha=alphas[1], c='tab:green',
+                           label=r"$tr_e-st_m$ ", linestyle=ls[1])
+        axs[n][5 + k].fill_between(f_vec, np.quantile(naux_gain_tr[2], 0.1, axis=0),
+                                   np.quantile(naux_gain_tr[2], 0.9, axis=0), color='tab:green', alpha=0.1)
+
+        # 7 Gain control - Entropy (tr - st)
+        # Positive changes - ini to mid windows
+        axs[n][6 + k].plot(f_vec, pG_mi_st[3], alpha=alphas[0], label=r"$tr_m-st_i$ ", c='tab:orange',
+                           linestyle=ls[0])
+        # Negative changes - mid to end windows
+        axs[n][6 + k].plot(f_vec, nG_em_st[3], alpha=alphas[1], label=r"$tr_e-st_m$ ", c='tab:green',
+                           linestyle=ls[1])
+
+
+def adjust_legend_freq_res(lbl_ind, fig, ax, gain):
+    row_indices = [
+        [1, 2, 3, 4, 5, 6, 7],
+        [8, 9, 10, 11, 12, 13, 14],
+        [15, 16, 17, 18, 19, 20, 21],
+    ]
+
+    # Convert to 0-based for the list
+    row_axes = [[ax[k - 1] for k in row] for row in lbl_ind]
+    # Choose one axis per row that has the desired handles/labels
+    ref_axes = [ax[row[6] - 1] for row in row_indices]  # axes 4, 7, 11, 14, 18, 21
+
+    # unifying handles and labels
+    legends = []
+    for row_j, ax_source in enumerate(row_axes):
+        handles, labels = [], []
+        for ax_ in ax_source:
+            h_, l_ = ax_.get_legend_handles_labels()
+            for h_i in h_:
+                handles.append(h_i)
+            for l_i in l_:
+                labels.append(l_i)
+
+        # Vertical position: center of the middle axis in that row
+        # mid_ax = row_axes[row_i][6]  # e.g. axes 4, 11, 18
+        bbox = ref_axes[row_j].get_window_extent().transformed(fig.transFigure.inverted())
+        y_center = (bbox.y0 + bbox.y1) / 2
+
+        leg = ref_axes[row_j].legend(
+            handles, labels,
+            loc='center left',
+            bbox_to_anchor=(1.02, 0.7),  # just outside right edge
+            frameon=False,
+            title='gain factor ' + str(gain[row_j])
+        )
+        legends.append(leg)
+
+
+def create_fig_freq_portrait(names_sv, title):
+    ax_p = []
+    fig_gc = []
+    for j in range(len(names_sv)):
+        # Creating figure for each state variable
+        fig, ax = plt.subplots(2, 4, figsize=(15, 6))
+        # Flattening array of axes (before it was 2x4), now 1x8
+        ax = ax.ravel()
+
+        # Group A: 0,1,2,4,5,6 share one x-axis
+        groupA = [ax[i] for i in [0, 1, 2, 4, 5, 6]]
+        # Group B: 3,7 share another x-axis
+        groupB = [ax[i] for i in [3, 7]]
+
+        # Link axes within each group
+        for ax_ in groupA[1:]:
+            ax_.sharex(groupA[0])
+            ax_.sharey(groupA[0])
+        for ax_ in groupB[1:]:
+            ax_.sharex(groupB[0])
+            ax_.sharey(groupB[0])
+
+        # Appending ax into ax_p
+        ax_p.append(ax)
+        fig.suptitle(title % names_sv[j], fontsize=22)
+        fig_gc.append(fig)
+    return fig_gc, ax_p
+
+
+def create_fig_freq_responses(name_sv, title):
+    ax_f = []
+    fig_gc = []
+    for j in range(len(name_sv)):
+        # Creating figure for each state variable
+        fig, ax = plt.subplots(3, 7, figsize=(20, 10), sharey='col')
+        # Flattening array of axes (before it was 3x7), now 1x21
+        ax = ax.ravel()
+
+        # Group A: 0,1,2,4,5,6 share one x-axis
+        # groupA = [ax[i] for i in [0, 1, 2, 4, 5, 6]]
+        # Group B: 3,7 share another x-axis
+        # groupB = [ax[i] for i in [3, 7]]
+
+        # Link axes within each group
+        # for ax_ in groupA[1:]:
+        #     ax_.sharex(groupA[0])
+        #     ax_.sharey(groupA[0])
+        # for ax_ in groupB[1:]:
+        #     ax_.sharex(groupB[0])
+        #     ax_.sharey(groupB[0])
+
+        # Appending ax into ax_p
+        ax_f.append(ax)
+        fig.suptitle(title % name_sv[j], fontsize=22)
+        fig_gc.append(fig)
+    return fig_gc, ax_f
+    # fig = [plt.figure(figsize=(20, 10)) for _ in range(len(name_sv))]  # (20, 3.6)
+    # for j in range(len(name_sv)):
+    #     fig[j].suptitle(title % name_sv[j], fontsize=22)
+    # ax_f = [[fig[i].add_subplot(3, 7, j + 1) for j in range(21)] for i in range(len(name_sv))]
+    # return fig, ax_f
 
 
 def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2, norm_neuron, titles, markers, alphas,
@@ -1433,13 +1613,108 @@ def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2,
             axs[n][j + 4].scatter(x[0], y[0], c='black')
 
 
-def adjust_freq_portraits(ax, x_label, y_label, title, xlims=None, ylims=None, xscale='linear'):
-    ax.set_xlabel(x_label, color='gray')
+def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, merge_directions=False):
+    Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = list_eff_gc
+
+    style_line = 'dashed' if merge_directions else 'solid'
+    alpha = 0.6 if merge_directions else 1
+    marker = 'o' if merge_directions else '+'
+    i = 0
+    for j in range(int(len(titles) / 2)):
+        # STATIONARY COMPONENT
+        aux_gain = np.copy(G_mi_st[j])
+        aux_filt = np.copy(Eff_i_st[j])
+        if G_det_mi_st[j].ndim == 2:
+            aux_det_gain = np.copy(G_det_mi_st[j])[0, :]
+        else:
+            aux_det_gain = np.copy(G_det_mi_st[j])
+        if Eff_det_i_st[j].ndim == 2:
+            aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+        else:
+            aux_det_filt = np.copy(Eff_det_i_st[j])
+        # if n_model == 'HH': aux_gain *= 1e3, aux_filt *= 1e3, aux_det_gain *= 1e3, aux_det_filt *= 1e3
+
+        # Deterministic plots
+        # if i_g == 0: ax_[n][j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
+        # else: ax_[n][j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
+        # ax_[n][j].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
+        # ax_[n][j].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
+
+        # Stochastic plots
+        if 'Entropy' in titles[j]: x, y, hab = aux_filt, aux_gain, False
+        else: x, y, hab = avg_f(aux_filt), avg_f(aux_gain), True
+        ax[j].scatter(x, y, marker=marker, alpha=alpha, color=color)
+        ax[j].plot(x, y, linestyle=style_line, alpha=alpha, color=color, label=label)
+        # if i == 0 and hab: ax[j].fill_between(x, np.quantile(aux_gain, 0.1, axis=0),
+        #                                np.quantile(aux_gain, 0.9, axis=0), color=color, alpha=0.1)
+        if i == 0 and hab: ax[j].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
+                                              color=color, alpha=0.1)
+        ax[j].scatter(x[0], y[0], c='black')
+
+        # TRANSITORY COMPONENT
+        aux_gain = np.copy(G_mi_tr[j])
+        aux_filt = np.copy(Eff_i_st[j])
+        # aux_det_gain = np.copy(G_det_mi_tr[j])[0, :]
+        # aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+        if G_det_mi_tr[j].ndim == 2:
+            aux_det_gain = np.copy(G_det_mi_tr[j])[0, :]
+        else:
+            aux_det_gain = np.copy(G_det_mi_tr[j])
+        if Eff_det_i_st[j].ndim == 2:
+            aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+        else:
+            aux_det_filt = np.copy(Eff_det_i_st[j])
+
+        # Deterministic plots
+        # if i_g == 0: ax_[n][j + 3].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
+        # else: ax_[n][j + 3].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
+        # ax_[n][j + 3].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
+        # ax_[n][j + 3].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
+
+        # Stochastic plots
+        if 'Entropy' in titles[j]: x, y, hab = aux_filt, aux_gain, False
+        else: x, y, hab = avg_f(aux_filt), avg_f(aux_gain), True
+        ax[j + 4].scatter(x, y, marker=marker, alpha=alpha, color=color)
+        ax[j + 4].plot(x, y, linestyle=style_line, alpha=alpha, color=color, label=label)
+        # if i == 0 and hab: ax[j + 4].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
+        #                                    np.quantile(aux_gain, 0.9, axis=0), color=color, alpha=0.1)
+        if i == 0 and hab: ax[j + 4].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
+                                                  color=color, alpha=0.1)
+        ax[j + 4].scatter(x[0], y[0], c='black')
+
+
+def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuron, titles, color, ode='n'):
+    win1, win2, win3 = 'ini', 'mid', 'end'
+    for n in range(len(name_state_vars)):
+        aux = ''
+        if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
+
+        # For positive changes of rate
+        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='ini', win2='mid', norm_neuron=norm_neuron,
+                                     ode=ode)
+        Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
+        aux_freq_portrait2(a, axp[n], titles, color, r"%.1f (pos)" % gain)
+
+        # For negative changes of rate
+        a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='mid', win2='end', norm_neuron=norm_neuron,
+                                     ode=ode)
+        Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
+        aux_freq_portrait2(a, axp[n], titles, color, r"%.1f (neg)" % gain, merge_directions=True)
+
+
+def adjust_freq_portraits(ax, x_label, y_label, title, xlims=None, ylims=None, xscale='linear', axes_=True, tit_=True,
+                          x_axis=True):
+    if x_axis: ax.set_xlabel(x_label, color='gray')
     ax.set_ylabel(y_label, color='gray')
     if xlims is not None: ax.set_xlim(xlims)
     if ylims is not None: ax.set_ylim(ylims)
-    ax.set_title(title, color="black", alpha=0.7)
-    ax.grid()
+    if tit_: ax.set_title(title, color="black", alpha=0.7)
+    # ax.grid()
+    if axes_:
+        ax.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        ax.axvline(0, color='gray', linestyle='--', linewidth=0.8)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     ax.set_xscale(xscale)
 
 
@@ -1496,6 +1771,19 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
     GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
 
+    """
+    output = {}
+    for k in var_:
+        output[k] = dr_[k][:30, :10]
+    output['H_' + pH + auxH + 'st'] = dr_['H_' + pH + auxH + 'st'][:, :10]
+    output['H_' + pH + auxH + 'tr'] = dr_['H_' + pH + auxH + 'tr'][:, :10]
+        
+    with pd.ExcelWriter(path_vars + dr_gain_control_file+ ".xlsx", engine="openpyxl") as writer:
+    for key, arr in output.items():
+        df = pd.DataFrame(arr)
+        df.to_excel(writer, sheet_name=key, index=False)
+    # """
+
     # Sets
     Eff_i_st_amp = n_sto_i_st_amp
     Eff_i_st_med = n_sto_i_st_med - n_sto_i_tr_min
@@ -1539,6 +1827,19 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
     GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
 
+    """
+    output_list = {}
+    for k in var_:
+        output_list[k] = dr_[k][:30, :10]
+    output_list['H_' + pH + auxH + 'st'] = dr_['H_' + pH + auxH + 'st'][:, :10]
+    output_list['H_' + pH + auxH + 'tr'] = dr_['H_' + pH + auxH + 'tr'][:, :10]
+    
+    with pd.ExcelWriter(path_vars + dr_syn_filtering_file+ ".xlsx", engine="openpyxl") as writer:
+        for key, arr in output_list.items():
+            df = pd.DataFrame(arr)
+            df.to_excel(writer, sheet_name=key, index=False)
+    # """
+
     # Sets
     Eff_i_st_amp = n_sto_i_st_amp
     Eff_i_st_med = n_sto_i_st_med - n_sto_i_st_min
@@ -1567,3 +1868,4 @@ def organise_keys_dr_gc(sufix):
          sufix + 'st_ini_prop_q90', sufix + 'st_ini_prop_q10', sufix + 'mtr_ini_prop_q90', sufix + 'mtr_ini_prop_q10',
          sufix + 'st_mid_prop_med', sufix + 'mtr_mid_prop_med', sufix + 'st_ini_prop_med', sufix + 'mtr_ini_prop_med']
     return v
+

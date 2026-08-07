@@ -294,15 +294,15 @@ def get_params_stp(name_model, ind):
     return syn_params, description, name_params
 
 
-def get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_n, stoch_inp, imputations, gain, n_noise):
+def get_name_file(sfreq, s_model, n_model, ind, num_syn, tau_n, stoch_inp, gain):
     aux_name = "_ind_" + str(ind) + "_gain_" + str(int(gain * 100)) + "_sf_" + str(int(sfreq / 1000)) + "k_syn_" + str(
         num_syn)
-    if lif_output and n_model == 'LIF': aux_name += "_tau" + n_model + "_" + str(tau_n) + "ms"
+    if n_model == 'LIF': aux_name += "_tau" + n_model + "_" + str(tau_n) + "ms"
     file_name = s_model + aux_name
     if not stoch_inp:
         file_name = s_model + '_det' + aux_name
     else:
-        if n_noise: file_name += '_noise'
+        file_name += '_noise'
     return file_name
 
 
@@ -1671,6 +1671,69 @@ def aux_statistics_sin(mp_signal, coff, sfreq, min_imp, max_imp):
 def sec2hour(secs, exp, realizations):
     rep = int(np.ceil(100 / realizations))
     return secs * exp * rep / 3600
+
+
+def quantiles_from_hist(hist, edges, qs=(0.1, 0.5, 0.9)):
+    hist = np.asarray(hist, dtype=float)
+    edges = np.asarray(edges, dtype=float)
+    total = hist.sum()
+    if total == 0:
+        return np.nan, np.nan, np.nan, np.nan, np.nan
+    cdf = np.cumsum(hist) / total
+    out = []
+    for q in qs:
+        idx = np.searchsorted(cdf, q)
+        idx = min(idx, len(hist) - 1)
+        prev_cdf = 0.0 if idx == 0 else cdf[idx - 1]
+        left, right = edges[idx], edges[idx + 1]
+        bin_count = hist[idx]
+        if bin_count == 0 or cdf[idx] == prev_cdf:
+            out.append((left + right) / 2)
+        else:
+            frac = (q - prev_cdf) / (cdf[idx] - prev_cdf)
+            out.append(left + frac * (right - left))
+    min_val = edges[0]
+    max_val = edges[-1]
+    return min_val, max_val, *out
+
+
+def quantiles_from_hist(hist, edges, qs=(0.1, 0.5, 0.9)):
+    hist = np.asarray(hist, dtype=float)
+    edges = np.asarray(edges, dtype=float)
+
+    total = hist.sum()
+    if total == 0:
+        return np.nan, np.nan, np.nan, np.nan, np.nan
+
+    nonzero = np.where(hist > 0)[0]
+    if nonzero.size == 0:
+        return np.nan, np.nan, np.nan, np.nan, np.nan
+
+    first = nonzero[0]
+    last = nonzero[-1]
+
+    min_val = edges[first]
+    max_val = edges[last + 1]
+
+    cdf = np.cumsum(hist) / total
+
+    out = []
+    for q in qs:
+        idx = np.searchsorted(cdf, q)
+        idx = min(idx, len(hist) - 1)
+
+        prev_cdf = 0.0 if idx == 0 else cdf[idx - 1]
+        left, right = edges[idx], edges[idx + 1]
+        bin_count = hist[idx]
+
+        if bin_count == 0 or cdf[idx] == prev_cdf:
+            out.append((left + right) / 2)
+        else:
+            frac = (q - prev_cdf) / (cdf[idx] - prev_cdf)
+            out.append(left + frac * (right - left))
+
+    return min_val, max_val, *out
+
 
 # ini_high_rate = 50  # 50
 # step_high_rate = 50  # 10 # 50

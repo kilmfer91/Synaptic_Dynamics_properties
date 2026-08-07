@@ -12,29 +12,26 @@ from gain_control.utils_gc import *
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) freq. response decay around 100Hz
 # (Experiment 6) freq. response decay around 10Hz
-s_model = 'MSSM'
-n_model = "LIF"
-ind = 4
-run_experiment = False
-save_figs = False
-imputations = True
-lif_output = True
-n_noise = True
+s_model = 'TM'
+n_model = 'LIF'
+ind = 8
+save_figs = True
 plot_figs = True
 num_syn = 1
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 10e3
 tau_lif = 30  # ms
-total_realizations = 1  # 100
-num_realizations = 1  # 8 for server, 4 for macbook air
-t_tra = None  # 0.25
+# total_realizations = 1  # 100
+# num_realizations = 1  # 8 for server, 4 for macbook air
+# t_tra = None  # 0.25
 
 # Path variables
 # path_vars = "../gain_control/variables/high_freq_" + str(int(sfreq/1e3)) + "k_2/"
-path_vars = "../gain_control/variables/high_freq_30k_2/"
+aux_p = ''  # '_2'
+path_vars = "../gain_control/variables/high_freq_10k" + aux_p + "/"
 check_create_folder(path_vars)
-folder_plots = '../gain_control/plots/'
+folder_plots = '../gain_control/plots/freq_portrait/'
 check_create_folder(folder_plots)
 
 # Normalization
@@ -49,7 +46,7 @@ if n_model == "LIF":
 # **********************************************************************************************************************
 # MULTIPLE GAINS
 # **********************************************************************************************************************
-gain_v = [0.1, 0.5, 1.0]  # [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+gain_v = [0.5]  # [0.1, 0.5, 1.0]
 filt_dict_loaded = False
 
 # Titles graphs
@@ -58,7 +55,6 @@ if n_model == 'LIF': title += r', $\tau_{lif}$ ' + str(tau_lif) + "ms"
 if len(gain_v) == 1: title += ', gain ' + str(int(gain_v[0] * 100)) + '%'
 else: title += ', multiple gains'
 
-# ""
 # Plot
 title_mp = ['Amplitude in steady-state', 'Varibility in steady-state', 'Median in steady-state',
             'Entropy in steady-state', 'Amplitude in transitory-state', 'Varibility in transitory-state',
@@ -69,88 +65,60 @@ x_label_ax_p = [r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)', r'
 y_label_ax_p = [r'$G_{m-i,st}^{amp} (mV)$', r'$G_{m-i,st}^{var} (mV)$', r'$G_{m-i,st}^{med} (mV)$',
                 r'$GH_{m-i,st}$ (bits)', r'$G_{m-i,tr}^{amp} (mV)$', r'$G_{m-i,tr}^{var} (mV)$',
                 r'$G_{m-i,tr}^{med} (mV)$', r'$GH_{m-i,tr}$ (bits)']
-x_label_ax_n = [r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)', r'$E_{ff_{m,st}}^{med}$ (mV)',
-                r'$H_{m,st}$ (bits)', r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)',
-                r'$E_{ff_{m,st}}^{med}$ (mV)', r'$H_{m,st}$ (bits)']
-y_label_ax_n = [r'$G_{e-m,st}^{amp} (mV)$', r'$G_{e-m,st}^{var} (mV)$', r'$G_{e-m,st}^{med} (mV)$',
-                r'$GH_{e-m,st}$ (bits)', r'$G_{e-m,tr}^{amp} (mV)$', r'$G_{e-m,tr}^{var} (mV)$',
-                r'$G_{e-m,tr}^{med} (mV)$', r'$GH_{e-m,tr}$ (bits)']
-title_freqres = ['H - filtering', 'H - Gain-control', 'Transitory time', 'Synaptic Filtering', 'GC - amp', 'GC - var',
-            'GC - med']
-ylabel_axb = ["Entropy (bits)", "Entropy (bits)", "Time (s)", "Mem. pot. (mV)", "Mem. pot. (mV)", "Mem. pot. (mV)",
-              "Mem. pot. (mV)"]
+# x_label_ax_n = [r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)', r'$E_{ff_{m,st}}^{med}$ (mV)',
+#                 r'$H_{m,st}$ (bits)', r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)',
+#                 r'$E_{ff_{m,st}}^{med}$ (mV)', r'$H_{m,st}$ (bits)']
+# y_label_ax_n = [r'$G_{e-m,st}^{amp} (mV)$', r'$G_{e-m,st}^{var} (mV)$', r'$G_{e-m,st}^{med} (mV)$',
+#                 r'$GH_{e-m,st}$ (bits)', r'$G_{e-m,tr}^{amp} (mV)$', r'$G_{e-m,tr}^{var} (mV)$',
+#                 r'$G_{e-m,tr}^{med} (mV)$', r'$GH_{e-m,tr}$ (bits)']
+# title_freqres = ['H - filtering', 'H - Gain-control', 'Transitory time', 'Synaptic Filtering', 'GC - amp', 'GC - var',
+#             'GC - med']
+title_freqres = ['Temp. filtering', 'Transients', 'Entropy (stationary)', 'Entropy (transitory)', 'Gain effect (amp)',
+                 'Gain effect (med)', 'Gain effect (Entropy)']
+# ylabel_axb = ["Entropy (bits)", "Entropy (bits)", "Time (s)", "Mem. pot. (mV)", "Mem. pot. (mV)", "Mem. pot. (mV)",
+#               "Mem. pot. (mV)"]
+ylabel_axb = ["Mem. pot. (mV)", "Mem. pot. (mV)", "Entropy (bits)", "Entropy (bits)", "Mem. pot. (mV)",
+              "Mem. pot. (mV)", "Entropy (bits)"]
 c_g = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
        'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
 
 name_n_state_variables, name_syn_state_variables = None, None
 ax_f, ax_fs, alphas, markers = None, None, None, None
 xl_neu, xl_syn, xl_syb, ax_s, ax_sb, ax_hI, ax_h, ax_h, ax_hs = [None for _ in range(9)]
-figNeur_pos_gc, figNeur_neg_gc, figSynapse, figCompPropNeuron, figCompPropSyn = None, None, None, None, None
+n_freq_por, figNeur_neg_gc, figSynapse, n_freq_res, s_freq_res = None, None, None, None, None
 figSynapseb, figCompPropSynb, figEntropyInput, figEntropy, ax_p, ax_n = None, None, None, None, None, None
-figSyn_pos_gc, figSyn_neg_gc, ax_sp, ax_sn = None, None, None, None
+s_freq_por, figSyn_neg_gc, ax_sp, ax_sn = None, None, None, None
 
 if plot_figs:
     plt.rcParams['figure.constrained_layout.use'] = True
     # Synaptic filtering vs. Gain-Control for Neuron
-    dr_gain_control_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_lif, True,
-                                         imputations, 0.1, n_noise=n_noise)
+    dr_gain_control_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, tau_lif, True, 0.1)
     if os.path.isfile(path_vars + dr_gain_control_file) and not filt_dict_loaded:
         # Name state variables
         dr_filt = loadObject(dr_gain_control_file, path_vars)
         name_n_state_variables = dr_filt['name_neuron_state_variables']
         name_syn_state_variables = dr_filt['name_syn_state_variables']
 
-        # Positive changes of rate - Neuron
-        figNeur_pos_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_n_state_variables))]  # 6.5, 5
-        title_ = 'Frequency portrait for short-term depression - %s(t) - positive changes of rate'
-        for j in range(len(name_n_state_variables)):
-            figNeur_pos_gc[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
-        ax_p = [[figNeur_pos_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
-               range(len(name_n_state_variables))]
+        # Frequency portrait - Neuron
+        title_ = 'Frequency portrait for Neuron - %s(t)'
+        n_freq_por, ax_p = create_fig_freq_portrait(name_n_state_variables, title_)
 
-        # Positive changes of rate - Synapse
-        figSyn_pos_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_syn_state_variables))]  # 6.5, 5
-        title_ = 'Frequency portrait for short-term depression - %s(t) - positive changes of rate'
-        for j in range(len(name_syn_state_variables)):
-            figSyn_pos_gc[j].suptitle(title_ % name_syn_state_variables[j], fontsize=22)
-        ax_sp = [[figSyn_pos_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
-               range(len(name_syn_state_variables))]
-
-        # Negative changes of rate - neuron
-        figNeur_neg_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_n_state_variables))]  # 6.5, 5
-        title_ = 'Frequency portrait for short-term depression - %s(t) - negative changes of rate'
-        for j in range(len(name_n_state_variables)):
-            figNeur_neg_gc[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
-        ax_n = [[figNeur_neg_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
-               range(len(name_n_state_variables))]
-
-        # Negative changes of rate - Synapse
-        figSyn_neg_gc = [plt.figure(figsize=(15, 6)) for _ in range(len(name_syn_state_variables))]  # 6.5, 5
-        title_ = 'Frequency portrait for short-term depression - %s(t) - negative changes of rate'
-        for j in range(len(name_syn_state_variables)):
-            figSyn_neg_gc[j].suptitle(title_ % name_syn_state_variables[j], fontsize=22)
-        ax_sn = [[figSyn_neg_gc[i].add_subplot(2, 4, j + 1) for j in range(len(title_mp))] for i in
-                 range(len(name_syn_state_variables))]
+        # Frequency portrait - Synapse
+        title_ = 'Frequency portrait for Synapse - %s(t)'
+        s_freq_por, ax_sp = create_fig_freq_portrait(name_syn_state_variables, title_)
 
         # Frequency responses - neuron
-        figCompPropNeuron = [plt.figure(figsize=(20, 7)) for _ in range(len(name_n_state_variables))]  # (20, 3.6)
-        title_ = 'Neuron - Frequency responses for %s(t) - positive and negative changes of rate'
-        for j in range(len(name_n_state_variables)):
-            figCompPropNeuron[j].suptitle(title_ % name_n_state_variables[j], fontsize=22)
-        ax_f = [[figCompPropNeuron[i].add_subplot(2, 7, j + 1) for j in range(14)] for i in
-                range(len(name_n_state_variables))]
+        title_ = 'Frequency responses for neuron - %s(t)'
+        n_freq_res, ax_f = create_fig_freq_responses(name_n_state_variables, title_)
 
         # Frequency responses - synapse
-        figCompPropSyn = [plt.figure(figsize=(20, 7)) for _ in range(len(name_syn_state_variables))]  # (20, 3.6)
-        title_ = 'Synapse - Frequency responses for %s(t) - positive and negative changes of rate'
-        for j in range(len(name_syn_state_variables)):
-            figCompPropSyn[j].suptitle(title_ % name_syn_state_variables[j], fontsize=22)
-        ax_fs = [[figCompPropSyn[i].add_subplot(2, 7, j + 1) for j in range(14)] for i in
-                 range(len(name_syn_state_variables))]
-    
+        title_ = 'Frequency responses for synapse - %s(t)'
+        s_freq_res, ax_fs = create_fig_freq_responses(name_syn_state_variables, title_)
+
     alpha = 0.3
     markers = ['+', '*']
     alphas = [1.0, 0.5]
+    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
 
 fig_syn_b = False
 fig_H_100 = False
@@ -167,10 +135,8 @@ i_g = 0
 l_gain = len(gain_v)
 for gain in gain_v:
     # File names
-    dr_syn_filtering_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_lif, False,
-                                          imputations, gain, n_noise=n_noise)
-    dr_gain_control_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_lif, True,
-                                         imputations, gain, n_noise=n_noise)
+    dr_syn_filtering_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, tau_lif, False, gain)
+    dr_gain_control_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, tau_lif, True, gain)
 
     print("For gain control, file %s and index %d" % (dr_gain_control_file, ind))
     print("For synaptic filtering, file %s and index %d" % (dr_syn_filtering_file, ind))
@@ -181,19 +147,19 @@ for gain in gain_v:
         dr_filt = loadObject(dr_syn_filtering_file, path_vars)
         # Auxiliar variables
         initial_frequencies, model = dr_filt['initial_frequencies'], dr_filt['stp_model']
-        dyn_synapse, num_synapses = dr_filt['dyn_synapse'], dr_filt['num_synapses']
-        num_realizations, sim_params = dr_filt['realizations'], dr_filt['sim_params']
+        # dyn_synapse, num_synapses = dr_filt['dyn_synapse'], dr_filt['num_synapses']
+        # num_realizations, sim_params = dr_filt['realizations'], dr_filt['sim_params']
         # prop_rate_change_a = dr_filt['prop_rate_change_a']
-        fix_rate_change_a, num_changes_rate, = dr_filt['fix_rate_change_a'], dr_filt['num_changes_rate'],
-        description = dr_filt['description']
-        seeds = dr_filt['seeds']
+        # fix_rate_change_a, num_changes_rate, = dr_filt['fix_rate_change_a'], dr_filt['num_changes_rate'],
+        # description = dr_filt['description']
+        # seeds = dr_filt['seeds']
         total_realizations = dr_filt['t_realizations']
 
         # Name state variables
         name_n_state_variables = dr_filt['name_neuron_state_variables']
         name_syn_state_variables = dr_filt['name_syn_state_variables']
 
-    if os.path.isfile(path_vars + dr_gain_control_file) and not run_experiment:
+    if os.path.isfile(path_vars + dr_gain_control_file):
         dr_gain = loadObject(dr_gain_control_file, path_vars)
 
     f_vec = dr_gain['initial_frequencies']
@@ -201,136 +167,37 @@ for gain in gain_v:
 
     # ******************************************************************************************************************
     # Plots 1
-    # FREQUENCY RESPONSES OF SYNAPTIC PROPERTIES
     dr_ = dr_gain
     if plot_figs:
-        if 'name_neuron_state_variables' not in dr_:
-            # For Membrane potential analysis
-            var_ = organise_keys_dr_gc(sufix='')
-            # Plotting properties
-            ax_f = plot_properties_in_freq(dr_, var_, f_vec, aux_H, gain, ax_f, dr_['time_transition'], min_n=min_n,
-                                           max_n=max_n, c_g=c_g[i_g], plot_filt=i_g == 0, norm_neuron=norm_neuron)
-        else:
-            # Plotting Frequency response of properties - neuron
-            plot_freq_responses(name_n_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_f,
-                                norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='n')
-            # Plotting Frequency response of properties - synapse
-            plot_freq_responses(name_syn_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_fs,
-                                norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='s')
+        # FREQUENCY RESPONSES OF NEURONS AND SYNAPSES
+        # For Neurons
+        plot_freq_responses(name_n_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_f,
+                            norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='n')
+        # For synapses
+        plot_freq_responses(name_syn_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_fs,
+                            norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='s')
 
+        # FREQUENCY PORTRAITS OF NEURONS AND SYNAPSES
+        # For neurons
+        plot_freq_portrait2(name_n_state_variables, dr_filt, dr_gain, gain, ax_p, norm_neuron, title_mp,
+                            colors[i_g], ode='n')  # , H_filt, H_gain)
+
+        # For synapses
+        plot_freq_portrait2(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sp, norm_neuron, title_mp,
+                            colors[i_g], ode='s')  # , H_filt, H_gain)
+
+        # Figure 1: Unified Frequency Portrait
+        # plot_unified_portrait(dr_gain, f_vec, save_path='unified_frequency_portrait.png')
+        # Figure 2: Key Frequency Responses
+        # plot_key_frequency_responses(dr_gain, f_vec, save_path='key_frequency_responses.png')
     # **********************************************************************************************************
-    # Plots 2
 
-    if plot_figs:
-        # For Neuron analysis
-        plot_freq_portrait(name_n_state_variables, dr_filt, dr_gain, gain, ax_p, 'ini', 'mid',
-                           norm_neuron, title_mp, markers, alphas, ode='n')  # , H_filt, H_gain)
-        plot_freq_portrait(name_n_state_variables, dr_filt, dr_gain, gain, ax_n, 'mid', 'end',
-                           norm_neuron, title_mp, markers, alphas, ode='n')
-
-        # For synapse analysis
-        plot_freq_portrait(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sp, 'ini', 'mid',
-                           norm_neuron, title_mp, markers, alphas, ode='s')  # , H_filt, H_gain)
-        plot_freq_portrait(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sn, 'mid', 'end',
-                           norm_neuron, title_mp, markers, alphas, ode='s')
     i_g += 1
 
-# For PhD Figure "methodology - Frequency portrait"
-# xlims = [[-0.01, -0.01, -70.005, -0.01, -0.01, -70.005], [1.52, 1.52, -69.88, 1.52, 1.52, -69.88]]
-# ylims = [[-0.48, -0.48, -0.48, -0.48, -0.48, -0.48], [0.15, 0.15, 0.15, 0.15, 0.15, 0.15]]
-xlims = [[-0.05, -0.05, -0.01, -0.05, -0.05, -0.01],
-         [2.42, 2.42, 0.34, 2.42, 2.42, 0.34]]
-ylims = [[-0.75, -0.75, -0.75, -0.75, -0.75, -0.75],
-         [1., 1., 1., 1., 1., 1.]]
-
-xlims_s = [[-69.9, -69.9, -69.95, -70.01, -70.01, -70.01, -70.01, -70.01],
-           [0.07, -69.1, -69.40, -69.82, -69.82, -69.82, -69.82, -69.82]]
-ylims_s = [[-0.02, -0.02, -0.02, -0.02, -0.02, -0.02, -0.02, -0.02],
-           [0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015, 0.015]]
-
-# H-filt, H-GC, tr_st_time, Filt, GC-max, GC-min, GC-var, GC-med
-if n_model == "HH":
-    xl_neu = {0: [[None for _ in range(10)],
-                  [None for _ in range(10)]],
-              1: [[-0.05, -0.65, -0.01, 0.2,   -0.06,  -5e-3,  -0.01,  -3e-3,  0.20, -0.02],
-                  [8.0,   0.2,   1.6,   0.5,   0.06,   0.02,   0.015,  8e-3,   0.35, 0.01]],
-              2: [[-0.05, -0.25, -0.01, -0.01, -0.5,   -0.3,   -0.04,  -0.01,  0.05, -0.25],
-                  [8.0,   0.75,  1.6,   1.05,   0.6,    0.3,    0.04,   0.06,   1.02, 0.55]],
-              3: [[-0.05, -1.25, -0.01, -0.01, -0.02,  -1e-3,  -0.028, -1e-3,  0.2,  -0.02],
-                  [8.0,   0.65,  1.6,   1.05,  0.04,   0.03,   0.05,   0.022,  0.4,  0.031]],
-              4: [[None for _ in range(10)],
-                  [None for _ in range(10)]],
-              5: [[-0.05, -0.22, -0.01, 0.05,  -5e-3,  -2e-3,  -1e-5,  -1e-3,  0.23, -4e-3],
-                  [8.0,   0.45,  1.6,   1.05,  9e-3,   9e-3,   5e-4,   8e-3,   0.27, 9e-3]],
-              6: [[-0.05, -0.7,  -0.01, -0.01, -0.075, -5e-3,  -15e-3, -3e-3,  0.2,  -0.05],
-                  [8.0,   0.15,  1.6,   1.05,  0.05,   0.013,  0.02,   4e-3,   0.5,  0.02]],
-              7: [[-0.05, -1.3,  -0.01, -0.01, -0.1,   -15e-3, -0.04,  -12e-3, 0.05, -0.06],
-                  [8.0,   0.4,   1.6,   1.1,   0.2,    12e-3,  65e-3,  0.02,   0.47, 0.08]],
-              8: [[-0.05, -1.3, -0.01, -0.01, -0.075, -5e-3,  -0.028,  -0.01,  0.05, -0.06],
-                  [8.0,   0.65,  1.6,   1.02,   0.06,    0.3,  0.025,   0.02,   0.5,  0.08]]}
-
-    xl_syn = {0: [[None for _ in range(10)],
-                  [None for _ in range(10)]],
-              1: [[-0.05, -0.8, -0.01, -0.01, -0.2,  -1e-3, -0.01,  -1e-3, -0.01, -0.07],
-                  [8.0,   0.2,  1.6,   0.8,   0.15,  0.012, 0.027,  75e-4, 0.4,   0.025]],
-              2: [[-0.05, -1.0, -0.01, -0.05, -0.2,  -0.02, -0.1,   -0.01, -0.01, -0.12],
-                  [8.0,   1.2,  1.6,   1.3,   0.4,   0.12,  0.1,    0.08,  0.7,   0.15]],
-              3: [[-0.05, -1.0, -0.01, 0.08,  -0.06, -1e-3, -0.027, -1e-3, -0.01, -0.06],
-                  [8.0,   0.5,  1.6,   1.05,  0.08,  0.03,  0.04,   0.02,  0.4,   0.07]],
-              4: [[None for _ in range(10)],
-                  [None for _ in range(10)]],
-              5: [[-0.05, -1.0, -0.01, -0.01, -8e-3, -1e-3, -2e-4,  -1e-3, 5e-3,  -75e-4],
-                  [8.0,   1.0,  1.6,   2.0,   8e-3,  0.01,  8e-4,   6e-3,  0.05,  0.01]],
-              6: [[-0.05, -1.0, -0.01, -0.05, -0.2,  -1e-4, -12e-3, -1e-4, -0.05, -0.19],
-                  [8.0,   0.3,  1.6,   2.6,   0.1,   0.01,  26e-3,  7e-3,  0.8,   0.03]],
-              7: [[-0.05, -1.4, -0.01, -0.05, -0.4,  -5e-4, -0.04,  -2e-3, -0.05, -0.15],
-                  [8.0,   1.4,  1.6,   2.5,   0.7,   5e-3,  65e-3,  6e-3,  0.8,   0.25]],
-              8: [[-0.05, -1.4, -0.01, -0.05, -0.4,  -0.02, -0.1,   -0.01, -0.05, -0.19],
-                  [8.0,   1.4,  1.6,   2.6,   0.7,   0.12,  0.1,    0.08,  0.8,   0.25]]}
-    if fig_syn_b:
-        xl_syb = {0: [[None for _ in range(10)],
-                      [None for _ in range(10)]],
-                  1: [[-0.05, -1.5, -0.01, -0.01, -0.07, -0.07, -0.09,  -0.04,  -0.01, -0.04],
-                      [8.0,   0.27, 1.6,   0.25,  0.03,  0.07,  0.05,   0.04,   0.25,  0.04]],
-                  2: [[-0.05, -1.2, -0.01, -0.05, -0.05, -0.05, -0.08,  -0.05,  -0.01, -0.045],
-                      [8.0,   1.0,  1.6,   0.25,  0.05,  0.1,   0.04,   0.08,   0.25,  0.06]],
-                  3: [[-0.05, -1.2, -0.01, -0.05, -0.04, -0.03, -0.05,  -0.04,  -0.01, -0.04],
-                      [8.0,   0.5,  1.6,   0.22,  0.02,  0.04,  0.01,   0.05,   0.22,  0.048]],
-                  4: [[None for _ in range(10)],
-                      [None for _ in range(10)]],
-                  5: [[-0.05, -0.7, -0.01, -0.01, -5e-3, -3e-4, -12e-4, -11e-4, 0.0,   -5e-3],
-                      [8.0,   0.6,  1.6,   0.6,   1e-3,  4e-4,  5e-4,   1e-4,   0.018, 1e-3]],
-                  6: [[-0.05, -1.2, -0.01, -0.01, -0.11, -0.05, -0.13,  -0.05,  -0.01, -0.11],
-                      [8.0,   0.21, 1.6,   0.81,  0.04,  0.04,  0.01,   0.01,   0.5,   0.05]],
-                  7: [[-0.05, -1.7, -0.01, -0.05, -0.15, -0.15, -0.2,   -0.1,   -0.01, -0.12],
-                      [8.0,   0.25, 1.6,   0.6,   0.22,  0.12,  0.1,    0.2,    0.43,  0.1]],
-                  8: [[-0.05, -1.7, -0.01, -0.05, -0.15, -0.15, -0.2,   -0.1,   -0.01, -0.12],
-                      [8.0,   1.0,  1.6,   0.81,  0.22,  0.12,  0.1,    0.2,    0.5,   0.1]]}
-elif n_model == "LIF":
-    if s_model == "MSSM":
-        xl_neu = {4: [[-0.05, -2.5, -0.01, -0.01, -0.05, -5e-4, -0.01, -1e-4, -0.01, -0.035],
-                      [13.0,  1.05, 1.6,   0.3,   0.025, 8e-3,  0.025, 7e-3,  0.17,  0.02]],
-                  5: [[None for _ in range(10)],
-                      [None for _ in range(10)]]}
-        xl_syn = {4: [[-0.05, -1.2, -0.01, -0.01, -0.02, -1e-4, -4e-3, -1e-4, -0.01, -0.017],
-                      [13.0,  0.2,  1.6,   0.14,  0.01,  3e-3,  8e-3,  25e-4, 0.08,  0.008]],
-                  5: [[None for _ in range(10)],
-                      [None for _ in range(10)]]}
-    if s_model == "TM":
-        xl_neu = {4: [[-0.05, -3.0,  -0.01, -0.01, -0.05,  -5e-4, -7e-3, -1e-4, -0.01, -0.04],
-                      [13.0,  1.25,  1.6,   0.3,   0.025,  55e-4, 0.015, 4e-3,  0.15,  0.017]],
-                  8: [[-0.05, -2.6,  -0.01, -0.01, -0.1,   -5e-4, -0.02, -5e-4, -0.01, -0.05],
-                      [13.0,  3.0,   1.6,   0.35,  0.15,   0.015, 0.05,  45e-3, 0.22,  0.06]]}
-        xl_syn = {4: [[-0.05, -1.5,  -0.01, -0.01, -0.025, -5e-4, -3e-3, -1e-4, -0.01, -0.02],
-                      [13.0,  1.0,   1.6,   0.175, 0.025,  2e-3,  6e-3,  13e-4, 0.09,  5e-3]],
-                  8: [[-0.05, -1.67, -0.01, -0.01, -0.05,  -5e-4, -7e-3, -5e-4, -0.01, -0.035],
-                      [13.0,  1.05,  1.6,   0.175, 0.05,   5e-3,  0.015, 4e-3,  0.15,  0.035]]}
-
 path_save = (folder_plots + s_model + '_ind_' + str(ind) + '_' + str(len(gain_v)) + '_gains_sf_' +
-             str(int(sfreq * 1e-3)) + 'k_tauLIF_' + str(tau_lif) + 'ms' + '_phase_portrait')
+             str(int(sfreq * 1e-3)) + 'k_tauLIF_' + str(tau_lif) + 'ms')
 
-# For plot neuron b
-# ind = 10
+# Adjusting frequency portraits and frequency responses
 if plot_figs:
     sizeF = 20
     # Neuronal state variables
@@ -339,47 +206,72 @@ if plot_figs:
             # xl, yl = (xlims[0][j], xlims[1][j]), (ylims[0][j], ylims[1][j])
             # Synaptic filtering vs. Gain-Control for Neuron - positive change of rate
             adjust_freq_portraits(ax_p[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
-
             # Synaptic filtering vs. Gain-Control for Neuron - negative change of rate
-            adjust_freq_portraits(ax_n[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
-
-            # Synaptic filtering vs. Gain-Control for Synapse - positive change of rate
-            adjust_freq_portraits(ax_sp[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
-
-            # Synaptic filtering vs. Gain-Control for Synapse - negative change of rate
-            adjust_freq_portraits(ax_sn[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
+        #     adjust_freq_portraits(ax_n[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
 
         for j in range(len(title_freqres)):
             # Frequency responses of properties for positive changes of rate
-            adjust_freq_portraits(ax_f[n][j], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log')
+            adjust_freq_portraits(ax_f[n][j], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
+                                  axes_=False, x_axis=False)
             # Frequency responses of properties for negative changes of rate
-            adjust_freq_portraits(ax_f[n][j + 7], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log')
+            adjust_freq_portraits(ax_f[n][j + 7], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
+                                  axes_=False, x_axis=False, tit_=False)
+            # Frequency responses of properties for negative changes of rate
+            adjust_freq_portraits(ax_f[n][j + 14], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
+                                  axes_=False, tit_=False)
 
-    # Synaptic filtering vs. Gain-Control for Neuron
+    for n in range(len(name_syn_state_variables)):
+        for j in range(len(title_mp)):
+            # Synaptic filtering vs. Gain-Control for Synapse - positive change of rate
+            adjust_freq_portraits(ax_sp[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
+            # Synaptic filtering vs. Gain-Control for Synapse - negative change of rate
+        #     adjust_freq_portraits(ax_sn[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
+
+        for j in range(len(title_freqres)):
+            # Frequency responses of properties for positive changes of rate
+            adjust_freq_portraits(ax_fs[n][j], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
+                                  axes_=False, x_axis=False)
+            # Frequency responses of properties for negative changes of rate
+            adjust_freq_portraits(ax_fs[n][j + 7], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
+                                  axes_=False, x_axis=False, tit_=False)
+            # Frequency responses of properties for negative changes of rate
+            adjust_freq_portraits(ax_fs[n][j + 14], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
+                                  axes_=False, tit_=False)
+
+    # Legends
+    # Frequency portraits
     for n in range(len(name_n_state_variables)):
-        ax_p[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
+        ax_p[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0.,
                                                 title='gain factor')
-        ax_n[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
-                                                   title='gain factor')
-        ax_sp[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
-                                                   title='gain factor')
-        ax_sn[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.1), loc='upper left', borderaxespad=0.,
-                                                   title='gain factor')
-        
-        # Plots of computational properties vs rates. Neuron
-        ax_f[n][3].legend(bbox_to_anchor=(1.1, 0.1), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 1
-        ax_f[n][6].legend(bbox_to_anchor=(1.1, 0.2), loc='upper left', borderaxespad=0., fontsize=sizeF - 10)  # 7
+    for n in range(len(name_syn_state_variables)):
+        ax_sp[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0.,
+                                                    title='gain factor')
+
+    # Frequency responses
+    lbl_ind = []
+    if 0.1 in gain_v: lbl_ind.append([int(len(title_mp) / 2), len(title_freqres)])
+    if 0.5 in gain_v: lbl_ind.append([7 + int(len(title_mp) / 2), 7 + len(title_freqres)])
+    if 1.0 in gain_v: lbl_ind.append([14 + int(len(title_mp) / 2), 14 + len(title_freqres)])
+
+    for n in range(len(name_n_state_variables)):
+        adjust_legend_freq_res(lbl_ind, n_freq_res[n], ax_f[n], gain_v)
+        # for ind_ in lbl_ind:
+        #     ax_f[n][ind_].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0., title='windows')
+
+    for n in range(len(name_syn_state_variables)):
+        adjust_legend_freq_res(lbl_ind, s_freq_res[n], ax_fs[n], gain_v)
+    #     for ind_ in lbl_ind:
+    #         ax_fs[n][ind_].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0., title='windows')
 
 if plot_figs and save_figs:
     for j in range(len(name_n_state_variables)):
         n = name_n_state_variables[j]
-        figNeur_pos_gc[j].savefig(path_save + "_freq_portrait_neuron_" + n + "_pos.png", format='png')
-        figNeur_neg_gc[j].savefig(path_save + "_freq_portrait_neuron_" + n + "_neg.png", format='png')
-        figCompPropNeuron[j].savefig(path_save + "_freq_responses_neuron_" + n + ".png", format='png')
+        n_freq_por[j].savefig(path_save + "_freq_portrait_neuron_" + n + "_pos" + aux_p + ".png", format='png')
+        n_freq_res[j].savefig(path_save + "_freq_responses_neuron_" + n + aux_p + ".png", format='png')
     for j in range(len(name_syn_state_variables)):
         n = name_syn_state_variables[j]
-        figSyn_pos_gc[j].savefig(path_save + "_freq_portrait_synapse_" + n + "_pos.png", format='png')
-        figSyn_neg_gc[j].savefig(path_save + "_freq_portrait_synapse_" + n + "_neg.png", format='png')
+        s_freq_por[j].savefig(path_save + "_freq_portrait_synapse_" + n + "_pos" + aux_p + ".png", format='png')
+        s_freq_res[j].savefig(path_save + "_freq_responses_synapse_" + n + aux_p + ".png", format='png')
 # """
 
 # Figure PhD thesis (methodology / metrics temporal filtering)
@@ -619,105 +511,4 @@ if fig_syn_b:
     plot_diff_windows_tr_st(f_vec, dr_gain, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st_lbl, cols_, t_, title_graph=title,
                             name_save=name_save, ls=ls, save_figs=save_figs, lbls=lbls, fillBetween=False,
                             y_lims_ind_plot=y_lims, y_lbl=y_label)
-# """
-
-# **********************************************************************************************************************
-# SINGLE GAIN
-# **********************************************************************************************************************
-
-# File names
-"""
-dr_syn_filtering_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_lif, False, imputations,.5)
-dr_gain_control_file = get_name_file(sfreq, s_model, n_model, ind, num_syn, lif_output, tau_lif, True, imputations,gain)
-# Auxiliar variables
-description = ""
-dr_filt = None
-dr_gain = None
-initial_frequencies = []
-
-print("For gain control, file %s and index %d" % (dr_gain_control_file, ind))
-print("For synaptic filtering, file %s and index %d" % (dr_syn_filtering_file, ind))
-
-# ******************************************************************************************************************
-# Trying to load freq. response of Gain Control
-if os.path.isfile(path_vars + dr_syn_filtering_file) and not run_experiment:
-    dr_filt = loadObject(dr_syn_filtering_file, path_vars)
-
-    # Auxiliar variables
-    initial_frequencies, model = dr_filt['initial_frequencies'], dr_filt['stp_model']
-    dyn_synapse, num_synapses = dr_filt['dyn_synapse'], dr_filt['num_synapses']
-    num_realizations, sim_params = dr_filt['realizations'], dr_filt['sim_params']
-    # prop_rate_change_a = dr_filt['prop_rate_change_a']
-    fix_rate_change_a, num_changes_rate, = dr_filt['fix_rate_change_a'], dr_filt['num_changes_rate'],
-    description = dr_filt['description']
-    seeds = dr_filt['seeds']
-    total_realizations = dr_filt['t_realizations']
-    # lif_params2, syn_params, lif_params, name_params = dr_filt['lif_params2'], dr_filt['syn_params'], 
-    # dr_filt['lif_params'], dr_filt['name_params']
-
-    '''
-    # Time conditions
-    max_t, sfreq, time_vector, L = sim_params['max_t'], sim_params['sfreq'], sim_params['time_vector'], sim_params['L']
-    dt = 1 / sfreq
-    Le_time_win = int(max_t / num_changes_rate)
-
-    # time transition
-    t_tra = dr_filt['time_transition']
-
-    # Parameters in dict format
-    params = dict(zip(name_params, syn_params))
-    # '''
-
-if os.path.isfile(path_vars + dr_gain_control_file) and not run_experiment:
-    dr_gain = loadObject(dr_gain_control_file, path_vars)
-# """
-
-# ******************************************************************************************************************
-# Plots
-"""
-lbl = ['st_mid_prop']
-lbl2 = ['st_ini_prop']
-st_lbl = ['_max',  '_q95', '_q90', '_med', '_min', '_q5', '_q10', '_mean']
-cols_ = ['tab:red', 'tab:olive', 'tab:green', 'tab:blue', 'tab:red', 'tab:olive', 'tab:green', 'tab:orange']
-# st_lbl = ['_max',  '_q90', '_med', '_min', '_q10', '_mean']
-# cols_ = ['tab:red', 'tab:green', 'tab:blue', 'tab:red', 'tab:green', 'tab:orange']
-# ylims = [-62.5, -54.0]  # [-70.05, -52]
-title = ("Steady-state: " + description.split(",")[0] + r', $\tau_{lif}$ ' +
-         str(tau_lif * 1e3) + "ms, gain " + str(int(gain * 100)) + "%")
-path_save = folder_plots + dr_gain_control_file + '_phase_portrait.png'
-plot_gain_filtering(dr_gain, dr_filt, lbl, lbl2, st_lbl, cols_, title, path_save, True)
-# title = "transition-state: " + title.split(":")[1]
-# lbl = ['mtr_mid_prop']
-# lbl2 = ['mtr_ini_prop']
-# plot_gain_filtering(dr_gain, dr_filt, lbl, lbl2, st_lbl, cols_, title, path_save, True)
-# """
-
-# PLOT CHARACTERISTICS OF MID AND INI WINDOWS IN THE SAME PLOT, FOR PROPORTIONAL AND CONSTANT INPUT RATE CHANGES
-"""
-lbl = ['st_ini_prop', 'mtr_ini_prop', 'st_ini_fix', 'mtr_ini_fix']
-lbl2 = ['st_mid_prop', 'mtr_mid_prop', 'st_mid_fix', 'mtr_mid_fix']
-st_lbl = ['_mean', '_med', '_max', '_min', '_q1', '_q90']  # , '_q5', '_q95']
-t_ = ['Steady-state, ini/mid windows (prop)', 'Transition-state, ini/mid windows (prop)',
-      'Steady-state, ini/mid windows (cons)', 'Transition-state, ini/mid windows (cons)']
-cols = ['tab:orange', 'tab:blue', 'tab:red', 'tab:red', 'tab:green', 'tab:green']  # , 'tab:olive', 'tab:olive']
-name_save = folder_plots + dr_gain_control_file + '_windows_statistics3.png'
-title = description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif * 1e3) + "ms, gain " + str(int(gain * 100)) + "%"
-plot_features_2windows_prop_fix(initial_frequencies, dr_gain, lbl, lbl2, st_lbl, cols, t_, title, path_save, save_figs)
-# """
-
-# SIMPLE PLOT OF DIFFERENCES OF STEADY-STATE BETWEEN MID AND INI WINDOWS FOR PROPORTIONAL AND CONSTANT CHANGE OF RATES
-# AND THE DIFFERENCES BETWEEN MAX OF MID WINDOW AND MEDIAN OF INI WINDOW
-"""
-# ylims = [-62.5, -54.0]  # [-70.05, -52]
-lbl = ['st_mid_prop', 'st_mid_fix']
-lbl2 = ['st_ini_prop', 'st_ini_fix']
-st_lbl = ['_max', '_min', '_q10', '_q90', '_mean', '_med']
-cols_ = ['tab:red', 'tab:red', 'tab:green', 'tab:green', 'tab:orange', 'tab:blue']
-t_ = [r"$mid_{st} - ini_{st}$ (Prop)", r"$mid_{st} - ini_{st}$ (Cons)",
-      "Max Transient (Proportional)", "Max Transient (Constant)"]
-name_save = folder_plots + dr_gain_control_file + '_' + 'diff_st_log.png'
-title = ("Steady-state: " + description.split(",")[0] + r', $\tau_{lif}$ ' + str(tau_lif * 1e3) + "ms, gain " +
-         str(int(gain * 100)) + "%")
-plot_diff_windows(initial_frequencies, dr_gain, lbl, lbl2, st_lbl, cols_, t_, title_graph=title, name_save=name_save,
-                  save_figs=save_figs)
 # """
