@@ -22,12 +22,8 @@ num_syn = 1
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 10e3
 tau_lif = 30  # ms
-# total_realizations = 1  # 100
-# num_realizations = 1  # 8 for server, 4 for macbook air
-# t_tra = None  # 0.25
 
 # Path variables
-# path_vars = "../gain_control/variables/high_freq_" + str(int(sfreq/1e3)) + "k_2/"
 aux_p = ''  # '_2'
 path_vars = "../gain_control/variables/high_freq_10k" + aux_p + "/"
 check_create_folder(path_vars)
@@ -185,11 +181,6 @@ for gain in gain_v:
         # For synapses
         plot_freq_portrait2(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sp, norm_neuron, title_mp,
                             colors[i_g], ode='s')  # , H_filt, H_gain)
-
-        # Figure 1: Unified Frequency Portrait
-        # plot_unified_portrait(dr_gain, f_vec, save_path='unified_frequency_portrait.png')
-        # Figure 2: Key Frequency Responses
-        # plot_key_frequency_responses(dr_gain, f_vec, save_path='key_frequency_responses.png')
     # **********************************************************************************************************
 
     i_g += 1
@@ -203,38 +194,32 @@ if plot_figs:
     # Neuronal state variables
     for n in range(len(name_n_state_variables)):
         for j in range(len(title_mp)):
-            # xl, yl = (xlims[0][j], xlims[1][j]), (ylims[0][j], ylims[1][j])
-            # Synaptic filtering vs. Gain-Control for Neuron - positive change of rate
+            # Frequency portrait for Neuron
             adjust_freq_portraits(ax_p[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
-            # Synaptic filtering vs. Gain-Control for Neuron - negative change of rate
-        #     adjust_freq_portraits(ax_n[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
-
         for j in range(len(title_freqres)):
-            # Frequency responses of properties for positive changes of rate
+            # Frequency responses for ini window
             adjust_freq_portraits(ax_f[n][j], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
                                   axes_=False, x_axis=False)
-            # Frequency responses of properties for negative changes of rate
+            # Frequency responses for mid window
             adjust_freq_portraits(ax_f[n][j + 7], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
                                   axes_=False, x_axis=False, tit_=False)
-            # Frequency responses of properties for negative changes of rate
+            # Frequency responses for end window
             adjust_freq_portraits(ax_f[n][j + 14], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
                                   axes_=False, tit_=False)
 
     for n in range(len(name_syn_state_variables)):
         for j in range(len(title_mp)):
-            # Synaptic filtering vs. Gain-Control for Synapse - positive change of rate
+            # Frequency portrait for Synapses
             adjust_freq_portraits(ax_sp[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
-            # Synaptic filtering vs. Gain-Control for Synapse - negative change of rate
-        #     adjust_freq_portraits(ax_sn[n][j], x_label_ax_n[j], y_label_ax_n[j], title_mp[j])  # xl, yl
 
         for j in range(len(title_freqres)):
-            # Frequency responses of properties for positive changes of rate
+            # Frequency responses for ini window
             adjust_freq_portraits(ax_fs[n][j], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
                                   axes_=False, x_axis=False)
-            # Frequency responses of properties for negative changes of rate
+            # Frequency responses for mid window
             adjust_freq_portraits(ax_fs[n][j + 7], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
                                   axes_=False, x_axis=False, tit_=False)
-            # Frequency responses of properties for negative changes of rate
+            # Frequency responses for end window
             adjust_freq_portraits(ax_fs[n][j + 14], "Rate (Hz)", ylabel_axb[j], title_freqres[j], xscale='log',
                                   axes_=False, tit_=False)
 

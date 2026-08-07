@@ -1687,8 +1687,10 @@ def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuro
     win1, win2, win3 = 'ini', 'mid', 'end'
     for n in range(len(name_state_vars)):
         aux = ''
-        if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
-
+        if name_state_vars[n] != 'v':
+            aux = name_state_vars[n] + '_'
+        #     norm_neuron = True
+        # else: norm_neuron = False
         # For positive changes of rate
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='ini', win2='mid', norm_neuron=norm_neuron,
                                      ode=ode)
