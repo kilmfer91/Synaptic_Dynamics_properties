@@ -1490,12 +1490,12 @@ def adjust_legend_freq_res(lbl_ind, fig, ax, gain):
         legends.append(leg)
 
 
-def create_fig_freq_portrait(names_sv, title):
+def create_fig_freq_portrait(names_sv, title, figsize=(15, 6)):
     ax_p = []
     fig_gc = []
     for j in range(len(names_sv)):
         # Creating figure for each state variable
-        fig, ax = plt.subplots(2, 4, figsize=(15, 6))
+        fig, ax = plt.subplots(2, 4, figsize=figsize)
         # Flattening array of axes (before it was 2x4), now 1x8
         ax = ax.ravel()
 
@@ -1683,7 +1683,8 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, merge_directions=F
         ax[j + 4].scatter(x[0], y[0], c='black')
 
 
-def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuron, titles, color, ode='n'):
+def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuron, titles, color, ode='n',
+                        ext_label=''):
     win1, win2, win3 = 'ini', 'mid', 'end'
     for n in range(len(name_state_vars)):
         aux = ''
@@ -1695,13 +1696,14 @@ def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuro
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='ini', win2='mid', norm_neuron=norm_neuron,
                                      ode=ode)
         Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
-        aux_freq_portrait2(a, axp[n], titles, color, r"%.1f (pos)" % gain)
+        aux_freq_portrait2(a, axp[n], titles, color, r"%s - gain: %.1f (pos)" % (ext_label, gain))
 
         # For negative changes of rate
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='mid', win2='end', norm_neuron=norm_neuron,
                                      ode=ode)
         Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
-        aux_freq_portrait2(a, axp[n], titles, color, r"%.1f (neg)" % gain, merge_directions=True)
+        aux_freq_portrait2(a, axp[n], titles, color, r"%s - gain: %.1f (neg)" % (ext_label, gain),
+                           merge_directions=True)
 
 
 def adjust_freq_portraits(ax, x_label, y_label, title, xlims=None, ylims=None, xscale='linear', axes_=True, tit_=True,
