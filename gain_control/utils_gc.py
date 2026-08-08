@@ -289,6 +289,7 @@ def get_params_stp(name_model, ind):
         name_params = ['E_ampa', 'E_nmda', 'tau_ampa', 'tau_nmda_rise', 'tau_nmda_decay', 'alpha_nmda', 'tau_d', 'U',
                        'S']
         syn_params = [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 813e-3, 0.01, 0.7]
+                   # [0.0e-3, 0.0e-3, 2e-3, 2e-3, 100e-3, 0.5, 813e-3, 15e-3, 1.65]
     assert syn_params is not None, "Not parameters for model %s and index %d" % (name_model, ind)
 
     return syn_params, description, name_params

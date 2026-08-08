@@ -1,3 +1,5 @@
+import pylab as pl
+
 from gain_control.utils_gc import *
 import cProfile, pstats, tracemalloc, os, psutil
 
@@ -14,7 +16,7 @@ max_freq = 500
 
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
-plots_phd = False
+plots_phd = True
 dyn_synapse = True
 gaincontrol_sinusoidal = True
 
@@ -138,11 +140,11 @@ seeds = []
 # Final dictionary
 dict_results = {'initial_frequencies': f_vector, 'num_synapses': num_syn, 'sfreq': sfreq,
                 'tau_lif': tau_m, 'gain_v': delta, 'stp_name_params': name_params, 'stp_value_params': syn_params,
-                'sim_params': sim_params, 'n_params': neuron_params, 'dyn_synapse': dyn_synapse}  # 'realizations': num_realizations,
+                'sim_params': sim_params, 'n_params': neuron_params, 'dyn_synapse': dyn_synapse}
 aux_name = "_ind_" + str(ind) + "_sf_" + str(
             int(sfreq / 1000)) + "k_syn_" + str(num_syn)
 if neuron_model == 'LIF': aux_name += "_tau" + n_model + "_" + str(tau_m) + "ms"
-aux_name += "_sinusoidal"
+aux_name += "_sinusoidal_q95"
 file_name = s_model + aux_name
 # ******************************************************************************************************************
 
@@ -168,12 +170,25 @@ if profiling:
 if os.path.isfile(folder_vars + file_name):
     dict_results = loadObject(file_name, folder_vars)
     if plots_phd:
-        plt.figure()
-        plt.plot(dict_results['initial_frequencies'], dict_results['SNR'], label='SNR')
-        plt.plot(dict_results['initial_frequencies'], dict_results['gc_metric'], label='GC metric')
-        plt.grid()
-        plt.legend()
-        plt.xscale('log')
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        SNR_mean = np.mean(np.array(dict_results['SNR']), axis=0)
+        SNR_std = np.std(np.array(dict_results['SNR']), axis=0)
+        gc_mean = np.mean(np.array(dict_results['gc_metric']), axis=0)
+        gc_std = np.std(np.array(dict_results['gc_metric']), axis=0)
+        ax.plot(dict_results['initial_frequencies'], SNR_mean, label='SNR', color='tab:red')
+        ax.fill_between(dict_results['initial_frequencies'], SNR_mean-SNR_std, SNR_mean+SNR_std, color='tab:red',
+                         alpha=0.5)
+        ax.plot(dict_results['initial_frequencies'], gc_mean, label='GC metric', color='tab:blue')
+        ax.fill_between(dict_results['initial_frequencies'], gc_mean - gc_std, gc_mean + gc_std, color='tab:blue',
+                         alpha=0.5)
+        # ax.grid()
+        ax.legend()
+        # ax.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        # ax.axvline(0, color='gray', linestyle='--', linewidth=0.8)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.grid()
 
 if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
     ini_sin_time = m_time()
@@ -204,8 +219,9 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                 modulation_signal2 = fix_rate[i] * np.ones(L)
 
                 # Sinusoidal modulated firing rate signal
-                modulated_signal1 = oscillatory_spike_train(sfreq, modulation_signal1, num_realizations=int(num_syn / 2),
-                                                            poisson=True, seeds=seeds1, correction=True)
+                modulated_signal1 = oscillatory_spike_train(sfreq, modulation_signal1,
+                                                            num_realizations=int(num_syn / 2), poisson=True,
+                                                            seeds=seeds1, correction=True)
                 # Constant firing rate signal
                 modulated_signal2 = simple_spike_train(sfreq, modulation_signal2[0], len(modulation_signal2),
                                                        num_realizations=int(num_syn / 2), poisson=True,
@@ -221,13 +237,14 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                 else:
                     static_synapse(neuron_model, Input_test, 0.0125)
 
-                # Filtering membrane potential, lowpass for getting the sinusoidal trend, high pass for the variance without
+                # Filtering mem. pot., lowpass for getting the sinusoidal trend, high pass for the variance without
                 # seasonality
                 # coff = 1
-                # res_per_reali[:, i, ind_exp], lp_mp, hp_mp = aux_statistics_sin(neuron_model.membrane_potential[0, :], coff, sfreq, min_imp, max_imp)
+                # res_per_reali[:, i, ind_exp], lp_mp, hp_mp = aux_statistics_sin(
+                # neuron_model.membrane_potential[0, :], coff, sfreq, min_imp, max_imp)
 
                 # """
-                # ******************************************************************************************************************
+                # ******************************************************************************************************
                 # Plot for the PhD Thesis
                 if i == 0:  # Only for high rate signal
                     mp_signal = neuron_model.membrane_potential[0, :]
@@ -235,7 +252,7 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                     high_pass_mempot = highpass(mp_signal, 1, sfreq)
                     mem_pot_low_filt = low_pass_mempot[int(min_imp / dt): int(max_imp / dt)]
                     mem_pot_high_filt = high_pass_mempot[int(min_imp / dt): int(max_imp / dt)]
-                    hp_mp_q90, hp_mp_q10 = np.quantile(mem_pot_high_filt, q=0.9), np.quantile(mem_pot_high_filt, q=0.1)
+                    hp_mp_q90, hp_mp_q10 = np.quantile(mem_pot_high_filt, q=0.95), np.quantile(mem_pot_high_filt, q=0.15)
                     lp_mp_max, lp_mp_min = np.max(mem_pot_low_filt), np.min(mem_pot_low_filt)
 
                     P_signal_i = np.mean(np.abs(mem_pot_low_filt - np.mean(mem_pot_low_filt))**2)
@@ -257,20 +274,26 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                     und_var[reali].append(variability)
                     gc_metric[reali].append(limit_gc)
 
-                    aux_ = file_name + ". Realisation %s, rate %d, SNR %.2fdB, GC met. %.2f, amp %.2f, var %.2f" % (reali, f_vector[ind_exp], SNR_, limit_gc, amplitude, variability)
+                    aux_ = (file_name + ". Realisation %s, rate %d, SNR %.2fdB, GC met. %.2f, amp %.2f, var %.2f"
+                            % (reali, f_vector[ind_exp], SNR_, limit_gc, amplitude, variability))
                     print_time(m_time() - ini_loop_time, aux_)
 
                     if plots_phd:
                         fig_filters = plt.figure(figsize=(9, 4))
-                        plt.suptitle(r"Gain Control measurements in sinusoidal schema for $\delta=0.5$", color="black", fontsize=14)
+                        plt.suptitle(r"Gain Control measurements in sinusoidal schema for $\delta=0.5$",
+                                     color="black", fontsize=14)
                         ax_v = fig_filters.add_subplot(2, 1, 1)
                         ax_s = fig_filters.add_subplot(2, 2, 3)
                         ax_n = fig_filters.add_subplot(2, 2, 4)
-                        ax_v.plot(time_vector[int(min_imp / dt): int(max_imp / dt)], mp_signal[int(min_imp / dt): int(max_imp / dt)], color='tab:blue')
-                        ax_s.plot(time_vector[int(min_imp / dt): int(max_imp / dt)], mem_pot_low_filt - np.mean(mp_signal[int(min_imp / dt): int(max_imp / dt)]), color='black')
+                        ax_v.plot(time_vector[int(min_imp / dt): int(max_imp / dt)],
+                                  mp_signal[int(min_imp / dt): int(max_imp / dt)], color='tab:blue')
+                        ax_s.plot(time_vector[int(min_imp / dt): int(max_imp / dt)],
+                                  mem_pot_low_filt - np.mean(mp_signal[int(min_imp / dt): int(max_imp / dt)]),
+                                  color='black')
                         ax_n.plot(time_vector[int(min_imp / dt): int(max_imp / dt)], mem_pot_high_filt, color='gray')
                         ax_n.plot([min_imp, max_imp], [hp_mp_q90, hp_mp_q90], color='tab:green', label='q90')
-                        ax_n.plot([min_imp, max_imp], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--', label='q10')
+                        ax_n.plot([min_imp, max_imp], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--',
+                                  label='q10')
                         ax_s.plot([min_imp, max_imp], [hp_mp_q90, hp_mp_q90], color='tab:green')
                         ax_s.plot([min_imp, max_imp], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--')
                         ax_s.set_ylim([-1., 2.])
@@ -283,12 +306,16 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                         ax_v.set_ylabel(r'$v(t) (mV)$', color='gray')
                         ax_s.set_ylabel(r'$v_{\mathrm{LP}}(t)$ (mV)', color='gray')
                         ax_n.set_ylabel(r'$v_{\mathrm{HP}}(t)$ (mV)', color='gray')
-                        ax_v.set_title('Membrane potential of output neuron for baseline rate %dHz' % mean_rate[0], color="black", alpha=0.7)
-                        ax_s.set_title('Underlined sinusoidal amplitude A(r) = %.2fmV' % (lp_mp_max - lp_mp_min), color="black", alpha=0.7)
-                        ax_n.set_title('Noise of membrane potential $\eta(r)=$%.2fmV' % (hp_mp_q90 - hp_mp_q10), color="black", alpha=0.7)
+                        ax_v.set_title('Membrane potential of output neuron for baseline rate %dHz' % mean_rate[0],
+                                       color="black", alpha=0.7)
+                        ax_s.set_title('Underlined sinusoidal amplitude A(r) = %.2fmV' % (lp_mp_max - lp_mp_min),
+                                       color="black", alpha=0.7)
+                        ax_n.set_title('Noise of membrane potential $\eta(r)=$%.2fmV' % (hp_mp_q90 - hp_mp_q10),
+                                       color="black", alpha=0.7)
                         ax_n.legend()
                         plt.tight_layout()
-                        path_save = r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) + '_high_and_low_filters_br_' + str(mean_rate[0]) + '_taum_' + str(tau_m) + 'ms.png'
+                        path_save = (r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) +
+                                     '_high_and_low_filters_br_' + str(mean_rate[0]) + '_taum_' + str(tau_m) + 'ms.png')
                         fig_filters.savefig(path_save, format='png')
                 # ******************************************************************************************************************
                 # """
@@ -305,20 +332,23 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                                                 modulated_signal1, modulated_signal2)
                     fig3.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
                     if mean_rate[0] == 100 and i == 0:
-                        fig_essan3 = plot_gc_sin_input_example(time_vector, dt, ind_exp, modulation_signal1, modulation_signal2,
-                                                               modulated_signal1[0, :], modulated_signal2[0, :])
+                        fig_essan3 = plot_gc_sin_input_example(time_vector, dt, ind_exp, modulation_signal1,
+                                                               modulation_signal2, modulated_signal1[0, :],
+                                                               modulated_signal2[0, :])
 
             if plots_net:
                 # plot_gc_sin_mp_high_rates_esann(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann,
                 #                                 out_ylim_min, out_ylim_max, output_mp_low_filt_esann)
-                path_save = r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) + '_high_rate_v(t)_taum_' + str(tau_m) + 'ms.png'
-                plot_gc_sin_mp_high_rates(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann, out_ylim_min,
-                                          out_ylim_max, output_mp_low_filt_esann, num_graphs=len(mean_rates),
-                                          pathsave=path_save, savefig=False)
+                path_save = (r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) +
+                             '_high_rate_v(t)_taum_' + str(tau_m) + 'ms.png')
+                plot_gc_sin_mp_high_rates(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann,
+                                          out_ylim_min, out_ylim_max, output_mp_low_filt_esann,
+                                          num_graphs=len(mean_rates), pathsave=path_save, savefig=False)
                 fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
                 fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
                 fig_esann.savefig(path_save, format='png')
-                path_save = r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) + '_input_example.png'
+                path_save = (r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) +
+                             '_input_example.png')
                 # fig_essan3.savefig(path_save, format='png')
 
             # time_desc = (f'[%dsin(0.2pit) + %d, %d], [%d, %dsin(0.2pit) + %d], [%dsin(0.2pit) + %d, %d]' %
@@ -431,5 +461,3 @@ if freq_analysis:
     # plt.close(fig_phd)
     # ******************************************************************************************************************
     # """
-
-

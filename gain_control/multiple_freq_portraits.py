@@ -1,7 +1,8 @@
 from gain_control.utils_gc import *
 
 
-def run_single_systems(s_model, n_model, ind, ext_lbl, ext_col=None, ax_global_freq_por=None, plot_freq_res=False):
+def run_single_systems(s_model, n_model, ind, ext_lbl, factor=1.0, ext_col=None, ax_global_freq_por=None,
+                       plot_freq_res=False):
     # s_model = 'TM'
     # n_model = 'LIF'
     # ind = 8
@@ -22,7 +23,7 @@ def run_single_systems(s_model, n_model, ind, ext_lbl, ext_col=None, ax_global_f
     ext_label = ''
 
     # Normalization
-    norm_neuron = True  # True
+    norm_neuron = False  # True
     min_n, max_n = None, None
     if n_model == "HH":
         # norm_neuron = False
@@ -172,7 +173,7 @@ def run_single_systems(s_model, n_model, ind, ext_lbl, ext_col=None, ax_global_f
             # FREQUENCY PORTRAITS OF NEURONS AND SYNAPSES
             # For neurons
             plot_freq_portrait2(name_n_state_variables, dr_filt, dr_gain, gain, ax_p, norm_neuron, title_mp,
-                                colors[i_g], ode='n', ext_label=ext_label)  # , H_filt, H_gain)
+                                colors[i_g], ode='n', ext_label=ext_label, factor=factor)  # , H_filt, H_gain)
 
             # For synapses
             # plot_freq_portrait2(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sp, norm_neuron, title_mp,
@@ -262,13 +263,14 @@ def run_single_systems(s_model, n_model, ind, ext_lbl, ext_col=None, ax_global_f
 
 
 SYSTEMS = {
-    1: ["TM", "LIF", 4, 'TM/LIF(4)'],
-    2: ["TM", "LIF", 8, 'TM/LIF(8)'],
+    # 1: ["TM", "LIF", 4, 'TM/LIF(4)', 1e-3],
+    # 2: ["TM", "LIF", 8, 'TM/LIF(8)', 1e-3],
     # 3: ["MSSM", "LIF", 4, 'MSSM/LIF(4)'],
     # 4: ["MSSM", "LIF", 7, 'MSSM/LIF(7)'],
-    3: ["DoornSTD", "HH", 0, 'Doorn/HH(0) healthy'],
-    4: ["DoornSTD", "HH", 1, 'Doorn/HH(1) Dravet'],
-    # 7: ["DoornSTF", "HH", 7],
+    3: ["DoornSTD", "HH", 0, 'DoornSTD(0) healthy', 1.0],
+    4: ["DoornSTD", "HH", 1, 'DoornSTD(1) Dravet', 1.0],
+    5: ["DoornSTF", "HH", 7, 'DoornSTF(7) Dravet', 1.0],
+    6: ["DoornSTD", "HH", 8, 'DoornSTD(7) Dravet', 1.0],
 }
 
 # Optionally, define colors / styles per system
@@ -278,7 +280,7 @@ global_fre_por, ax_global_freq_por = create_fig_freq_portrait(['v'],
                                                               "Frequency portrait all systems %s(t)",
                                                               figsize=(20, 8))
 
-for i, (sys_id, (s_model, n_model, ind, lbl)) in enumerate(SYSTEMS.items()):
+for i, (sys_id, (s_model, n_model, ind, lbl, factor)) in enumerate(SYSTEMS.items()):
     # Run your existing pipeline for this system, but only compute what you need
     # You may want to modify run_single_system to return the portrait data
     # instead of plotting internally, or to accept an external axis to plot on.
@@ -289,6 +291,7 @@ for i, (sys_id, (s_model, n_model, ind, lbl)) in enumerate(SYSTEMS.items()):
         n_model=n_model,
         ind=ind,
         ext_lbl=lbl,
+        factor=factor,
         ext_col=[colors[i]],
         ax_global_freq_por=[global_fre_por, ax_global_freq_por],      # don’t create a new figure inside
         plot_freq_res=False,

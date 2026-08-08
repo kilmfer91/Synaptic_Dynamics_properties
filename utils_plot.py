@@ -1319,11 +1319,11 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
     c_f = ['tab:red', 'tab:olive', 'tab:blue']
     c_gc = ['tab:orange', 'tab:green']
     l_f = ['Amp', 'Med']
-    ls = ['dashdot', 'dashed', 'dotted']
+    ls = ['dashdot', 'dashed', 'dotted', 'solid']
     wins = [['ini', 'mid'], ['mid', 'end']]
     # shift = [0, 7]
     aux = ''
-    map_gain_shift = {0.1: 0, 0.5: 7, 1.0: 14}
+    map_gain_shift = {0.1: 0, 0.5: 6, 1.0: 12}
     k = map_gain_shift[gain]
     for n in range(len(name_state_vars)):
         if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
@@ -1354,7 +1354,7 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
         naux_filt_tr = np.copy(nEff_m_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
 
         # Only for end window
-        win1, win2 = wins[1][1], wins[1][1]  # "end", "end"
+        win1, win2 = wins[1][1], wins[0][0]  # "end", "ini"
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1=win1, win2=win2, norm_neuron=norm_neuron,
                                      ode=ode)
         nEff_e_st, nEff_e_tr, _, _, _, _, _, _ = a
@@ -1363,106 +1363,127 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
         eaux_filt = np.copy(nEff_e_st[:-1])[[0, 2], :]  # Selecting only amplitude and median
         eaux_filt_tr = np.copy(nEff_e_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
 
-        # 1 temporal filtering
-        # Positive changes - ini window
-        axs[n][0 + k].plot(f_vec, avg_f(paux_filt[0]), alpha=alphas[0], c=c_f[0], label=r"$st_{i}$ ",
-                           linestyle=ls[0])
-        axs[n][0 + k].fill_between(f_vec, np.quantile(paux_filt[0], 0.1, axis=0),
-                                   np.quantile(paux_filt[0], 0.9, axis=0), color=c_f[0], alpha=0.1)
-        # Negative changes - mid window
-        axs[n][0 + k].plot(f_vec, avg_f(naux_filt[0]), alpha=alphas[0], c=c_f[1], label="$st_{m}$ ",
-                           linestyle=ls[1])
-        axs[n][0 + k].fill_between(f_vec, np.quantile(naux_filt[0], 0.1, axis=0),
-                                   np.quantile(naux_filt[0], 0.9, axis=0), color=c_f[1], alpha=0.1)
-        # end window
-        axs[n][0 + k].plot(f_vec, avg_f(eaux_filt[0]), alpha=alphas[0], c=c_f[2], label="$st_{e}$ ",
-                           linestyle=ls[2])
-        axs[n][0 + k].fill_between(f_vec, np.quantile(eaux_filt[0], 0.1, axis=0),
-                                   np.quantile(eaux_filt[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
-
         # 2 Transient dynamics
         # Positive changes - ini window
-        axs[n][1 + k].plot(f_vec, avg_f(paux_filt_tr[0]), alpha=alphas[0], c=c_f[0], label="$tr_{i}$ ",
-                           linestyle=ls[0])
-        axs[n][1 + k].fill_between(f_vec, np.quantile(paux_filt_tr[0], 0.1, axis=0),
+        axs[n][0 + k].plot(f_vec, avg_f(paux_filt_tr[0]), alpha=alphas[0], c=c_f[0], label="$tr_{i}$ ", linestyle=ls[3])
+        axs[n][0 + k].fill_between(f_vec, np.quantile(paux_filt_tr[0], 0.1, axis=0),
                                    np.quantile(paux_filt_tr[0], 0.9, axis=0), color=c_f[0], alpha=0.1)
         # Negative changes - mid window
-        axs[n][1 + k].plot(f_vec, avg_f(naux_filt_tr[0]), alpha=alphas[0], c=c_f[1], label="$tr_{m}$ ",
-                           linestyle=ls[1])
-        axs[n][1 + k].fill_between(f_vec, np.quantile(naux_filt_tr[0], 0.1, axis=0),
+        axs[n][0 + k].plot(f_vec, avg_f(naux_filt_tr[0]), alpha=alphas[0], c=c_f[1], label="$tr_{m}$ ", linestyle=ls[3])
+        axs[n][0 + k].fill_between(f_vec, np.quantile(naux_filt_tr[0], 0.1, axis=0),
                                    np.quantile(naux_filt_tr[0], 0.9, axis=0), color=c_f[1], alpha=0.1)
         # Negative changes - end window
-        axs[n][1 + k].plot(f_vec, avg_f(eaux_filt_tr[0]), alpha=alphas[0], c=c_f[2], label="$tr_{e}$ ",
-                           linestyle=ls[2])
-        axs[n][1 + k].fill_between(f_vec, np.quantile(eaux_filt_tr[0], 0.1, axis=0),
+        axs[n][0 + k].plot(f_vec, avg_f(eaux_filt_tr[0]), alpha=alphas[0], c=c_f[2], label="$tr_{e}$ ", linestyle=ls[3])
+        axs[n][0 + k].fill_between(f_vec, np.quantile(eaux_filt_tr[0], 0.1, axis=0),
                                    np.quantile(eaux_filt_tr[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
+
+        # 1 temporal filtering
+        # Positive changes - ini window
+        axs[n][1 + k].plot(f_vec, avg_f(paux_filt[0]), alpha=alphas[0], c=c_f[0], label=r"$st_{i}$ ", linestyle=ls[0])
+        axs[n][1 + k].fill_between(f_vec, np.quantile(paux_filt[0], 0.1, axis=0),
+                                   np.quantile(paux_filt[0], 0.9, axis=0), color=c_f[0], alpha=0.1)
+        # Negative changes - mid window
+        axs[n][1 + k].plot(f_vec, avg_f(naux_filt[0]), alpha=alphas[0], c=c_f[1], label="$st_{m}$ ", linestyle=ls[1])
+        axs[n][1 + k].fill_between(f_vec, np.quantile(naux_filt[0], 0.1, axis=0),
+                                   np.quantile(naux_filt[0], 0.9, axis=0), color=c_f[1], alpha=0.1)
+        # end window
+        axs[n][1 + k].plot(f_vec, avg_f(eaux_filt[0]), alpha=alphas[0], c=c_f[2], label="$st_{e}$ ", linestyle=ls[2])
+        axs[n][1 + k].fill_between(f_vec, np.quantile(eaux_filt[0], 0.1, axis=0),
+                                   np.quantile(eaux_filt[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
 
         # 3 Synaptic information - Entropy (stationary regime)
         # Positive changes - ini window
-        axs[n][2 + k].plot(f_vec, pEff_i_st[3], alpha=alphas[0], label=r"$st_{i}$ ", c=c_f[0],
-                           linestyle=ls[0])
+        axs[n][2 + k].plot(f_vec, pEff_i_st[3], alpha=alphas[0], label=r"$st_{i}$ ", c=c_f[0], linestyle=ls[0])
         # Negative changes - mid window
-        axs[n][2 + k].plot(f_vec, nEff_m_st[3], alpha=alphas[0], label=r"$st_{m}$ ", c=c_f[1],
-                           linestyle=ls[1])
+        axs[n][2 + k].plot(f_vec, nEff_m_st[3], alpha=alphas[0], label=r"$st_{m}$ ", c=c_f[1], linestyle=ls[1])
         # Negative changes - end window
-        axs[n][2 + k].plot(f_vec, nEff_e_st[3], alpha=alphas[0], label=r"$st_{e}$ ", c=c_f[2],
-                           linestyle=ls[2])
+        axs[n][2 + k].plot(f_vec, nEff_e_st[3], alpha=alphas[0], label=r"$st_{e}$ ", c=c_f[2], linestyle=ls[2])
 
         # 4 Synaptic information - Entropy (transitory regime)
         # Positive changes - ini window
-        axs[n][3 + k].plot(f_vec, pEff_i_tr[3], alpha=alphas[0], label="$tr_{i}$ ", c=c_f[0],
-                           linestyle=ls[0])
+        axs[n][2 + k].plot(f_vec, pEff_i_tr[3], alpha=alphas[0], label="$tr_{i}$ ", c=c_f[0], linestyle=ls[3])  # ls[0])
         # Negative changes - mid window
-        axs[n][3 + k].plot(f_vec, nEff_m_tr[3], alpha=alphas[0], label="$tr_{m}$ ", c=c_f[1],
-                           linestyle=ls[1])
-        # Negative changes - mid window
-        axs[n][3 + k].plot(f_vec, nEff_e_tr[3], alpha=alphas[0], label="$tr_{e}$ ", c=c_f[2],
-                           linestyle=ls[2])
+        axs[n][2 + k].plot(f_vec, nEff_m_tr[3], alpha=alphas[0], label="$tr_{m}$ ", c=c_f[1], linestyle=ls[3])  # ls[1])
+        # Negative changes - end window
+        axs[n][2 + k].plot(f_vec, nEff_e_tr[3], alpha=alphas[0], label="$tr_{e}$ ", c=c_f[2], linestyle=ls[3])  # ls[2])
 
         # 5 Gain control - Amplitude (tr - st)
         # Positive changes - ini to mid windows
-        axs[n][4 + k].plot(f_vec, avg_f(paux_gain_tr[0]), alpha=alphas[0], c='tab:orange',
-                           label=r"$tr_m-st_i$", linestyle=ls[0])
-        axs[n][4 + k].fill_between(f_vec, np.quantile(paux_gain_tr[0], 0.1, axis=0),
+        axs[n][3 + k].plot(f_vec, avg_f(paux_gain_tr[0]), alpha=alphas[0], c='tab:orange',
+                           label=r"$tr_m-st_i$", linestyle=ls[3])
+        axs[n][3 + k].fill_between(f_vec, np.quantile(paux_gain_tr[0], 0.1, axis=0),
                                    np.quantile(paux_gain_tr[0], 0.9, axis=0), color='tab:orange', alpha=0.1)
         # Negative changes - mid to end windows
-        axs[n][4 + k].plot(f_vec, avg_f(naux_gain_tr[0]), alpha=alphas[1], c='tab:green',
-                           label=r"$tr_e-st_m$", linestyle=ls[1])
-        axs[n][4 + k].fill_between(f_vec, np.quantile(naux_gain_tr[0], 0.1, axis=0),
+        axs[n][3 + k].plot(f_vec, avg_f(naux_gain_tr[0]), alpha=alphas[1], c='tab:green',
+                           label=r"$tr_e-st_m$", linestyle=ls[3])
+        axs[n][3 + k].fill_between(f_vec, np.quantile(naux_gain_tr[0], 0.1, axis=0),
                                    np.quantile(naux_gain_tr[0], 0.9, axis=0), color='tab:green', alpha=0.1)
+        # Positive changes - ini to mid windoww
+        axs[n][3 + k].plot(f_vec, avg_f(paux_gain[0]), alpha=alphas[0], c='tab:orange',
+                           label=r"$st_m-st_i$", linestyle=ls[0])
+        axs[n][3 + k].fill_between(f_vec, np.quantile(paux_gain[0], 0.1, axis=0),
+                                   np.quantile(paux_gain[0], 0.9, axis=0), color='tab:orange', alpha=0.1)
+        # Negative changes - mid to end windows
+        axs[n][3 + k].plot(f_vec, avg_f(naux_gain[0]), alpha=alphas[1], c='tab:green',
+                           label=r"$st_e-st_m$", linestyle=ls[1])
+        axs[n][3 + k].fill_between(f_vec, np.quantile(naux_gain[0], 0.1, axis=0),
+                                   np.quantile(naux_gain[0], 0.9, axis=0), color='tab:green', alpha=0.1)
+        # x-axis
+        axs[n][3 + k].axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        # ax.axvline(0, color='gray', linestyle='--', linewidth=0.8)
 
         # 6 Gain control - Median (tr - st)
         # Positive changes - ini to mid windows
-        axs[n][5 + k].plot(f_vec, avg_f(paux_gain_tr[2]), alpha=alphas[0], c='tab:orange',
-                           label=r"$tr_m-st_i$ ", linestyle=ls[0])
-        axs[n][5 + k].fill_between(f_vec, np.quantile(paux_gain_tr[2], 0.1, axis=0),
+        axs[n][4 + k].plot(f_vec, avg_f(paux_gain_tr[2]), alpha=alphas[0], c='tab:orange',
+                           label=r"$tr_m-st_i$ ", linestyle=ls[3])
+        axs[n][4 + k].fill_between(f_vec, np.quantile(paux_gain_tr[2], 0.1, axis=0),
                                    np.quantile(paux_gain_tr[2], 0.9, axis=0), color='tab:orange', alpha=0.1)
         # Negative changes - mid to end windows
-        axs[n][5 + k].plot(f_vec, avg_f(naux_gain_tr[2]), alpha=alphas[1], c='tab:green',
-                           label=r"$tr_e-st_m$ ", linestyle=ls[1])
-        axs[n][5 + k].fill_between(f_vec, np.quantile(naux_gain_tr[2], 0.1, axis=0),
+        axs[n][4 + k].plot(f_vec, avg_f(naux_gain_tr[2]), alpha=alphas[1], c='tab:green',
+                           label=r"$tr_e-st_m$ ", linestyle=ls[3])
+        axs[n][4 + k].fill_between(f_vec, np.quantile(naux_gain_tr[2], 0.1, axis=0),
                                    np.quantile(naux_gain_tr[2], 0.9, axis=0), color='tab:green', alpha=0.1)
+        # Positive changes - ini to mid windows
+        axs[n][4 + k].plot(f_vec, avg_f(paux_gain[2]), alpha=alphas[0], c='tab:orange',
+                           label=r"$st_m-st_i$ ", linestyle=ls[0])
+        axs[n][4 + k].fill_between(f_vec, np.quantile(paux_gain[2], 0.1, axis=0),
+                                   np.quantile(paux_gain[2], 0.9, axis=0), color='tab:orange', alpha=0.1)
+        # Negative changes - mid to end windows
+        axs[n][4 + k].plot(f_vec, avg_f(naux_gain[2]), alpha=alphas[1], c='tab:green',
+                           label=r"$st_e-st_m$ ", linestyle=ls[1])
+        axs[n][4 + k].fill_between(f_vec, np.quantile(naux_gain[2], 0.1, axis=0),
+                                   np.quantile(naux_gain[2], 0.9, axis=0), color='tab:green', alpha=0.1)
+        # x-axis
+        axs[n][4 + k].axhline(0, color='gray', linestyle='--', linewidth=0.8)
 
         # 7 Gain control - Entropy (tr - st)
         # Positive changes - ini to mid windows
-        axs[n][6 + k].plot(f_vec, pG_mi_st[3], alpha=alphas[0], label=r"$tr_m-st_i$ ", c='tab:orange',
+        # Positive changes - ini to mid windows
+        axs[n][5 + k].plot(f_vec, pG_mi_st[3], alpha=alphas[0], label=r"$tr_m-st_i$ ", c='tab:orange',
+                           linestyle=ls[3])
+        # Negative changes - mid to end windows
+        axs[n][5 + k].plot(f_vec, nG_em_st[3], alpha=alphas[1], label=r"$tr_e-st_m$ ", c='tab:green',
+                           linestyle=ls[3])
+        axs[n][5 + k].plot(f_vec, pG_mi_tr[3], alpha=alphas[0], label=r"$st_m-st_i$ ", c='tab:orange',
                            linestyle=ls[0])
         # Negative changes - mid to end windows
-        axs[n][6 + k].plot(f_vec, nG_em_st[3], alpha=alphas[1], label=r"$tr_e-st_m$ ", c='tab:green',
+        axs[n][5 + k].plot(f_vec, nG_em_tr[3], alpha=alphas[1], label=r"$st_e-st_m$ ", c='tab:green',
                            linestyle=ls[1])
+        # x-axis
+        axs[n][5 + k].axhline(0, color='gray', linestyle='--', linewidth=0.8)
 
 
 def adjust_legend_freq_res(lbl_ind, fig, ax, gain):
     row_indices = [
-        [1, 2, 3, 4, 5, 6, 7],
-        [8, 9, 10, 11, 12, 13, 14],
-        [15, 16, 17, 18, 19, 20, 21],
+        [1, 2, 3, 4, 5, 6],
+        [7, 8, 9, 10, 11, 12],
+        [13, 14, 15, 16, 17, 18],
     ]
 
     # Convert to 0-based for the list
     row_axes = [[ax[k - 1] for k in row] for row in lbl_ind]
     # Choose one axis per row that has the desired handles/labels
-    ref_axes = [ax[row[6] - 1] for row in row_indices]  # axes 4, 7, 11, 14, 18, 21
+    ref_axes = [ax[row[5] - 1] for row in row_indices]  # axes 4, 7, 11, 14, 18, 21
 
     # unifying handles and labels
     legends = []
@@ -1524,7 +1545,7 @@ def create_fig_freq_responses(name_sv, title):
     fig_gc = []
     for j in range(len(name_sv)):
         # Creating figure for each state variable
-        fig, ax = plt.subplots(3, 7, figsize=(20, 10), sharey='col')
+        fig, ax = plt.subplots(3, 6, figsize=(20, 10), sharey='col', sharex='col')
         # Flattening array of axes (before it was 3x7), now 1x21
         ax = ax.ravel()
 
@@ -1613,12 +1634,12 @@ def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2,
             axs[n][j + 4].scatter(x[0], y[0], c='black')
 
 
-def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, merge_directions=False):
+def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_directions=False):
     Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = list_eff_gc
 
     style_line = 'dashed' if merge_directions else 'solid'
     alpha = 0.6 if merge_directions else 1
-    marker = 'o' if merge_directions else '+'
+    marker = '' if merge_directions else ''
     i = 0
     for j in range(int(len(titles) / 2)):
         # STATIONARY COMPONENT
@@ -1642,14 +1663,16 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, merge_directions=F
 
         # Stochastic plots
         if 'Entropy' in titles[j]: x, y, hab = aux_filt, aux_gain, False
-        else: x, y, hab = avg_f(aux_filt), avg_f(aux_gain), True
+        else: x, y, hab = avg_f(aux_filt) * factor, avg_f(aux_gain) * factor, True
         ax[j].scatter(x, y, marker=marker, alpha=alpha, color=color)
         ax[j].plot(x, y, linestyle=style_line, alpha=alpha, color=color, label=label)
+        # Median - Quartiles
         # if i == 0 and hab: ax[j].fill_between(x, np.quantile(aux_gain, 0.1, axis=0),
         #                                np.quantile(aux_gain, 0.9, axis=0), color=color, alpha=0.1)
-        if i == 0 and hab: ax[j].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
-                                              color=color, alpha=0.1)
-        ax[j].scatter(x[0], y[0], c='black')
+        # Mean - Std
+        # if i == 0 and hab: ax[j].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
+        #                                       color=color, alpha=0.1)
+        ax[j].scatter(x[0], y[0], marker='o', alpha=alpha, color=color)
 
         # TRANSITORY COMPONENT
         aux_gain = np.copy(G_mi_tr[j])
@@ -1673,18 +1696,20 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, merge_directions=F
 
         # Stochastic plots
         if 'Entropy' in titles[j]: x, y, hab = aux_filt, aux_gain, False
-        else: x, y, hab = avg_f(aux_filt), avg_f(aux_gain), True
+        else: x, y, hab = avg_f(aux_filt) * factor, avg_f(aux_gain) * factor, True
         ax[j + 4].scatter(x, y, marker=marker, alpha=alpha, color=color)
         ax[j + 4].plot(x, y, linestyle=style_line, alpha=alpha, color=color, label=label)
+        # Median - Quartiles
         # if i == 0 and hab: ax[j + 4].fill_between(avg_f(aux_filt), np.quantile(aux_gain, 0.1, axis=0),
         #                                    np.quantile(aux_gain, 0.9, axis=0), color=color, alpha=0.1)
-        if i == 0 and hab: ax[j + 4].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
-                                                  color=color, alpha=0.1)
-        ax[j + 4].scatter(x[0], y[0], c='black')
+        # mean - std
+        # if i == 0 and hab: ax[j + 4].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
+        #                                           color=color, alpha=0.1)
+        ax[j + 4].scatter(x[0], y[0], marker='o', alpha=alpha, color=color)
 
 
 def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuron, titles, color, ode='n',
-                        ext_label=''):
+                        ext_label='', factor=1.0):
     win1, win2, win3 = 'ini', 'mid', 'end'
     for n in range(len(name_state_vars)):
         aux = ''
@@ -1696,14 +1721,14 @@ def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuro
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='ini', win2='mid', norm_neuron=norm_neuron,
                                      ode=ode)
         Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
-        aux_freq_portrait2(a, axp[n], titles, color, r"%s - gain: %.1f (pos)" % (ext_label, gain))
+        aux_freq_portrait2(a, axp[n], titles, color, r"%s - gain: %.1f (pos)" % (ext_label, gain), factor=factor)
 
         # For negative changes of rate
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='mid', win2='end', norm_neuron=norm_neuron,
                                      ode=ode)
         Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
         aux_freq_portrait2(a, axp[n], titles, color, r"%s - gain: %.1f (neg)" % (ext_label, gain),
-                           merge_directions=True)
+                           merge_directions=True, factor=factor)
 
 
 def adjust_freq_portraits(ax, x_label, y_label, title, xlims=None, ylims=None, xscale='linear', axes_=True, tit_=True,
@@ -1730,6 +1755,7 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     # Getting indices for Entropy arrays
     H_pos1, H_pos2 = 0, 1
     if win2 == 'end': H_pos1, H_pos2 = 1, 2
+    if win2 == 'ini': H_pos1, H_pos2 = 2, 2  # Only for retrieving entropy on end window
     # altering prefix for H
     pH = prefix
     if prefix == '': pH = 'v_'
@@ -1772,8 +1798,10 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     H_tr = dr_['H_' + pH + auxH + 'tr'][H_pos1:H_pos2 + 1, :]
     H_i_st = H_st[0, :]
     H_i_tr = H_tr[0, :]
-    GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
-    GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
+    if H_pos1 != H_pos2: GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
+    else: GH_mi_st = H_st[0, :]
+    if H_pos1 != H_pos2: GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
+    else: GH_mi_tr = H_tr[0, :]
 
     """
     output = {}
@@ -1828,8 +1856,10 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
     H_tr = dr_['H_' + pH + auxH + 'tr'][H_pos1:H_pos2 + 1, :]
     H_i_st = H_st[0, :]
     H_i_tr = H_tr[0, :]
-    GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
-    GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
+    if H_pos1 != H_pos2: GH_mi_st = H_st[1, :] - H_st[0, :]  # H_mid_st - H_ini_st
+    else: GH_mi_st = H_st[0, :]
+    if H_pos1 != H_pos2: GH_mi_tr = H_tr[1, :] - H_st[0, :]  # H_mid_tr - H_ini_st
+    else: GH_mi_tr = H_tr[0, :]
 
     """
     output_list = {}
