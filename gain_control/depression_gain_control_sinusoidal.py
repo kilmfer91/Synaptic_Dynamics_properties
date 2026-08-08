@@ -16,7 +16,7 @@ max_freq = 500
 
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
-plots_phd = True
+plots_phd = False
 dyn_synapse = True
 gaincontrol_sinusoidal = True
 
@@ -39,7 +39,7 @@ und_q10, und_amp_min = [[] for _ in range(num_realisations)], [[] for _ in range
 und_q90, und_var = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
 
 # Profiling
-profiling = True
+profiling = False
 profiler = None
 
 # Model parameters
