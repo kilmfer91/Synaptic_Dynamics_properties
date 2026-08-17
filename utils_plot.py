@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import scipy.signal as signal
+# plt.rcParams['text.usetex'] = True
+
 
 colors = ["#ED0000", "#FFF200", "#0000ED", "#FF7E27", "#00ED00", "#7F3F3F", "#B97A57", "#FFDBB7", "#ED00ED", "#00EDED",
           "#FF7F7F", "#FFC90D", "#6C6CFF", "#FFB364", "#22B14C", "#D1A5A5", "#008040", "#AEFFAE", "#FF84FF", "#95FFFF",
@@ -602,95 +604,123 @@ def plot_gc_sin_statistics(res_per_reali, mean_rates):
     fig.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
 
 
-def plot_gc_mem_potential_prop_fix(time_vector, i, s1, s2, t_tr, statis, title, max_t, path_save="", save_figs=False,
-                                   y_lims_ind_plot=None, plot_stats=False, plt_grid=False,
-                                   ref_rate=None, dt=None):
+def plt_gc_stat_descr_t_series(time_vector, i, s1, s2, t_tr, statis, title, max_t, path_save="", save_figs=False,
+                               y_lims_ind_plot=None, plot_stats=False, plt_grid=False, ref_rate=None, dt=None,
+                               plot_phd_pre_results=False, plot_phd_pre_res_2=False, color_stat=None, color_win=None):
+    color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"] if color_stat is None else color_stat
+    color_win = ["tab:red", "tab:olive", "tab:blue"] if color_win is None else color_win
     # t_tr = t_tr_[0]
     a, b, c = int(max_t / 3), int(2 * max_t / 3), max_t
 
-    figc = plt.figure(figsize=(8, 3))  # (10, 3))
+    figc = plt.figure(figsize=(8, 2))  # (10, 3))
     plt.suptitle(title)
     # tm=30/syn=100 [-65.7,-52.5], tm=1/syn=100[-70,-35], tm=1/syn=1 [-70.05,-67.4]
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else [-71, -43]
     ax1 = figc.add_subplot(1, 1, 1)  # (1, 2, 1)
-    ax1.set_xlabel("Time (s)")
-    ax1.set_ylabel("Mem. potential (V)")
+    ax1.set_xlabel("Time (s)", color="gray")
+    ax1.set_ylabel("Mem. potential (V)", color="gray")
     ax1.plot(time_vector, s1[0, :], c="black", alpha=0.4)
     if plot_stats:
-        # np.array(mean_st_pi), np.array(median_st_pi), np.array(q5_st_pi), np.array(q10_st_pi),
-        # np.array(q90_st_pi), np.array(q95_st_pi), np.array(min_st_pi), np.array(max_st_pi),  # 7
+        ax1.plot([0 + t_tr, a], [statis[0, i, 0], statis[0, i, 0]], c=color_stat[1], label=r'$\mu$')  # mean ini window
+        ax1.plot([a + t_tr, b], [statis[8, i, 0], statis[8, i, 0]], c=color_stat[1])  # mean mid window
+        ax1.plot([b + t_tr, c], [statis[16, i, 0], statis[16, i, 0]], c=color_stat[1])  # mean end window
 
-        # np.array(mean_st_pm), np.array(median_st_pm), np.array(q5_st_pm), np.array(q10_st_pm),
-        # np.array(q90_st_pm), np.array(q95_st_pm), np.array(min_st_pm), np.array(max_st_pm),  # 15
+        ax1.plot([0 + t_tr, a], [statis[6, i, 0], statis[6, i, 0]], c=color_stat[0], alpha=0.8, label='min')  # min ini win
+        ax1.plot([a + t_tr, b], [statis[14, i, 0], statis[14, i, 0]], c=color_stat[0], alpha=0.8)  # min mid window
+        ax1.plot([b + t_tr, c], [statis[22, i, 0], statis[22, i, 0]], c=color_stat[0], alpha=0.8)  # min end window
+        ax1.plot([0, 0 + t_tr], [statis[52, i, 0], statis[52, i, 0]], c=color_stat[0], alpha=0.8)  # tr min ini window
+        ax1.plot([a, a + t_tr], [statis[57, i, 0], statis[57, i, 0]], c=color_stat[0], alpha=0.8)  # tr min mid window
+        ax1.plot([b, b + t_tr], [statis[62, i, 0], statis[62, i, 0]], c=color_stat[0], alpha=0.8)  # tr min end window
 
-        #  np.array(mean_st_pe), np.array(median_st_pe), np.array(q5_st_pe), np.array(q10_st_pe),
-        # np.array(q90_st_pe), np.array(q95_st_pe), np.array(min_st_pe), np.array(max_st_pe),  # 23
+        ax1.plot([0 + t_tr, a], [statis[7, i, 0], statis[7, i, 0]], c=color_stat[0], alpha=0.8, label='max')  # max ini win
+        ax1.plot([a + t_tr, b], [statis[15, i, 0], statis[15, i, 0]], c=color_stat[0], alpha=0.8)  # max mid window
+        ax1.plot([b + t_tr, c], [statis[23, i, 0], statis[23, i, 0]], c=color_stat[0], alpha=0.8)  # max end window
+        ax1.plot([0, 0 + t_tr], [statis[51, i, 0], statis[51, i, 0]], c=color_stat[0], alpha=0.8)  # tr max ini window
+        ax1.plot([a, a + t_tr], [statis[56, i, 0], statis[56, i, 0]], c=color_stat[0], alpha=0.8)  # tr max mid window
+        ax1.plot([b, b + t_tr], [statis[61, i, 0], statis[61, i, 0]], c=color_stat[0], alpha=0.8)  # tr max end window
 
-        # np.array(mean_st_ci), np.array(median_st_ci), np.array(q5_st_ci), np.array(q10_st_ci),
-        # np.array(q90_st_ci), np.array(q95_st_ci), np.array(min_st_ci), np.array(max_st_ci),  # 31
-        # np.array(mean_st_cm), np.array(median_st_cm), np.array(q5_st_cm), np.array(q10_st_cm),
-        # np.array(q90_st_cm), np.array(q95_st_cm), np.array(min_st_cm), np.array(max_st_cm),  # 39
-        # np.array(mean_st_ce), np.array(median_st_ce), np.array(q5_st_ce), np.array(q10_st_ce),
-        # np.array(q90_st_ce), np.array(q95_st_ce), np.array(min_st_ce), np.array(max_st_ce),  # 47
+        ax1.plot([0 + t_tr, a], [statis[3, i, 0], statis[3, i, 0]], c=color_stat[2], label='q10%')  # q10 ini window
+        ax1.plot([a + t_tr, b], [statis[11, i, 0], statis[11, i, 0]], c=color_stat[2])  # q10 mid window
+        ax1.plot([b + t_tr, c], [statis[19, i, 0], statis[19, i, 0]], c=color_stat[2])  # q10 end window
+        ax1.plot([0, 0 + t_tr], [statis[50, i, 0], statis[50, i, 0]], c=color_stat[2], alpha=0.8)  # tr q10 ini window
+        ax1.plot([a, a + t_tr], [statis[55, i, 0], statis[55, i, 0]], c=color_stat[2], alpha=0.8)  # tr q10 mid window
+        ax1.plot([b, b + t_tr], [statis[60, i, 0], statis[60, i, 0]], c=color_stat[2], alpha=0.8)  # tr q10 end window
 
-        # np.array(max_tr_pi), np.array(max_tr_pm), np.array(max_tr_pe)]  # 50
+        ax1.plot([0 + t_tr, a], [statis[4, i, 0], statis[4, i, 0]], c=color_stat[2], label='q90%')  # q90 ini window
+        ax1.plot([a + t_tr, b], [statis[12, i, 0], statis[12, i, 0]], c=color_stat[2])  # q90 mid window
+        ax1.plot([b + t_tr, c], [statis[20, i, 0], statis[20, i, 0]], c=color_stat[2])  # q90 end window
+        ax1.plot([0, 0 + t_tr], [statis[49, i, 0], statis[49, i, 0]], c=color_stat[2], alpha=0.8)  # tr q90 ini window
+        ax1.plot([a, a + t_tr], [statis[54, i, 0], statis[54, i, 0]], c=color_stat[2], alpha=0.8)  # tr q90 mid window
+        ax1.plot([b, b + t_tr], [statis[59, i, 0], statis[59, i, 0]], c=color_stat[2], alpha=0.8)  # tr q90 end window
 
-        ax1.plot([0 + t_tr, a], [statis[0, i, 0], statis[0, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
-        ax1.plot([a + t_tr, b], [statis[8, i, 0], statis[8, i, 0]], c="tab:orange")  # mean mid window
-        ax1.plot([b + t_tr, c], [statis[16, i, 0], statis[16, i, 0]], c="tab:orange")  # mean end window
-
-        ax1.plot([0 + t_tr, a], [statis[6, i, 0], statis[6, i, 0]], c="tab:red", alpha=0.8, label='min')  # min ini win
-        ax1.plot([a + t_tr, b], [statis[14, i, 0], statis[14, i, 0]], c="tab:red", alpha=0.8)  # min mid window
-        ax1.plot([b + t_tr, c], [statis[22, i, 0], statis[22, i, 0]], c="tab:red", alpha=0.8)  # min end window
-        ax1.plot([0, 0 + t_tr], [statis[52, i, 0], statis[52, i, 0]], c="tab:red", alpha=0.8)  # tr min ini window
-        ax1.plot([a, a + t_tr], [statis[57, i, 0], statis[57, i, 0]], c="tab:red", alpha=0.8)  # tr min mid window
-        ax1.plot([b, b + t_tr], [statis[62, i, 0], statis[62, i, 0]], c="tab:red", alpha=0.8)  # tr min end window
-
-        ax1.plot([0 + t_tr, a], [statis[7, i, 0], statis[7, i, 0]], c="tab:red", alpha=0.8, label='max')  # max ini win
-        ax1.plot([a + t_tr, b], [statis[15, i, 0], statis[15, i, 0]], c="tab:red", alpha=0.8)  # max mid window
-        ax1.plot([b + t_tr, c], [statis[23, i, 0], statis[23, i, 0]], c="tab:red", alpha=0.8)  # max end window
-        ax1.plot([0, 0 + t_tr], [statis[51, i, 0], statis[51, i, 0]], c="tab:red", alpha=0.8)  # tr max ini window
-        ax1.plot([a, a + t_tr], [statis[56, i, 0], statis[56, i, 0]], c="tab:red", alpha=0.8)  # tr max mid window
-        ax1.plot([b, b + t_tr], [statis[61, i, 0], statis[61, i, 0]], c="tab:red", alpha=0.8)  # tr max end window
-
-        ax1.plot([0 + t_tr, a], [statis[3, i, 0], statis[3, i, 0]], c="tab:green", label='q10%')  # q10 ini window
-        ax1.plot([a + t_tr, b], [statis[11, i, 0], statis[11, i, 0]], c="tab:green")  # q10 mid window
-        ax1.plot([b + t_tr, c], [statis[19, i, 0], statis[19, i, 0]], c="tab:green")  # q10 end window
-        ax1.plot([0, 0 + t_tr], [statis[50, i, 0], statis[50, i, 0]], c="tab:green", alpha=0.8)  # tr q10 ini window
-        ax1.plot([a, a + t_tr], [statis[55, i, 0], statis[55, i, 0]], c="tab:green", alpha=0.8)  # tr q10 mid window
-        ax1.plot([b, b + t_tr], [statis[60, i, 0], statis[60, i, 0]], c="tab:green", alpha=0.8)  # tr q10 end window
-
-        ax1.plot([0 + t_tr, a], [statis[4, i, 0], statis[4, i, 0]], c="tab:green", label='q90%')  # q90 ini window
-        ax1.plot([a + t_tr, b], [statis[12, i, 0], statis[12, i, 0]], c="tab:green")  # q90 mid window
-        ax1.plot([b + t_tr, c], [statis[20, i, 0], statis[20, i, 0]], c="tab:green")  # q90 end window
-        ax1.plot([0, 0 + t_tr], [statis[49, i, 0], statis[49, i, 0]], c="tab:green", alpha=0.8)  # tr q90 ini window
-        ax1.plot([a, a + t_tr], [statis[54, i, 0], statis[54, i, 0]], c="tab:green", alpha=0.8)  # tr q90 mid window
-        ax1.plot([b, b + t_tr], [statis[59, i, 0], statis[59, i, 0]], c="tab:green", alpha=0.8)  # tr q90 end window
-
-        ax1.plot([0 + t_tr, a], [statis[1, i, 0], statis[1, i, 0]], c="tab:blue", label='median')  # median ini window
-        ax1.plot([a + t_tr, b], [statis[9, i, 0], statis[9, i, 0]], c="tab:blue")  # median mid window
-        ax1.plot([b + t_tr, c], [statis[17, i, 0], statis[17, i, 0]], c="tab:blue")  # median end window
-        ax1.plot([0, 0 + t_tr], [statis[48, i, 0], statis[48, i, 0]], c="tab:blue", alpha=0.8)  # tr median ini window
-        ax1.plot([a, a + t_tr], [statis[53, i, 0], statis[53, i, 0]], c="tab:blue", alpha=0.8)  # tr median mid window
-        ax1.plot([b, b + t_tr], [statis[58, i, 0], statis[58, i, 0]], c="tab:blue", alpha=0.8)  # tr median end window
-        # ax1.grid()
-        # ax1.legend(loc="upper right")
+        ax1.plot([0 + t_tr, a], [statis[1, i, 0], statis[1, i, 0]], c=color_stat[3], label='median')  # median ini window
+        ax1.plot([a + t_tr, b], [statis[9, i, 0], statis[9, i, 0]], c=color_stat[3])  # median mid window
+        ax1.plot([b + t_tr, c], [statis[17, i, 0], statis[17, i, 0]], c=color_stat[3])  # median end window
+        ax1.plot([0, 0 + t_tr], [statis[48, i, 0], statis[48, i, 0]], c=color_stat[3], alpha=0.8)  # tr median ini window
+        ax1.plot([a, a + t_tr], [statis[53, i, 0], statis[53, i, 0]], c=color_stat[3], alpha=0.8)  # tr median mid window
+        ax1.plot([b, b + t_tr], [statis[58, i, 0], statis[58, i, 0]], c=color_stat[3], alpha=0.8)  # tr median end window
         ax1.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    ax1.set_title("Proportional changes", color="black", alpha=0.7)
+
+    if plot_phd_pre_results:
+        t0, t1, t2, t3 = 0, 2, 4, 6
+        t1r, t2r, t3r = t_tr, t1 + t_tr, t2 + t_tr
+        # Window shading
+        ax1.axvspan(t0, t1r, color=color_win[0], alpha=0.6)
+        ax1.axvspan(t1, t2r, color=color_win[1], alpha=0.6)
+        ax1.axvspan(t2, t3r, color=color_win[2], alpha=0.6)
+        # Window shading
+        ax1.axvspan(t1r, t1, color=color_win[0], alpha=0.12)
+        ax1.axvspan(t2r, t2, color=color_win[1], alpha=0.12)
+        ax1.axvspan(t3r, t3, color=color_win[2], alpha=0.12)
+        # Separating bars
+        for x in [t1, t2]:
+            ax1.axvline(x, color="k", linestyle="--", linewidth=1)
+        for x in [t1r, t2r, t3r]:
+            ax1.axvline(x, color="gray", linestyle="--", linewidth=1)
+
+        # Labels centered in each window
+        ymin, ymax = ax1.get_ylim()
+        ypos = ymax - 0.08 * (ymax - ymin)
+        ax1.text(1, ypos, "ini-window", ha="center", va="top")
+        ax1.text(3, ypos, "mid-window", ha="center", va="top")
+        ax1.text(5, ypos, "end-window", ha="center", va="top")
+
+    if plot_phd_pre_res_2:
+        t1, t2 = 2, 4
+        t1r, t2r, t3r = t_tr, t1 + t_tr, t2 + t_tr
+        # Window shading
+        ax1.axvspan(t1r, t2r, color=color_win[0], alpha=0.6)
+        ax1.axvspan(t2r, t3r, color=color_win[1], alpha=0.6)
+        # Separating bars
+        for x in [t1, t2]:
+            ax1.axvline(x, color="k", linestyle="--", linewidth=1)
+        for x in [t1r, t2r, t3r]:
+            ax1.axvline(x, color="gray", linestyle="--", linewidth=1)
+
+        # Labels centered in each window
+        ymin, ymax = ax1.get_ylim()
+        ypos = ymax - 0.08 * (ymax - ymin)
+        ax1.text(1, ypos, "ini-window", ha="center", va="top")
+        ax1.text(3, ypos, "mid-window", ha="center", va="top")
+        ax1.text(5, ypos, "end-window", ha="center", va="top")
+
+    # ax1.set_title("Proportional changes", color="black", alpha=0.7)
     # ax1.set_ylim(ylims)
     if plt_grid: ax1.grid()
     figc.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
     if save_figs: figc.savefig(path_save, format='png')
 
 
-def plot_gc_stoch_input(time_vector, i, s1, s2, t_tr, statis, title, max_t, path_save="", save_figs=False,
-                                   y_lims_ind_plot=None, ref_rate=None, dt=None, ax=None, th_percentage=1e-3):
-    # t_tr = t_tr_[0]
-    # ******************************************************************************************************************
-    # Figure for PhD thesis: methodology-Experimental setup-Stimuli schema-proportional change of rate
-    a, b, c = int(max_t / 3), int(2 * max_t / 3), max_t
+def plot_gc_t_series_windows(time_vector, i, s1, s2, t_tr, statis, title, max_t, path_save="", save_figs=False,
+                             y_lims_ind_plot=None, ref_rate=None, dt=None, ax=None, th_percentage=1e-3,
+                             color_stat=None, color_win=None):
+    # Color definitions
+    color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"] if color_stat is None else color_stat
+    color_win = ["tab:red", "tab:olive", "tab:blue"] if color_win is None else color_win
 
     # """
+    # ******************************************************************************************************************
+    # Figure for PhD thesis: methodology - Time series divided by windows, computation of time to reach steady state
     fig_tr_st = plt.figure(figsize=(8, 5))
     # plt.suptitle("Example of system response to three window schema", color="black")
     axa = fig_tr_st.add_subplot(2, 1, 1)
@@ -700,9 +730,9 @@ def plot_gc_stoch_input(time_vector, i, s1, s2, t_tr, statis, title, max_t, path
     # axa.grid()
     t0, t1, t2, t3 = 0, 2, 4, 6
     # Window shading
-    axa.axvspan(t0, t1, color="tab:blue", alpha=0.12)
-    axa.axvspan(t1, t2, color="tab:orange", alpha=0.12)
-    axa.axvspan(t2, t3, color="tab:green", alpha=0.12)
+    axa.axvspan(t0, t1, color=color_win[0], alpha=0.12)
+    axa.axvspan(t1, t2, color=color_win[1], alpha=0.12)
+    axa.axvspan(t2, t3, color=color_win[2], alpha=0.12)
     # Separating bars
     for x in [t1, t2]:
         axa.axvline(x, color="k", linestyle="--", linewidth=1)
@@ -727,8 +757,8 @@ def plot_gc_stoch_input(time_vector, i, s1, s2, t_tr, statis, title, max_t, path
     ind_tr = np.min([ind_tr[0][list(np.array(ind_unique) - 1)][0], int(3.5 / dt)])
 
     # Plotting
-    axb.plot(time_vector[:int(2 * ind_tr)], s1[0, :int(2 * ind_tr)], c="tab:blue", label=r'ini-window')
-    axb.plot(time_vector[:int(np.min([2 * ind_tr, L / 3]))], s1[0, int(2 * L / 3):int(2 * L / 3 + np.min([2 * ind_tr, L / 3]))], c="tab:green",
+    axb.plot(time_vector[:int(2 * ind_tr)], s1[0, :int(2 * ind_tr)], c=color_win[0], label=r'ini-window')
+    axb.plot(time_vector[:int(np.min([2 * ind_tr, L / 3]))], s1[0, int(2 * L / 3):int(2 * L / 3 + np.min([2 * ind_tr, L / 3]))], c=color_win[2],
              label=r'end-window')
     axb.axvline(time_vector[ind_tr], color="k", linestyle="--", linewidth=1)
     # Labels centered in each window
@@ -741,6 +771,7 @@ def plot_gc_stoch_input(time_vector, i, s1, s2, t_tr, statis, title, max_t, path
     axb.legend(loc="best")
     plt.tight_layout()
     if save_figs: fig_tr_st.savefig(path_save, format='png')
+    # ******************************************************************************************************************
     # """
     # ******************************************************************************************************************
     # Figure for PhD thesis: methodology - Measurements - Temporal filtering - Inputs
@@ -753,31 +784,34 @@ def plot_gc_stoch_input(time_vector, i, s1, s2, t_tr, statis, title, max_t, path
 
     axc.set_title("Input at rate %dHz" % ref_rate, color="gray", fontsize=16)
     axc.set_ylabel("Mem. pot. (mV)", color="gray", fontsize=14)
+    d = int(dt * L/3)
+    axc.plot(time_vector[:int(L/3)], s1[0, :int(L/3)], c="gray")
+    axc.plot([0 + t_tr, d], [statis[6, i, 0], statis[6, i, 0]], c=color_stat[0], alpha=0.6, label='min')  # min ini win
+    axc.plot([0, 0 + t_tr], [statis[52, i, 0], statis[52, i, 0]], c=color_stat[0], alpha=0.6)  # tr min ini window
+    axc.plot([0 + t_tr, d], [statis[0, i, 0], statis[0, i, 0]], c=color_stat[1], label=r'$\mu$')  # mean ini window
+    axc.plot([0 + t_tr, d], [statis[7, i, 0], statis[7, i, 0]], c=color_stat[0], alpha=0.6, label='max')  # max ini win
+    axc.plot([0, 0 + t_tr], [statis[51, i, 0], statis[51, i, 0]], c=color_stat[0], alpha=0.6)  # tr max ini window
+    axc.plot([0 + t_tr, d], [statis[3, i, 0], statis[3, i, 0]], c=color_stat[2], label='q10%')  # q10 ini window
+    axc.plot([0, 0 + t_tr], [statis[50, i, 0], statis[50, i, 0]], c=color_stat[2], alpha=0.6)  # tr q10 ini window
+    axc.plot([0 + t_tr, d], [statis[4, i, 0], statis[4, i, 0]], c=color_stat[2], label='q90%')  # q90 ini window
+    axc.plot([0, 0 + t_tr], [statis[49, i, 0], statis[49, i, 0]], c=color_stat[2], alpha=0.6)  # tr q90 ini window
+    axc.plot([0 + t_tr, d], [statis[1, i, 0], statis[1, i, 0]], c=color_stat[3], label='median')  # median ini window
+    axc.plot([0, 0 + t_tr], [statis[48, i, 0], statis[48, i, 0]], c=color_stat[3], alpha=0.6)  # tr median ini window
+
+    # Vertical line with time to reach steady-state
     axc.axvline(time_vector[ind_tr], color="k", linestyle="--", linewidth=1)
     # Labels centered in each window
     ymin, ymax = axc.get_ylim()
     ypos = ymax - 0.11 * (ymax - ymin)
-    axc.text(time_vector[int(ind_tr * 1.01)], 0.14, r'$t_{tr/st} = %.1f$ms' % (time_vector[ind_tr] * 1e3), ha="left",
+    axc.text(time_vector[int(ind_tr * 1.01)], ypos, r'$t_{tr/st} = %.1f$ms' % (time_vector[ind_tr] * 1e3), ha="left",
              va="top")
-    d = int(dt * L/3)
-    axc.plot(time_vector[:int(L/3)], s1[0, :int(L/3)], c="gray")
-    axc.plot([0 + t_tr, d], [statis[6, i, 0], statis[6, i, 0]], c="tab:red", alpha=0.6, label='min')  # min ini win
-    axc.plot([0, 0 + t_tr], [statis[52, i, 0], statis[52, i, 0]], c="tab:red", alpha=0.6)  # tr min ini window
-    axc.plot([0 + t_tr, d], [statis[0, i, 0], statis[0, i, 0]], c="tab:orange", label=r'$\mu$')  # mean ini window
-    axc.plot([0 + t_tr, d], [statis[7, i, 0], statis[7, i, 0]], c="tab:red", alpha=0.6, label='max')  # max ini win
-    axc.plot([0, 0 + t_tr], [statis[51, i, 0], statis[51, i, 0]], c="tab:red", alpha=0.6)  # tr max ini window
-    axc.plot([0 + t_tr, d], [statis[3, i, 0], statis[3, i, 0]], c="tab:green", label='q10%')  # q10 ini window
-    axc.plot([0, 0 + t_tr], [statis[50, i, 0], statis[50, i, 0]], c="tab:green", alpha=0.6)  # tr q10 ini window
-    axc.plot([0 + t_tr, d], [statis[4, i, 0], statis[4, i, 0]], c="tab:green", label='q90%')  # q90 ini window
-    axc.plot([0, 0 + t_tr], [statis[49, i, 0], statis[49, i, 0]], c="tab:green", alpha=0.6)  # tr q90 ini window
-    axc.plot([0 + t_tr, d], [statis[1, i, 0], statis[1, i, 0]], c="tab:blue", label='median')  # median ini window
-    axc.plot([0, 0 + t_tr], [statis[48, i, 0], statis[48, i, 0]], c="tab:blue", alpha=0.6)  # tr median ini window
+
     # axc.grid()
-    ylims = [-0.005, 0.15]  # y_lims_ind_plot if y_lims_ind_plot is not None else [-71, -43]
-    axc.set_ylim(ylims)
+    # ylims = [-0.005, 0.15]  # y_lims_ind_plot if y_lims_ind_plot is not None else [-71, -43]
+    # axc.set_ylim(ylims)
     # axc.set_xscale('log')
     # axc.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-    plt.tight_layout()
+    # plt.tight_layout()
     # if save_figs: fig_syn_filt.savefig(path_save, format='png')
     # """
 
@@ -859,26 +893,28 @@ def plot_features_windows_prop_fix(f_vector, dr, lbl, st_lbl, cols, suptitle_=""
 def plot_features_tr_st_3windows(f_vector, dr, lbl, lbl2, st_lbl, legends, cols, t_, title_graph, path_save, save_figs,
                                     y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None, y_lbl=None):
     ls = ['-' for _ in range(len(st_lbl))] if ls is None else ls
-    fig_st2 = plt.figure(figsize=(10, 3.6))  # (10, 3.2)
+    fig_st2, ax_st2 = plt.subplots(int(len(lbl) / 3), 3, figsize=(10, 3.6), sharey=True)
+    ax_st2 = ax_st2.ravel()
+
     plt.suptitle(title_graph, color='black')
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
     y_label = y_lbl if y_lbl is not None else None
-    ax_st2 = None
+    # ax_st2 = None
     c_le = 0
     for i in range(len(lbl)):
-        ax_st2 = fig_st2.add_subplot(int(len(lbl) / 3), 3, i + 1)
+        # ax_st2 = fig_st2.add_subplot(int(len(lbl) / 3), 3, i + 1, sharey=True)
         for j in range(len(st_lbl)):
             plot_sign, sign = aux_plot_features_win_prop_fix(dr, lbl[i], st_lbl[j],
                                                              normalise=normalise, min_n=min_n, max_n=max_n)
             # sign = sign * f_vector
             if plot_sign:
                 if i == 2:
-                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, label=legends[c_le] % 'tr',
+                    ax_st2[i].plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, label=legends[c_le] % 'tr',
                                 linestyle=ls[j])
                     c_le += 1
                 else:
-                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, linestyle=ls[j])
-                ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                    ax_st2[i].plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, linestyle=ls[j])
+                ax_st2[i].fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
                                     color='gray', alpha=0.3)
         for j in range(len(st_lbl)):
             plot_sign, sign = aux_plot_features_win_prop_fix(dr, lbl2[i], st_lbl[j],
@@ -886,26 +922,26 @@ def plot_features_tr_st_3windows(f_vector, dr, lbl, lbl2, st_lbl, legends, cols,
             # sign = sign * f_vector
             if plot_sign:
                 if i == 2:
-                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=legends[c_le] % 'st',
+                    ax_st2[i].plot(f_vector, np.median(sign, axis=0), c=cols[j], label=legends[c_le] % 'st',
                                 linestyle=ls[j])
                     c_le += 1
                 else:
-                    ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], linestyle=ls[j])
-                ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                    ax_st2[i].plot(f_vector, np.median(sign, axis=0), c=cols[j], linestyle=ls[j])
+                ax_st2[i].fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
                                     color=cols[j], alpha=0.3)
-        ax_st2.set_title(t_[i], color='black', alpha=0.7)
-        ax_st2.set_xlabel("Rate (Hz)", color='gray')
-        ax_st2.set_ylabel(y_label, color='gray')
-        ax_st2.grid()
-        ax_st2.set_xscale('log')
-        if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+        ax_st2[i].set_title(t_[i], color='black', alpha=0.7)
+        ax_st2[i].set_xlabel("Rate (Hz)", color='gray')
+        ax_st2[i].set_ylabel(y_label, color='gray')
+        ax_st2[i].grid()
+        ax_st2[i].set_xscale('log')
+        if y_lims_ind_plot is not None: ax_st2[i].set_ylim(ylims)
 
-    ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
+    ax_st2[-1].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
     fig_st2.tight_layout()  # pad=0.5, w_pad=0.5, h_pad=1.0)
     if save_figs: fig_st2.savefig(path_save, format='png')
 
 
-def plot_features_tr_st_3windows_phd(f_vector, dr, pre_, mid_, lbl, legends, cols, t_, title_graph, path_save,
+def plot_features_tr_st_3windows_phd(f_vector, dr, pre_, mid_, lbl, legends, cols, color_w, t_, title_graph, path_save,
                                      save_figs, y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None,
                                      y_lbl=None):
     fig_st2 = plt.figure(figsize=(10, 2.5))  # (10, 3.2)
@@ -918,43 +954,52 @@ def plot_features_tr_st_3windows_phd(f_vector, dr, pre_, mid_, lbl, legends, col
         ax_st2 = fig_st2.add_subplot(int(len(lbl) / 3), 3, i + 1)
         # Transitory state
         sign1 = [dr['%s_%s_prop_max' % (pre_[0], mid_[i])] - dr['%s_%s_prop_min' % (pre_[0], mid_[i])],
-                 dr['%s_%s_prop_q90' % (pre_[0], mid_[i])] - dr['%s_%s_prop_q10' % (pre_[0], mid_[i])],
+                 # dr['%s_%s_prop_q90' % (pre_[0], mid_[i])] - dr['%s_%s_prop_q10' % (pre_[0], mid_[i])],
                  dr['%s_%s_prop_med' % (pre_[0], mid_[i])] - dr['%s_%s_prop_min' % (pre_[0], mid_[i])]]
         for j in range(len(sign1)):
             sign = norm_array(sign1[j], compute_norm=normalise, min_n=min_n, max_n=max_n)
             if i == 2:
                 label = legends[j] % 'tr' if legends is not None else None
-                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, label=label,
-                            linestyle='--')
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=label, linestyle='solid')
                 c_le += 1
             else:
-                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.5, linestyle='--')
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], linestyle='solid')
             ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
-                                color='gray', alpha=0.3)
+                                color=cols[j], alpha=0.2)
         # Stationary state
         sign2 = [dr['%s_%s_prop_max' % (pre_[1], mid_[i])] - dr['%s_%s_prop_min' % (pre_[1], mid_[i])],
-                 dr['%s_%s_prop_q90' % (pre_[1], mid_[i])] - dr['%s_%s_prop_q10' % (pre_[1], mid_[i])],
+                 # dr['%s_%s_prop_q90' % (pre_[1], mid_[i])] - dr['%s_%s_prop_q10' % (pre_[1], mid_[i])],
                  dr['%s_%s_prop_med' % (pre_[1], mid_[i])] - dr['%s_%s_prop_min' % (pre_[0], mid_[i])]]
         for j in range(len(sign2)):
             sign = norm_array(sign2[j], compute_norm=normalise, min_n=min_n, max_n=max_n)
             if i == 2:
                 label = legends[j] % 'st' if legends is not None else None
                 ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=label,
-                            linestyle='-')
+                            linestyle='dashdot')
                 c_le += 1
             else:
-                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], linestyle='-')
+                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], linestyle='dashdot')
             ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
-                                color=cols[j], alpha=0.3)
+                                color=cols[j], alpha=0.2)
         ax_st2.set_title(t_[i], color='black', alpha=0.7, fontsize=12)
         ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
         ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
-        ax_st2.grid()
+        # ax_st2.grid()
         ax_st2.set_xscale('log')
         if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
 
+        # Getting x-limits
+        xmin, xmax = ax_st2.get_xlim()
+        # Window shading
+        ax_st2.patch.set_color(color_w[i])  # or whatever color you like
+        ax_st2.patch.set_alpha(.2)
+        # Plotting y=10, y=100 and x=0 axes
+        ax_st2.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(10, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(100, color='gray', linestyle='--', linewidth=0.8)
+
     if legends is not None: ax_st2.legend(bbox_to_anchor=(1.05, 1.15), loc='upper left', borderaxespad=0., fontsize=12)
-    fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    # fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
     if save_figs: fig_st2.savefig(path_save, format='png')
 
 
@@ -990,39 +1035,62 @@ def plot_features_tr_st_1window(f_vector, sign1, sign2, lbl, cols, t_, title_gra
 
 def plot_features_tr_st_1window_phd(f_vector, sign1, sign2, lbl, cols, t_, title_graph, path_save, save_figs,
                                     y_lims_ind_plot=None, normalise=False, min_n=None, max_n=None, y_lbl=None,
-                                    maxf=-1):
-    fig_st2 = plt.figure(figsize=(8, 4))
+                                    maxf=-1, linesty=None):
+    fig_st2 = plt.figure(figsize=(7, 4))
     plt.suptitle(title_graph, fontsize=20, color='black')
+
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
     y_label = y_lbl if y_lbl is not None else None
-    ax_st = fig_st2.add_subplot(2, 1, 1)
+    linestyle = linesty if linesty is not None else '--'
+
+    ax_st = fig_st2.add_subplot(1, 1, 1)
     for j in range(len(sign1)):
         sign = sign1[j] if maxf is None else sign1[j][:, :maxf]
-        ax_st.plot(f_vector[:maxf], np.median(sign, axis=0), c=cols[j], label=lbl[j] % "tr", linestyle='--')
+        ax_st.plot(f_vector[:maxf], np.median(sign, axis=0), c=cols[j], label=lbl[j] % "tr", linestyle=linestyle)
         ax_st.fill_between(f_vector[:maxf], np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
-                            color=cols[j], alpha=0.2)
+                           color=cols[j], alpha=0.2)
+    ax_st.set_title(t_, color='black', alpha=0.7, fontsize=16)
+    ax_st.set_xlabel("Rate (Hz)", color='gray', fontsize=14)
+    ax_st.set_ylabel(y_label, color='gray', fontsize=14)
+    ax_st.set_xscale('log')
+    # ax_st.grid()
+    # ax_st.set_xscale('log')
+    ax_st.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=16)
+
+    # Hiding top and right lines of axes box
+    ax_st.spines['top'].set_visible(False)
+    ax_st.spines['right'].set_visible(False)
+
+    # Plotting y=10, y=100 and x=0 axes
+    ax_st.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+    ax_st.axvline(10, color='gray', linestyle='--', linewidth=0.8)
+    ax_st.axvline(100, color='gray', linestyle='--', linewidth=0.8)
+
+    """
     ax_st2 = fig_st2.add_subplot(2, 1, 2)
     for j in range(len(sign2)):
         sign = sign2[j] if maxf is None else sign2[j][:, :maxf]
         ax_st2.plot(f_vector[:maxf], np.median(sign, axis=0), c=cols[j], label=lbl[j] % "st", linestyle='-', alpha=0.7)
         ax_st2.fill_between(f_vector[:maxf], np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
-                            color=cols[j], alpha=0.3)
-    ax_st.set_title(t_[0], color='black', alpha=0.7, fontsize=16)
-    # ax_st.set_xlabel("Rate (Hz)", color='gray')
-    ax_st.set_ylabel(y_label, color='gray', fontsize=14)
-    ax_st.set_xscale('log')
-    ax_st.grid()
-    # ax_st.set_xscale('log')
+                            color=cols[j], alpha=0.3)    
     ax_st2.set_title(t_[1], color='black', alpha=0.7, fontsize=16)
     ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=14)
     ax_st2.set_ylabel(y_label, color='gray', fontsize=14)
-    ax_st2.grid()
+    # ax_st2.grid()
     ax_st2.set_xscale('log')
     # if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
-
-    ax_st.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=16)
     ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=16)
-    fig_st2.tight_layout()  # pad=0.5, w_pad=0.5, h_pad=1.0)
+    
+    # Hiding top and right lines of axes box
+    ax_st2.spines['top'].set_visible(False)
+    ax_st2.spines['right'].set_visible(False)
+
+    # Plotting y=10, y=100 and x=0 axes
+    ax_st2.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+    ax_st2.axvline(10, color='gray', linestyle='--', linewidth=0.8)
+    ax_st2.axvline(100, color='gray', linestyle='--', linewidth=0.8)
+    # """
+    # fig_st2.tight_layout()  # pad=0.5, w_pad=0.5, h_pad=1.0)
     if save_figs: fig_st2.savefig(path_save, format='png')
 
 
@@ -1151,7 +1219,7 @@ def plot_diff_windows_tr_st(f_vector, dr, mid_st_lbl, mid_tr_lbl, ini_st_lbl, st
         return ax
 
 
-def plot_diff_windows_tr_st_phd(f_vector, dr, sign1, sign2, lbl, legends, cols, t_, title_graph, path_save,
+def plot_diff_windows_tr_st_phd(f_vector, sign1, sign2, lbl, legends, cols, color_w, t_, title_graph, path_save,
                                      save_figs, y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None,
                                      y_lbl=None):
     fig_st2 = plt.figure(figsize=(10, 4))  # (10, 3.2)
@@ -1159,6 +1227,7 @@ def plot_diff_windows_tr_st_phd(f_vector, dr, sign1, sign2, lbl, legends, cols, 
     ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
     y_label = y_lbl if y_lbl is not None else None
     ax_st2 = None
+    handles, labels = [], []
 
     # Concatenating signals
     pc_ = [sign1, sign2]
@@ -1168,23 +1237,166 @@ def plot_diff_windows_tr_st_phd(f_vector, dr, sign1, sign2, lbl, legends, cols, 
         # Transitory state
         for j in range(len(pc_[i])):
             sign = norm_array(pc_[i][j], compute_norm=normalise, min_n=min_n, max_n=max_n)
-            if i == 1:
-                label = legends[j] % '[w]' if legends is not None else None
-                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.8, label=label,
-                            linestyle=ls[j])
-            else:
-                ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.8, linestyle=ls[j])
+            # if i == 1:
+            label = legends[j] % lbl[i] if legends is not None else None
+            # label = legends[j] if legends is not None else None
+            ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.8, label=label, linestyle=ls[i])
+            # else: ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], alpha=0.8, linestyle=ls[i])
             ax_st2.fill_between(f_vector, np.quantile(sign, 0.25, axis=0), np.quantile(sign, 0.75, axis=0),
-                                color='gray' if j < 3 else cols[j], alpha=0.2)
+                                color=cols[j] if j < 3 else cols[j], alpha=0.2)
 
         ax_st2.set_title(t_[i], color='black', alpha=0.7, fontsize=12)
         ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
-        ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
-        ax_st2.grid()
+        ax_st2.set_ylabel(y_label[i], color='gray', fontsize=10)
+        # ax_st2.grid()
         ax_st2.set_xscale('log')
         if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
 
-    if legends is not None: ax_st2.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=11)
+        # Hiding top and right lines of axes box
+        # ax_st2.spines['top'].set_visible(False)
+        # ax_st2.spines['right'].set_visible(False)
+
+        # Window shading
+        ax_st2.patch.set_color(color_w[i])  # or whatever color you like
+        ax_st2.patch.set_alpha(.12)
+
+        # Plotting y=10, y=100 and x=0 axes
+        ax_st2.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(10, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(100, color='gray', linestyle='--', linewidth=0.8)
+
+        # Getting labels of legends to have one legend with all labels
+        h_, l_ = ax_st2.get_legend_handles_labels()
+        for h_i in h_:
+            handles.append(h_i)
+        for l_i in l_:
+            labels.append(l_i)
+
+    if legends is not None: ax_st2.legend(handles, labels, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.,
+                                          fontsize=11)
+    fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    if save_figs: fig_st2.savefig(path_save, format='png')
+
+
+def plot_features_H_3windows_phd(f_vector, dr, legends, lbl, color_w, t_, title_graph, path_save,
+                                     save_figs, y_lims_ind_plot=None, y_lbl=None):
+    fig_st2 = plt.figure(figsize=(10, 2.5))  # (10, 3.2)
+    if legends is not None: plt.suptitle(title_graph, color='black', fontsize=16)
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
+    ax_ = []
+    ax_st2 = None
+    c_le = 0
+
+    for i in range(3):
+        ax_st2 = fig_st2.add_subplot(int(len(t_) / 3), 3, i + 1)
+        ax_.append(ax_st2)
+        # Transitory state
+        sign1 = dr['H_v_neu_tr'][i, :]
+        label = legends % (lbl[i], 'tr') if legends is not None else None
+        ax_st2.plot(f_vector, sign1, c=color_w[i], label=label, linestyle='solid')
+
+        # Stationary state
+        sign2 = dr['H_v_neu_st'][i, :]
+        label = legends % (lbl[i], 'st') if legends is not None else None
+        ax_st2.plot(f_vector, sign2, c=color_w[i], label=label, linestyle='dashdot')
+
+        # Title
+        ax_st2.set_title(t_[i], color='black', alpha=0.7, fontsize=12)
+        ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
+        ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
+        # ax_st2.grid()
+        ax_st2.set_xscale('log')
+        if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+        # Getting x-limits
+        xmin, xmax = ax_st2.get_xlim()
+        # Plotting y=10, y=100 and x=0 axes
+        # ax_st2.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(10, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(100, color='gray', linestyle='--', linewidth=0.8)
+
+    # Convert to 0-based for the list
+    row_axes = ax_
+    # Choose one axis per row that has the desired handles/labels
+    ref_axes = [ax_[-1]]  # axes 4, 7, 11, 14, 18, 21
+
+    # unifying handles and labels
+    handles, labels = [], []
+    for row_j, ax_source in enumerate(row_axes):
+        h_, l_ = ax_source.get_legend_handles_labels()
+        for h_i in h_:
+            handles.append(h_i)
+        for l_i in l_:
+            labels.append(l_i)
+
+    # Vertical position: center of the middle axis in that row
+    # mid_ax = row_axes[row_i][6]  # e.g. axes 4, 11, 18
+    bbox = ref_axes[0].get_window_extent().transformed(fig_st2.transFigure.inverted())
+    y_center = (bbox.y0 + bbox.y1) / 2
+
+    ax_st2.legend(
+        handles, labels,
+        loc='upper left',
+        bbox_to_anchor=(1.05, 1.05),  # move below the axes
+        # ncol=5,  # number of columns
+        frameon=True,
+        # title='gain factor ' + str(gain[row_j])
+    )
+    # if legends is not None: ax_st2.legend(bbox_to_anchor=(1.05, 1.15), loc='upper left', borderaxespad=0., fontsize=12)
+    # fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    if save_figs: fig_st2.savefig(path_save, format='png')
+
+
+def plot_diff_windows_tr_st_H_phd(f_vector, sign1, sign2, lbl, legends, cols, color_w, t_, title_graph, path_save,
+                                     save_figs, y_lims_ind_plot=None, ls=None, normalise=False, min_n=None, max_n=None,
+                                     y_lbl=None):
+    fig_st2 = plt.figure(figsize=(10, 4))  # (10, 3.2)
+    if legends is not None: plt.suptitle(title_graph, color='black', fontsize=16)
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
+    ax_st2 = None
+    handles, labels = [], []
+
+    # Concatenating signals
+    pc_ = [sign1, sign2]
+
+    for i in range(2):
+        ax_st2 = fig_st2.add_subplot(1, 2, i + 1)
+        # Positive changes - ini to mid windows
+        ax_st2.plot(f_vector, pc_[i], label=legends[i], c=color_w[i], linestyle=ls[i])
+        # Negative changes - mid to end windows
+        # ax_st2.plot(f_vector, sign2, alpha=alphas[1], label=r'$PC_{pos}^\mathrm{H}$ ', c='tab:green', linestyle=ls[3])
+
+        ax_st2.set_title(t_[i], color='black', alpha=0.7, fontsize=12)
+        ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
+        ax_st2.set_ylabel(y_label[i], color='gray', fontsize=10)
+        # ax_st2.grid()
+        ax_st2.set_xscale('log')
+        if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+        # Hiding top and right lines of axes box
+        ax_st2.spines['top'].set_visible(False)
+        ax_st2.spines['right'].set_visible(False)
+
+        # Window shading
+        # ax_st2.patch.set_color(color_w[i])  # or whatever color you like
+        # ax_st2.patch.set_alpha(.12)
+
+        # Plotting y=10, y=100 and x=0 axes
+        ax_st2.axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(10, color='gray', linestyle='--', linewidth=0.8)
+        ax_st2.axvline(100, color='gray', linestyle='--', linewidth=0.8)
+
+        # Getting labels of legends to have one legend with all labels
+        h_, l_ = ax_st2.get_legend_handles_labels()
+        for h_i in h_:
+            handles.append(h_i)
+        for l_i in l_:
+            labels.append(l_i)
+
+    if legends is not None: ax_st2.legend(handles, labels, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.,
+                                          fontsize=11)
     fig_st2.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
     if save_figs: fig_st2.savefig(path_save, format='png')
 
@@ -1313,8 +1525,44 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
     return axb_
 
 
+def create_fig_freq_responses(name_sv, title, transpose, freq_res_single, num_single=6):
+    ax_f = []
+    fig_gc = []
+    nrows, ncols, figsize, sharexy = 3, 6, (18, 10), 'col'
+    if transpose: nrows, ncols, figsize, sharexy = 6, 3, (10, 13), 'row'
+    if freq_res_single:
+        for j in range(len(name_sv)):
+            fig, ax = [], []
+            for k in range(num_single):
+                f, a = plt.subplots(1, 3, figsize=(10, 2.5), sharey=True)
+                f.suptitle(title[k] % name_sv[j], fontsize=20, c='black')
+                fig.append(f)
+                ax.append(a.ravel())
+            fig_gc.append(fig)
+            ax_f.append(np.array(ax).ravel())
+        return fig_gc, np.array(ax_f)
+    else:
+        for j in range(len(name_sv)):
+            # Creating figure for each state variable
+            fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharey=sharexy, sharex=sharexy)
+                                   # , constrained_layout=transpose)
+            # Flattening array of axes (before it was 3x7), now 1x21
+            ax = ax.ravel()
+
+            # Appending ax into ax_p
+            ax_f.append(ax)
+            fig.suptitle(title % name_sv[j], fontsize=22)
+            fig_gc.append(fig)
+        return fig_gc, ax_f
+        # fig = [plt.figure(figsize=(20, 10)) for _ in range(len(name_sv))]  # (20, 3.6)
+        # for j in range(len(name_sv)):
+        #     fig[j].suptitle(title % name_sv[j], fontsize=22)
+        # ax_f = [[fig[i].add_subplot(3, 7, j + 1) for j in range(21)] for i in range(len(name_sv))]
+        # return fig, ax_f
+
+
 def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, norm_neuron, titles, markers,
-                        alphas, c_g, plot_filt=False, ode='n'):
+                        alphas, c_g, plot_filt=False, ode='n', transpose=False, single_properties=False):
     f_vec = dr_filt['initial_frequencies']
     c_f = ['tab:red', 'tab:olive', 'tab:blue']
     c_gc = ['tab:orange', 'tab:green']
@@ -1325,6 +1573,7 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
     aux = ''
     map_gain_shift = {0.1: 0, 0.5: 6, 1.0: 12}
     k = map_gain_shift[gain]
+
     for n in range(len(name_state_vars)):
         if name_state_vars[n] != 'v': aux = name_state_vars[n] + '_'
 
@@ -1365,112 +1614,151 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
 
         # 2 Transient dynamics
         # Positive changes - ini window
-        axs[n][0 + k].plot(f_vec, avg_f(paux_filt_tr[0]), alpha=alphas[0], c=c_f[0], label="$tr_{i}$ ", linestyle=ls[3])
-        axs[n][0 + k].fill_between(f_vec, np.quantile(paux_filt_tr[0], 0.1, axis=0),
+        idx = get_subplt_index_freq_res(1, k, transpose)  # For plot 1
+        axs[n][idx].plot(f_vec, avg_f(paux_filt_tr[0]), alpha=alphas[0], c=c_f[0], label=r"$Eff_{i,tr}$ ",
+                         linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(paux_filt_tr[0], 0.1, axis=0),
                                    np.quantile(paux_filt_tr[0], 0.9, axis=0), color=c_f[0], alpha=0.1)
         # Negative changes - mid window
-        axs[n][0 + k].plot(f_vec, avg_f(naux_filt_tr[0]), alpha=alphas[0], c=c_f[1], label="$tr_{m}$ ", linestyle=ls[3])
-        axs[n][0 + k].fill_between(f_vec, np.quantile(naux_filt_tr[0], 0.1, axis=0),
+        axs[n][idx].plot(f_vec, avg_f(naux_filt_tr[0]), alpha=alphas[0], c=c_f[1], label=r"$Eff_{m,tr}$ ",
+                         linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(naux_filt_tr[0], 0.1, axis=0),
                                    np.quantile(naux_filt_tr[0], 0.9, axis=0), color=c_f[1], alpha=0.1)
         # Negative changes - end window
-        axs[n][0 + k].plot(f_vec, avg_f(eaux_filt_tr[0]), alpha=alphas[0], c=c_f[2], label="$tr_{e}$ ", linestyle=ls[3])
-        axs[n][0 + k].fill_between(f_vec, np.quantile(eaux_filt_tr[0], 0.1, axis=0),
+        axs[n][idx].plot(f_vec, avg_f(eaux_filt_tr[0]), alpha=alphas[0], c=c_f[2], label=r"$Eff_{e,tr}$ ",
+                         linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(eaux_filt_tr[0], 0.1, axis=0),
                                    np.quantile(eaux_filt_tr[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
 
         # 1 temporal filtering
         # Positive changes - ini window
-        axs[n][1 + k].plot(f_vec, avg_f(paux_filt[0]), alpha=alphas[0], c=c_f[0], label=r"$st_{i}$ ", linestyle=ls[0])
-        axs[n][1 + k].fill_between(f_vec, np.quantile(paux_filt[0], 0.1, axis=0),
+        idx = get_subplt_index_freq_res(2, k, transpose)  # For plot 2
+        axs[n][idx].plot(f_vec, avg_f(paux_filt[0]), alpha=alphas[0], c=c_f[0], label=r"$Eff_{i,st}$ ",
+                         linestyle=ls[0])
+        axs[n][idx].fill_between(f_vec, np.quantile(paux_filt[0], 0.1, axis=0),
                                    np.quantile(paux_filt[0], 0.9, axis=0), color=c_f[0], alpha=0.1)
         # Negative changes - mid window
-        axs[n][1 + k].plot(f_vec, avg_f(naux_filt[0]), alpha=alphas[0], c=c_f[1], label="$st_{m}$ ", linestyle=ls[1])
-        axs[n][1 + k].fill_between(f_vec, np.quantile(naux_filt[0], 0.1, axis=0),
+        axs[n][idx].plot(f_vec, avg_f(naux_filt[0]), alpha=alphas[0], c=c_f[1], label=r"$Eff_{m,st}$ ",
+                         linestyle=ls[1])
+        axs[n][idx].fill_between(f_vec, np.quantile(naux_filt[0], 0.1, axis=0),
                                    np.quantile(naux_filt[0], 0.9, axis=0), color=c_f[1], alpha=0.1)
         # end window
-        axs[n][1 + k].plot(f_vec, avg_f(eaux_filt[0]), alpha=alphas[0], c=c_f[2], label="$st_{e}$ ", linestyle=ls[2])
-        axs[n][1 + k].fill_between(f_vec, np.quantile(eaux_filt[0], 0.1, axis=0),
+        axs[n][idx].plot(f_vec, avg_f(eaux_filt[0]), alpha=alphas[0], c=c_f[2], label=r"$Eff_{e,st}$ ",
+                         linestyle=ls[2])
+        axs[n][idx].fill_between(f_vec, np.quantile(eaux_filt[0], 0.1, axis=0),
                                    np.quantile(eaux_filt[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
 
         # 3 Synaptic information - Entropy (stationary regime)
         # Positive changes - ini window
-        axs[n][2 + k].plot(f_vec, pEff_i_st[3], alpha=alphas[0], label=r"$st_{i}$ ", c=c_f[0], linestyle=ls[0])
+        idx = get_subplt_index_freq_res(3, k, transpose)  # For plot 3
+        axs[n][idx].plot(f_vec, pEff_i_st[3], alpha=alphas[0], label=r"$Eff_{i,st}$ ", c=c_f[0], linestyle=ls[0])
         # Negative changes - mid window
-        axs[n][2 + k].plot(f_vec, nEff_m_st[3], alpha=alphas[0], label=r"$st_{m}$ ", c=c_f[1], linestyle=ls[1])
+        axs[n][idx].plot(f_vec, nEff_m_st[3], alpha=alphas[0], label=r"$Eff_{m,st}$ ", c=c_f[1], linestyle=ls[1])
         # Negative changes - end window
-        axs[n][2 + k].plot(f_vec, nEff_e_st[3], alpha=alphas[0], label=r"$st_{e}$ ", c=c_f[2], linestyle=ls[2])
+        axs[n][idx].plot(f_vec, nEff_e_st[3], alpha=alphas[0], label=r"$Eff_{e,st}$ ", c=c_f[2], linestyle=ls[2])
 
         # 4 Synaptic information - Entropy (transitory regime)
         # Positive changes - ini window
-        axs[n][2 + k].plot(f_vec, pEff_i_tr[3], alpha=alphas[0], label="$tr_{i}$ ", c=c_f[0], linestyle=ls[3])  # ls[0])
+        axs[n][idx].plot(f_vec, pEff_i_tr[3], alpha=alphas[0], label=r"$Eff_{i,tr}$ ", c=c_f[0], linestyle=ls[3])
         # Negative changes - mid window
-        axs[n][2 + k].plot(f_vec, nEff_m_tr[3], alpha=alphas[0], label="$tr_{m}$ ", c=c_f[1], linestyle=ls[3])  # ls[1])
+        axs[n][idx].plot(f_vec, nEff_m_tr[3], alpha=alphas[0], label=r"$Eff_{m,tr}$ ", c=c_f[1], linestyle=ls[3])
         # Negative changes - end window
-        axs[n][2 + k].plot(f_vec, nEff_e_tr[3], alpha=alphas[0], label="$tr_{e}$ ", c=c_f[2], linestyle=ls[3])  # ls[2])
+        axs[n][idx].plot(f_vec, nEff_e_tr[3], alpha=alphas[0], label=r"$Eff_{e,tr}$ ", c=c_f[2], linestyle=ls[3])
 
         # 5 Gain control - Amplitude (tr - st)
         # Positive changes - ini to mid windows
-        axs[n][3 + k].plot(f_vec, avg_f(paux_gain_tr[0]), alpha=alphas[0], c='tab:orange',
-                           label=r"$tr_m-st_i$", linestyle=ls[3])
-        axs[n][3 + k].fill_between(f_vec, np.quantile(paux_gain_tr[0], 0.1, axis=0),
+        idx = get_subplt_index_freq_res(4, k, transpose)  # For plot 4
+        axs[n][idx].plot(f_vec, avg_f(paux_gain_tr[0]), alpha=alphas[0], c='tab:orange',
+                           label=r'$PC_{pos}^\mathrm{amp}$ ', linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(paux_gain_tr[0], 0.1, axis=0),
                                    np.quantile(paux_gain_tr[0], 0.9, axis=0), color='tab:orange', alpha=0.1)
         # Negative changes - mid to end windows
-        axs[n][3 + k].plot(f_vec, avg_f(naux_gain_tr[0]), alpha=alphas[1], c='tab:green',
-                           label=r"$tr_e-st_m$", linestyle=ls[3])
-        axs[n][3 + k].fill_between(f_vec, np.quantile(naux_gain_tr[0], 0.1, axis=0),
+        axs[n][idx].plot(f_vec, avg_f(naux_gain_tr[0]), alpha=alphas[1], c='tab:green',
+                           label=r'$PC_{neg}^\mathrm{amp}$ ', linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(naux_gain_tr[0], 0.1, axis=0),
                                    np.quantile(naux_gain_tr[0], 0.9, axis=0), color='tab:green', alpha=0.1)
         # Positive changes - ini to mid windoww
-        axs[n][3 + k].plot(f_vec, avg_f(paux_gain[0]), alpha=alphas[0], c='tab:orange',
-                           label=r"$st_m-st_i$", linestyle=ls[0])
-        axs[n][3 + k].fill_between(f_vec, np.quantile(paux_gain[0], 0.1, axis=0),
-                                   np.quantile(paux_gain[0], 0.9, axis=0), color='tab:orange', alpha=0.1)
+        # axs[n][idx].plot(f_vec, avg_f(paux_gain[0]), alpha=alphas[0], c='tab:orange',
+        #                    label=r"$st_m-st_i$", linestyle=ls[0])
+        # axs[n][idx].fill_between(f_vec, np.quantile(paux_gain[0], 0.1, axis=0),
+        #                            np.quantile(paux_gain[0], 0.9, axis=0), color='tab:orange', alpha=0.1)
         # Negative changes - mid to end windows
-        axs[n][3 + k].plot(f_vec, avg_f(naux_gain[0]), alpha=alphas[1], c='tab:green',
-                           label=r"$st_e-st_m$", linestyle=ls[1])
-        axs[n][3 + k].fill_between(f_vec, np.quantile(naux_gain[0], 0.1, axis=0),
-                                   np.quantile(naux_gain[0], 0.9, axis=0), color='tab:green', alpha=0.1)
+        # axs[n][idx].plot(f_vec, avg_f(naux_gain[0]), alpha=alphas[1], c='tab:green',
+        #                    label=r"$st_e-st_m$", linestyle=ls[1])
+        # axs[n][idx].fill_between(f_vec, np.quantile(naux_gain[0], 0.1, axis=0),
+        #                            np.quantile(naux_gain[0], 0.9, axis=0), color='tab:green', alpha=0.1)
         # x-axis
-        axs[n][3 + k].axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        axs[n][idx].axhline(0, color='gray', linestyle='--', linewidth=0.8)
         # ax.axvline(0, color='gray', linestyle='--', linewidth=0.8)
 
         # 6 Gain control - Median (tr - st)
         # Positive changes - ini to mid windows
-        axs[n][4 + k].plot(f_vec, avg_f(paux_gain_tr[2]), alpha=alphas[0], c='tab:orange',
-                           label=r"$tr_m-st_i$ ", linestyle=ls[3])
-        axs[n][4 + k].fill_between(f_vec, np.quantile(paux_gain_tr[2], 0.1, axis=0),
+        idx = get_subplt_index_freq_res(5, k, transpose)  # For plot 5
+        axs[n][idx].plot(f_vec, avg_f(paux_gain_tr[2]), alpha=alphas[0], c='tab:orange',
+                           label=r'$PC_{pos}^\mathrm{med}$ ', linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(paux_gain_tr[2], 0.1, axis=0),
                                    np.quantile(paux_gain_tr[2], 0.9, axis=0), color='tab:orange', alpha=0.1)
         # Negative changes - mid to end windows
-        axs[n][4 + k].plot(f_vec, avg_f(naux_gain_tr[2]), alpha=alphas[1], c='tab:green',
-                           label=r"$tr_e-st_m$ ", linestyle=ls[3])
-        axs[n][4 + k].fill_between(f_vec, np.quantile(naux_gain_tr[2], 0.1, axis=0),
+        axs[n][idx].plot(f_vec, avg_f(naux_gain_tr[2]), alpha=alphas[1], c='tab:green',
+                           label=r'$PC_{neg}^\mathrm{med}$ ', linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(naux_gain_tr[2], 0.1, axis=0),
                                    np.quantile(naux_gain_tr[2], 0.9, axis=0), color='tab:green', alpha=0.1)
         # Positive changes - ini to mid windows
-        axs[n][4 + k].plot(f_vec, avg_f(paux_gain[2]), alpha=alphas[0], c='tab:orange',
-                           label=r"$st_m-st_i$ ", linestyle=ls[0])
-        axs[n][4 + k].fill_between(f_vec, np.quantile(paux_gain[2], 0.1, axis=0),
-                                   np.quantile(paux_gain[2], 0.9, axis=0), color='tab:orange', alpha=0.1)
+        # axs[n][idx].plot(f_vec, avg_f(paux_gain[2]), alpha=alphas[0], c='tab:orange',
+        #                    label=r"$st_m-st_i$ ", linestyle=ls[0])
+        # axs[n][idx].fill_between(f_vec, np.quantile(paux_gain[2], 0.1, axis=0),
+        #                            np.quantile(paux_gain[2], 0.9, axis=0), color='tab:orange', alpha=0.1)
         # Negative changes - mid to end windows
-        axs[n][4 + k].plot(f_vec, avg_f(naux_gain[2]), alpha=alphas[1], c='tab:green',
-                           label=r"$st_e-st_m$ ", linestyle=ls[1])
-        axs[n][4 + k].fill_between(f_vec, np.quantile(naux_gain[2], 0.1, axis=0),
-                                   np.quantile(naux_gain[2], 0.9, axis=0), color='tab:green', alpha=0.1)
+        # axs[n][idx].plot(f_vec, avg_f(naux_gain[2]), alpha=alphas[1], c='tab:green',
+        #                    label=r"$st_e-st_m$ ", linestyle=ls[1])
+        # axs[n][idx].fill_between(f_vec, np.quantile(naux_gain[2], 0.1, axis=0),
+        #                            np.quantile(naux_gain[2], 0.9, axis=0), color='tab:green', alpha=0.1)
         # x-axis
-        axs[n][4 + k].axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        axs[n][idx].axhline(0, color='gray', linestyle='--', linewidth=0.8)
 
         # 7 Gain control - Entropy (tr - st)
         # Positive changes - ini to mid windows
         # Positive changes - ini to mid windows
-        axs[n][5 + k].plot(f_vec, pG_mi_st[3], alpha=alphas[0], label=r"$tr_m-st_i$ ", c='tab:orange',
+        idx = get_subplt_index_freq_res(6, k, transpose)  # For plot 6
+        axs[n][idx].plot(f_vec, pG_mi_st[3], alpha=alphas[0], label=r'$PC_{pos}^\mathrm{H}$ ', c='tab:orange',
                            linestyle=ls[3])
         # Negative changes - mid to end windows
-        axs[n][5 + k].plot(f_vec, nG_em_st[3], alpha=alphas[1], label=r"$tr_e-st_m$ ", c='tab:green',
+        axs[n][idx].plot(f_vec, nG_em_st[3], alpha=alphas[1], label=r'$PC_{pos}^\mathrm{H}$ ', c='tab:green',
                            linestyle=ls[3])
-        axs[n][5 + k].plot(f_vec, pG_mi_tr[3], alpha=alphas[0], label=r"$st_m-st_i$ ", c='tab:orange',
-                           linestyle=ls[0])
+        # axs[n][idx].plot(f_vec, pG_mi_tr[3], alpha=alphas[0], label=r"$st_m-st_i$ ", c='tab:orange',
+        #                    linestyle=ls[0])
         # Negative changes - mid to end windows
-        axs[n][5 + k].plot(f_vec, nG_em_tr[3], alpha=alphas[1], label=r"$st_e-st_m$ ", c='tab:green',
-                           linestyle=ls[1])
+        # axs[n][idx].plot(f_vec, nG_em_tr[3], alpha=alphas[1], label=r"$st_e-st_m$ ", c='tab:green',
+        #                    linestyle=ls[1])
         # x-axis
-        axs[n][5 + k].axhline(0, color='gray', linestyle='--', linewidth=0.8)
+        axs[n][idx].axhline(0, color='gray', linestyle='--', linewidth=0.8)
+
+
+def get_subplt_index_freq_res(plot_num, k, transpose=False):
+    """
+    Map plot number (1-18) to subplot position.
+
+    When transpose=False (3x6 grid):
+        Order: row-major (left to right, top to bottom)
+        {1:(1,1), 2:(1,2), ..., 6:(1,6), 7:(2,1), ..., 18:(3,6)}
+
+    When transpose=True (6x3 grid):
+        Order: column-major (top to bottom, left to right)
+        {1:(1,1), 7:(1,2), 12:(1,3), 2:(2,1), ..., 6:(6,1), 12:(6,2), 18:(6,3)}
+
+    Get the flat index for a subplot given the plot number and k value.
+    k can be 0, 6, or 12 (representing the row in the original 3x6 layout)
+    """
+    if not transpose:
+        # Original 3x6 layout
+        return k + (plot_num - 1)
+    else:
+        # Transposed 6x3 layout
+        # k represents the original row (0, 6, or 12)
+        # In the transposed layout, this becomes the column
+        col = k // 6  # 0, 1, or 2
+        row = plot_num - 1
+        return row * 3 + col
 
 
 def adjust_legend_freq_res(lbl_ind, fig, ax, gain):
@@ -1504,26 +1792,64 @@ def adjust_legend_freq_res(lbl_ind, fig, ax, gain):
         leg = ref_axes[row_j].legend(
             handles, labels,
             loc='center left',
-            bbox_to_anchor=(1.02, 0.7),  # just outside right edge
+            bbox_to_anchor=(1.02, 0.5),  # just outside right edge
             frameon=False,
-            title='gain factor ' + str(gain[row_j])
+            title='gain factor ' + str(gain[row_j]),
+            fontsize=12
         )
         legends.append(leg)
 
 
-def create_fig_freq_portrait(names_sv, title, figsize=(15, 6)):
+def adjust_legend_freq_resT(lbl_ind, fig, ax, gain):
+    # Convert to 0-based for the list
+    row_axes = [ax[k - 1] for k in lbl_ind]
+    # Choose one axis per row that has the desired handles/labels
+    ref_axes = [ax[-1]]  # axes 4, 7, 11, 14, 18, 21
+
+    # unifying handles and labels
+    handles, labels = [], []
+    for row_j, ax_source in enumerate(row_axes):
+        h_, l_ = ax_source.get_legend_handles_labels()
+        for h_i in h_:
+            handles.append(h_i)
+        for l_i in l_:
+            labels.append(l_i)
+
+    # Vertical position: center of the middle axis in that row
+    # mid_ax = row_axes[row_i][6]  # e.g. axes 4, 11, 18
+    bbox = ref_axes[0].get_window_extent().transformed(fig.transFigure.inverted())
+    y_center = (bbox.y0 + bbox.y1) / 2
+
+    fig.legend(
+        handles, labels,
+        loc='lower center',
+        bbox_to_anchor=(0.5, -0.00),  # move below the axes
+        ncol=5,  # number of columns
+        frameon=True,
+        # title='gain factor ' + str(gain[row_j])
+    )
+    # fig.get_constrained_layout().set_rect([0, 0.05, 1, 0.95])
+
+
+def create_fig_freq_portrait(names_sv, title, figsize=(12, 6)):
     ax_p = []
     fig_gc = []
     for j in range(len(names_sv)):
         # Creating figure for each state variable
-        fig, ax = plt.subplots(2, 4, figsize=figsize)
+        fig, ax = plt.subplots(2, 3, figsize=figsize)
         # Flattening array of axes (before it was 2x4), now 1x8
         ax = ax.ravel()
 
         # Group A: 0,1,2,4,5,6 share one x-axis
-        groupA = [ax[i] for i in [0, 1, 2, 4, 5, 6]]
+        # groupA = [ax[i] for i in [0, 1, 2, 4, 5, 6]]
+        # groupA = [ax[i] for i in [0, 1, 4, 5]]
         # Group B: 3,7 share another x-axis
-        groupB = [ax[i] for i in [3, 7]]
+        # groupB = [ax[i] for i in [3, 7]]
+        # Group C: 3,6 share another x-axis
+
+        groupA = [ax[i] for i in [0, 1]]
+        groupB = [ax[i] for i in [3, 4]]
+        groupC = [ax[i] for i in [2, 5]]
 
         # Link axes within each group
         for ax_ in groupA[1:]:
@@ -1532,46 +1858,15 @@ def create_fig_freq_portrait(names_sv, title, figsize=(15, 6)):
         for ax_ in groupB[1:]:
             ax_.sharex(groupB[0])
             ax_.sharey(groupB[0])
+        for ax_ in groupC[1:]:
+            ax_.sharex(groupC[0])
+            ax_.sharey(groupC[0])
 
         # Appending ax into ax_p
         ax_p.append(ax)
         fig.suptitle(title % names_sv[j], fontsize=22)
         fig_gc.append(fig)
     return fig_gc, ax_p
-
-
-def create_fig_freq_responses(name_sv, title):
-    ax_f = []
-    fig_gc = []
-    for j in range(len(name_sv)):
-        # Creating figure for each state variable
-        fig, ax = plt.subplots(3, 6, figsize=(20, 10), sharey='col', sharex='col')
-        # Flattening array of axes (before it was 3x7), now 1x21
-        ax = ax.ravel()
-
-        # Group A: 0,1,2,4,5,6 share one x-axis
-        # groupA = [ax[i] for i in [0, 1, 2, 4, 5, 6]]
-        # Group B: 3,7 share another x-axis
-        # groupB = [ax[i] for i in [3, 7]]
-
-        # Link axes within each group
-        # for ax_ in groupA[1:]:
-        #     ax_.sharex(groupA[0])
-        #     ax_.sharey(groupA[0])
-        # for ax_ in groupB[1:]:
-        #     ax_.sharex(groupB[0])
-        #     ax_.sharey(groupB[0])
-
-        # Appending ax into ax_p
-        ax_f.append(ax)
-        fig.suptitle(title % name_sv[j], fontsize=22)
-        fig_gc.append(fig)
-    return fig_gc, ax_f
-    # fig = [plt.figure(figsize=(20, 10)) for _ in range(len(name_sv))]  # (20, 3.6)
-    # for j in range(len(name_sv)):
-    #     fig[j].suptitle(title % name_sv[j], fontsize=22)
-    # ax_f = [[fig[i].add_subplot(3, 7, j + 1) for j in range(21)] for i in range(len(name_sv))]
-    # return fig, ax_f
 
 
 def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2, norm_neuron, titles, markers, alphas,
@@ -1634,7 +1929,8 @@ def plot_freq_portrait(name_state_vars, dr_filt, dr_gain, gain, axs, win1, win2,
             axs[n][j + 4].scatter(x[0], y[0], c='black')
 
 
-def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_directions=False):
+def aux_freq_portrait(list_eff_gc, ax, titles, color, label, factor=1.0, merge_directions=False):
+    # Unwrapping variables
     Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = list_eff_gc
 
     style_line = 'dashed' if merge_directions else 'solid'
@@ -1645,6 +1941,7 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_
         # STATIONARY COMPONENT
         aux_gain = np.copy(G_mi_st[j])
         aux_filt = np.copy(Eff_i_st[j])
+        aux_tran = np.copy(Eff_i_tr[j])
         if G_det_mi_st[j].ndim == 2:
             aux_det_gain = np.copy(G_det_mi_st[j])[0, :]
         else:
@@ -1654,12 +1951,6 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_
         else:
             aux_det_filt = np.copy(Eff_det_i_st[j])
         # if n_model == 'HH': aux_gain *= 1e3, aux_filt *= 1e3, aux_det_gain *= 1e3, aux_det_filt *= 1e3
-
-        # Deterministic plots
-        # if i_g == 0: ax_[n][j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
-        # else: ax_[n][j].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
-        # ax_[n][j].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
-        # ax_[n][j].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
 
         # Stochastic plots
         if 'Entropy' in titles[j]: x, y, hab = aux_filt, aux_gain, False
@@ -1688,12 +1979,6 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_
         else:
             aux_det_filt = np.copy(Eff_det_i_st[j])
 
-        # Deterministic plots
-        # if i_g == 0: ax_[n][j + 3].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i], label='Det')
-        # else: ax_[n][j + 3].plot(aux_det_filt, aux_det_gain, c='gray', alpha=alphas[i])
-        # ax_[n][j + 3].scatter(aux_det_filt, aux_det_gain, c=c_g[i_g], marker=markers[i], alpha=alphas[i])
-        # ax_[n][j + 3].scatter(aux_det_filt[0], aux_det_gain[0], c='black')
-
         # Stochastic plots
         if 'Entropy' in titles[j]: x, y, hab = aux_filt, aux_gain, False
         else: x, y, hab = avg_f(aux_filt) * factor, avg_f(aux_gain) * factor, True
@@ -1706,6 +1991,76 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_
         # if i == 0 and hab: ax[j + 4].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
         #                                           color=color, alpha=0.1)
         ax[j + 4].scatter(x[0], y[0], marker='o', alpha=alpha, color=color)
+
+
+def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_directions=False):
+    # Unwrapping variables
+    Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = list_eff_gc
+    # x = Eff_i_st(amp)0, Eff_i_st(med)2, Eff_i_tr(amp)0,                  Eff_i_st(H_i_st)3
+    # y = G_mi_st(amp)0,  G_mi_tr(med)2,  Eff_i_st(amp)0 - Eff_i_tr(amp)0, G_mi_st(H_mst - H_ist)3
+    Eff_m_tr_amp = G_mi_tr[0] + Eff_i_st[0]
+    # x_1 = [Eff_i_st[0], Eff_i_st[2], Eff_i_tr[0], Eff_i_st[3]]
+    # y_1 = [G_mi_st[0], G_mi_tr[2], Eff_m_tr_amp - Eff_i_tr[0], G_mi_st[3]]  # Eff_i_tr[0] - Eff_i_st[0]
+    x_1 = [Eff_i_st[0], Eff_i_st[2], Eff_i_st[3]]
+    y_1 = [G_mi_st[0], G_mi_st[2], G_mi_st[3]]  # Eff_i_tr[0] - Eff_i_st[0]
+
+    # x = Eff_i_st(amp)0, Eff_i_tr(med)2,                  Eff_i_tr(H_i_tr)3,                     Eff_i_st(H_i_st)3
+    # y = G_mi_tr(amp)0, Eff_i_st(med)2 - Eff_i_tr(med)2, Eff_i_st(H_i_st)3 - Eff_i_tr(H_i_tr)3, G_mi_tr(H_mst - H_ist)3
+    Eff_m_tr_med = G_mi_tr[2] + Eff_i_st[2]
+    H_m_tr = G_mi_st[3] + Eff_i_st[3]
+    # x_2 = [Eff_i_st[0], Eff_i_st[2], Eff_i_tr[3], Eff_i_st[3]]
+    # y_2 = [G_mi_tr[0], Eff_m_tr_med - Eff_i_tr[2], H_m_tr - Eff_i_tr[3], G_mi_tr[3]]  # Eff_i_tr[2] - Eff_i_st[2], Eff_i_tr[3] - Eff_i_st[3]
+    x_2 = [Eff_i_tr[0], Eff_i_tr[0], Eff_i_tr[3]]
+    y_2 = [Eff_m_tr_amp - Eff_i_tr[0], Eff_m_tr_med - Eff_i_tr[2], H_m_tr - Eff_i_tr[3]]  # [Eff_i_st[0] - Eff_i_tr[0], Eff_i_st[2] - Eff_m_tr_med, Eff_i_st[3] - Eff_i_tr[3]]  # [Eff_m_tr_amp - Eff_i_tr[0], Eff_m_tr_med - Eff_i_tr[2], H_m_tr - Eff_i_tr[3]]
+
+    style_line = 'dashed' if merge_directions else 'solid'
+    alpha = 0.6 if merge_directions else 1
+    marker = '' if merge_directions else ''
+    i = 0
+    for j in range(int(len(titles) / 2)):
+        # FIRST ROW
+        x = np.copy(x_1[j])
+        y = np.copy(y_1[j])
+        # aux_tran = np.copy(Eff_i_tr[j])
+        if G_det_mi_st[j].ndim == 2: aux_det_gain = np.copy(G_det_mi_st[j])[0, :]
+        else: aux_det_gain = np.copy(G_det_mi_st[j])
+        if Eff_det_i_st[j].ndim == 2: aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+        else: aux_det_filt = np.copy(Eff_det_i_st[j])
+        # if n_model == 'HH': aux_gain *= 1e3, aux_filt *= 1e3, aux_det_gain *= 1e3, aux_det_filt *= 1e3
+
+        # Computing average only for non-entropy variables
+        if 'Entropy' in titles[j]: x, y, hab = x, y, False
+        else: x, y, hab = avg_f(x) * factor, avg_f(y) * factor, True
+
+        # Plotting
+        ax[j].scatter(x, y, marker=marker, alpha=alpha, color=color)
+        ax[j].plot(x, y, linestyle=style_line, alpha=alpha, color=color, label=label)
+        # Mean - Std
+        # if i == 0 and hab: ax[j].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
+        #                                       color=color, alpha=0.1)
+        ax[j].scatter(x[0], y[0], marker='o', alpha=alpha, color=color)
+
+        # SECOND ROW
+        # """
+        x = np.copy(x_2[j])
+        y = np.copy(y_2[j])
+        if G_det_mi_tr[j].ndim == 2: aux_det_gain = np.copy(G_det_mi_tr[j])[0, :]
+        else: aux_det_gain = np.copy(G_det_mi_tr[j])
+        if Eff_det_i_st[j].ndim == 2: aux_det_filt = np.copy(Eff_det_i_st[j][0, :])
+        else: aux_det_filt = np.copy(Eff_det_i_st[j])
+
+        # Computing average only for non-entropy variables
+        if 'Entropy' in titles[j + 3]: x, y, hab = x, y, False
+        else: x, y, hab = avg_f(x) * factor, avg_f(y) * factor, True
+
+        # Plotting
+        ax[j + 3].scatter(x, y, marker=marker, alpha=alpha, color=color)
+        ax[j + 3].plot(x, y, linestyle=style_line, alpha=alpha, color=color, label=label)
+        # mean - std
+        # if i == 0 and hab: ax[j + 4].fill_between(x, y - np.std(aux_gain, axis=0), y + np.std(aux_gain, axis=0),
+        #                                           color=color, alpha=0.1)
+        ax[j + 3].scatter(x[0], y[0], marker='o', alpha=alpha, color=color)
+        # """
 
 
 def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuron, titles, color, ode='n',
@@ -1721,23 +2076,23 @@ def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, norm_neuro
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='ini', win2='mid', norm_neuron=norm_neuron,
                                      ode=ode)
         Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
-        aux_freq_portrait2(a, axp[n], titles, color, r"%s - gain: %.1f (pos)" % (ext_label, gain), factor=factor)
+        aux_freq_portrait2(a, axp[n], titles, color, r"%sgain: %.1f (pos)" % (ext_label, gain), factor=factor)
 
         # For negative changes of rate
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='mid', win2='end', norm_neuron=norm_neuron,
                                      ode=ode)
         Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, Eff_det_i_st, Eff_det_i_tr, G_det_mi_st, G_det_mi_tr = a
-        aux_freq_portrait2(a, axp[n], titles, color, r"%s - gain: %.1f (neg)" % (ext_label, gain),
+        aux_freq_portrait2(a, axp[n], titles, color, r"%sgain: %.1f (neg)" % (ext_label, gain),
                            merge_directions=True, factor=factor)
 
 
 def adjust_freq_portraits(ax, x_label, y_label, title, xlims=None, ylims=None, xscale='linear', axes_=True, tit_=True,
                           x_axis=True):
-    if x_axis: ax.set_xlabel(x_label, color='gray')
-    ax.set_ylabel(y_label, color='gray')
+    if x_axis: ax.set_xlabel(x_label, color='gray', fontsize=12)
+    ax.set_ylabel(y_label, color='gray', fontsize=12)
     if xlims is not None: ax.set_xlim(xlims)
     if ylims is not None: ax.set_ylim(ylims)
-    if tit_: ax.set_title(title, color="black", alpha=0.7)
+    if tit_: ax.set_title(title, color="black", alpha=0.7, fontsize=14)
     # ax.grid()
     if axes_:
         ax.axhline(0, color='gray', linestyle='--', linewidth=0.8)
@@ -1745,6 +2100,35 @@ def adjust_freq_portraits(ax, x_label, y_label, title, xlims=None, ylims=None, x
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.set_xscale(xscale)
+
+
+def adjust_freq_responses(ax, title_freqres, freq_res_T, freq_res_single, gain_v, ylabel_axb):
+    for j in range(len(title_freqres)):
+        if freq_res_T:
+            if freq_res_single:
+                # For all gain factors
+                for g in range(len(gain_v)):
+                    j_ = (j * len(gain_v)) + g
+                    # Frequency responses for ini window
+                    adjust_freq_portraits(ax[j_], "Rate (Hz)", ylabel_axb[j_], title_freqres[j][g],
+                                          xscale='log', axes_=False, x_axis=True)
+                    if g == len(gain_v) - 1:
+                        ax[j_].legend(bbox_to_anchor=(1.05, 1.), loc='upper left', borderaxespad=0.)
+            else:
+                x_axis = False if j < 15 else True
+                # Frequency responses for ini window
+                adjust_freq_portraits(ax[j], "Rate (Hz)", ylabel_axb[j], title_freqres[j],
+                                      xscale='log', axes_=False, x_axis=True)  # x_axis)
+        else:
+            # Frequency responses for ini window
+            adjust_freq_portraits(ax[j], "Rate (Hz)", ylabel_axb[j], title_freqres[j],
+                                  xscale='log', axes_=False, x_axis=False)
+            # Frequency responses for mid window
+            adjust_freq_portraits(ax[j + 6], "Rate (Hz)", ylabel_axb[j], title_freqres[j],
+                                  xscale='log', axes_=False, x_axis=False, tit_=False)
+            # Frequency responses for end window
+            adjust_freq_portraits(ax[j + 12], "Rate (Hz)", ylabel_axb[j], title_freqres[j],
+                                  xscale='log', axes_=False, tit_=False)
 
 
 def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=True, min_n=None, max_n=None, ode='n'):
@@ -1815,7 +2199,6 @@ def get_sets_filtering_gainC(dr_filt, dr_gain, prefix, win1, win2, norm_neuron=T
         df = pd.DataFrame(arr)
         df.to_excel(writer, sheet_name=key, index=False)
     # """
-
     # Sets
     Eff_i_st_amp = n_sto_i_st_amp
     Eff_i_st_med = n_sto_i_st_med - n_sto_i_tr_min

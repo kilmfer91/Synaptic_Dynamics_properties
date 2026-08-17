@@ -44,28 +44,43 @@ def run_single_systems(s_model, n_model, ind, ext_lbl, factor=1.0, ext_col=None,
     else: title += ', multiple gains'
 
     # Plot
-    title_mp = ['Amplitude in steady-state', 'Varibility in steady-state', 'Median in steady-state',
-                'Entropy in steady-state', 'Amplitude in transitory-state', 'Varibility in transitory-state',
-                'Median in transitory-state', 'Entropy in transitory-state']
-    x_label_ax_p = [r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)', r'$E_{ff_{i,st}}^{med}$ (mV)',
-                    r'$H_{i,st}$ (bits)', r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)',
-                    r'$E_{ff_{i,st}}^{med}$ (mV)', r'$H_{i,st}$ (bits)']
-    y_label_ax_p = [r'$G_{m-i,st}^{amp} (mV)$', r'$G_{m-i,st}^{var} (mV)$', r'$G_{m-i,st}^{med} (mV)$',
-                    r'$GH_{m-i,st}$ (bits)', r'$G_{m-i,tr}^{amp} (mV)$', r'$G_{m-i,tr}^{var} (mV)$',
-                    r'$G_{m-i,tr}^{med} (mV)$', r'$GH_{m-i,tr}$ (bits)']
+    # title_mp = ['Amplitude in steady-state', 'Varibility in steady-state', 'Median in steady-state',
+    #             'Entropy in steady-state', 'Amplitude in transitory-state', 'Varibility in transitory-state',
+    #             'Median in transitory-state', 'Entropy in transitory-state']
+    # title_mp = ['Amplitude in steady-state', 'Median in transitory-state', 'Amplitude in transient dynamics',
+    #             'Entropy in steady-state', 'Amplitude in transitory-state', 'Median in transient dynamics',
+    #             'Entropy in transient dynamics', 'Entropy in transitory-state']
+    title_mp = ['Amplitude in transitory-state', 'Median in transitory-state', 'Entropy in transitory-state',
+                'Amplitude in transient dynamics', 'Median in transient dynamics', 'Entropy difference per window']
+    # x_label_ax_p = [r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)', r'$E_{ff_{i,st}}^{med}$ (mV)',
+    #                 r'$H_{i,st}$ (bits)', r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)',
+    #                 r'$E_{ff_{i,st}}^{med}$ (mV)', r'$H_{i,st}$ (bits)']
+    # y_label_ax_p = [r'$G_{m-i,st}^{amp} (mV)$', r'$G_{m-i,st}^{var} (mV)$', r'$G_{m-i,st}^{med} (mV)$',
+    #                 r'$GH_{m-i,st}$ (bits)', r'$G_{m-i,tr}^{amp} (mV)$', r'$G_{m-i,tr}^{var} (mV)$',
+    #                 r'$G_{m-i,tr}^{med} (mV)$', r'$GH_{m-i,tr}$ (bits)']
+    # x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (mV)', r'$E_{ff_{st}}^{med}$ (mV)', r'$E_{ff_{tr}}^{amp}$ (mV)',
+    #                 r'$H_{st}$ (bits)', r'$E_{ff_{st}}^{amp}$ (mV)', r'$E_{ff_{tr}}^{med}$ (mV)',
+    #                 r'$H_{tr}$ (bits)', r'$H_{st}$ (bits)']
+    # y_label_ax_p = [r'$G_{st-st}^{amp} (mV)$', r'$G_{tr-st}^{med} (mV)$', r'$G_{tr-tr}^{amp} (mV)$',
+    #                r'$GH_{st-st}$ (bits)', r'$G_{tr-st}^{amp} (mV)$', r'$G_{tr-tr}^{med} (mV)$',
+    #                 r'$GH_{tr-tr}$ (bits)', r'$GH_{tr-st}$ (bits)']
+    x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (mV)', r'$E_{ff_{st}}^{med}$ (mV)', r'$H_{st}$ (bits)',
+                    r'$E_{ff_{tr}}^{amp}$ (mV)', r'$E_{ff_{tr}}^{med}$ (mV)', r'$H_{tr}$ (bits)']
+    y_label_ax_p = [r'$G_{tr-st}^{amp} (mV)$', r'$G_{tr-st}^{med} (mV)$', r'$GH_{tr-st}$ (bits)',
+                    r'$G_{tr-tr}^{amp} (mV)$', r'$G_{tr-tr}^{med} (mV)$', r'$GH_{tr-tr}$ (bits)']
     # x_label_ax_n = [r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)', r'$E_{ff_{m,st}}^{med}$ (mV)',
     #                 r'$H_{m,st}$ (bits)', r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)',
     #                 r'$E_{ff_{m,st}}^{med}$ (mV)', r'$H_{m,st}$ (bits)']
     # y_label_ax_n = [r'$G_{e-m,st}^{amp} (mV)$', r'$G_{e-m,st}^{var} (mV)$', r'$G_{e-m,st}^{med} (mV)$',
     #                 r'$GH_{e-m,st}$ (bits)', r'$G_{e-m,tr}^{amp} (mV)$', r'$G_{e-m,tr}^{var} (mV)$',
     #                 r'$G_{e-m,tr}^{med} (mV)$', r'$GH_{e-m,tr}$ (bits)']
-    # title_freqres = ['H - filtering', 'H - Gain-control', 'Transitory time', 'Synaptic Filtering', 'GC - amp',
-    #                  'GC - var', 'GC - med']
-    title_freqres = ['Temp. filtering', 'Transients', 'Entropy (stationary)', 'Entropy (transitory)',
-                     'Gain effect (amp)', 'Gain effect (med)', 'Gain effect (Entropy)']
-    # ylabel_axb = ["Entropy (bits)", "Entropy (bits)", "Time (s)", "Mem. pot. (mV)", "Mem. pot. (mV)",
-    #               "Mem. pot. (mV)", "Mem. pot. (mV)"]
-    ylabel_axb = ["Mem. pot. (mV)", "Mem. pot. (mV)", "Entropy (bits)", "Entropy (bits)", "Mem. pot. (mV)",
+    # title_freqres = ['H - filtering', 'H - Gain-control', 'Transitory time', 'Synaptic Filtering', 'GC - amp', 'GC - var',
+    #             'GC - med']
+    title_freqres = ['Transient dynamics', 'Temporal filtering', 'Entropy', 'Gain effect (amp)',
+                     'Gain effect (med)', 'Gain effect (Entropy)']
+    # ylabel_axb = ["Entropy (bits)", "Entropy (bits)", "Time (s)", "Mem. pot. (mV)", "Mem. pot. (mV)", "Mem. pot. (mV)",
+    #               "Mem. pot. (mV)"]
+    ylabel_axb = ["Mem. pot. (mV)", "Mem. pot. (mV)", "Entropy (bits)", "Mem. pot. (mV)",
                   "Mem. pot. (mV)", "Entropy (bits)"]
     c_g = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
            'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
@@ -95,7 +110,7 @@ def run_single_systems(s_model, n_model, ind, ext_lbl, factor=1.0, ext_col=None,
 
             # Frequency portrait - Neuron
             if ax_global_freq_por is None:
-                title_ = 'Frequency portrait for Neuron - %s(t)'
+                title_ = ext_lbl + '. Frequency portrait for Neuron - %s(t)'
                 n_freq_por, ax_p = create_fig_freq_portrait(name_n_state_variables, title_)
                 # n_freq_por, ax_p = create_fig_freq_portrait(['v'], title_)
             else:
@@ -105,16 +120,16 @@ def run_single_systems(s_model, n_model, ind, ext_lbl, factor=1.0, ext_col=None,
                 name_n_state_variables = ['v']
 
             # Frequency portrait - Synapse
-            # title_ = 'Frequency portrait for Synapse - %s(t)'
+            # title_ = ext_lbl + '. Frequency portrait for Synapse - %s(t)'
             # s_freq_por, ax_sp = create_fig_freq_portrait(name_syn_state_variables, title_)
 
             if plot_freq_res:
                 # Frequency responses - neuron
-                title_ = 'Frequency responses for neuron - %s(t)'
+                title_ = ext_lbl + '. Frequency responses for neuron - %s(t)'
                 n_freq_res, ax_f = create_fig_freq_responses(name_n_state_variables, title_)
 
                 # Frequency responses - synapse
-                title_ = 'Frequency responses for synapse - %s(t)'
+                title_ = ext_lbl + '. Frequency responses for synapse - %s(t)'
                 s_freq_res, ax_fs = create_fig_freq_responses(name_syn_state_variables, title_)
 
     fig_syn_b = False
@@ -189,7 +204,7 @@ def run_single_systems(s_model, n_model, ind, ext_lbl, factor=1.0, ext_col=None,
         sizeF = 20
         # Neuronal state variables
         for n in range(len(name_n_state_variables)):
-            for j in range(len(title_mp)):
+            for j in range(int(len(title_mp) / 2)):  # range(len(title_mp)):
                 # Frequency portrait for Neuron
                 adjust_freq_portraits(ax_p[n][j], x_label_ax_p[j], y_label_ax_p[j], title_mp[j])  # xl, yl
 
@@ -267,10 +282,10 @@ SYSTEMS = {
     # 2: ["TM", "LIF", 8, 'TM/LIF(8)', 1e-3],
     # 3: ["MSSM", "LIF", 4, 'MSSM/LIF(4)'],
     # 4: ["MSSM", "LIF", 7, 'MSSM/LIF(7)'],
-    3: ["DoornSTD", "HH", 0, 'DoornSTD(0) healthy', 1.0],
-    4: ["DoornSTD", "HH", 1, 'DoornSTD(1) Dravet', 1.0],
-    5: ["DoornSTF", "HH", 7, 'DoornSTF(7) Dravet', 1.0],
-    6: ["DoornSTD", "HH", 8, 'DoornSTD(7) Dravet', 1.0],
+    3: ["DoornSTD", "HH", 0, 'DoornSTD(0) healthy, ', 1.0],
+    4: ["DoornSTD", "HH", 1, 'DoornSTD(1) Dravet, ', 1.0],
+    5: ["DoornSTF", "HH", 7, 'DoornSTF(7) Dravet, ', 1.0],
+    # 6: ["DoornSTD", "HH", 8, 'DoornSTD(8) Dravet, ', 1.0],
 }
 
 # Optionally, define colors / styles per system

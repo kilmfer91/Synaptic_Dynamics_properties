@@ -5,18 +5,18 @@ import cProfile, pstats, tracemalloc, os, psutil
 
 # ******************************************************************************************************************
 # Depression using the MSSM
-s_model = 'TM'
+s_model = 'MSSM'
 n_model = 'LIF'
 
 # (Experiment 4) freq. response from Gain Control paper
 # (Experiment 5) slow-decay frequency response
-ind = 4
+ind = 5
 tau_m = 30
 max_freq = 500
-
+aux_q90 = "_q95"  # " _q95"
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
-plots_phd = False
+plots_phd = True
 dyn_synapse = True
 gaincontrol_sinusoidal = True
 
@@ -144,7 +144,7 @@ dict_results = {'initial_frequencies': f_vector, 'num_synapses': num_syn, 'sfreq
 aux_name = "_ind_" + str(ind) + "_sf_" + str(
             int(sfreq / 1000)) + "k_syn_" + str(num_syn)
 if neuron_model == 'LIF': aux_name += "_tau" + n_model + "_" + str(tau_m) + "ms"
-aux_name += "_sinusoidal_q95"
+aux_name += "_sinusoidal" + aux_q90
 file_name = s_model + aux_name
 # ******************************************************************************************************************
 
@@ -182,13 +182,11 @@ if os.path.isfile(folder_vars + file_name):
         ax.plot(dict_results['initial_frequencies'], gc_mean, label='GC metric', color='tab:blue')
         ax.fill_between(dict_results['initial_frequencies'], gc_mean - gc_std, gc_mean + gc_std, color='tab:blue',
                          alpha=0.5)
-        # ax.grid()
+        ax.grid()
         ax.legend()
-        # ax.axhline(0, color='gray', linestyle='--', linewidth=0.8)
-        # ax.axvline(0, color='gray', linestyle='--', linewidth=0.8)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.grid()
+        ax.set_xscale('log')
 
 if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
     ini_sin_time = m_time()

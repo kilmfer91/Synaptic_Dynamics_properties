@@ -339,7 +339,7 @@ class GC_prop_cons:
         pass
 
     def run(self, gain, fixed_rate_change=None, dr=None, soft_stop_cond=True, plot_ind_figs=False, th_percentage=1e-2,
-            y_lims_ind_plot=None, st_prior=None, filtering=False, cutoff=5, profiling=False):
+            y_lims_ind_plot=None, st_prior=None, filtering=False, cutoff=5, profiling=False, flag_plots=None):
         if dr is None: dr = self.dict_results
         self.validate_dict_params(dr)
 
@@ -357,6 +357,13 @@ class GC_prop_cons:
 
         title_graph = self.description.split(",")[0] + ", gain " + str(gain)
         stp_params = dict(zip(self.stp_name_params, self.stp_value_params))
+
+        # Which plots?
+        flag_plots = [True, True, True, True] if flag_plots is None else flag_plots
+
+        # Colors
+        color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
+        color_win = ["tab:red", "tab:olive", "tab:blue"]
 
         # Sim params
         L = sim_params['L']
@@ -423,16 +430,20 @@ class GC_prop_cons:
             loop_time = m_time()
             t_tra_mid_win, t_tra_mid_win_syn = None, None
 
+            # **********************************************************************************************************
+            # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
+            c_a, ax, fig_syn_filt = 0, None, None
+            if flag_plots[0]:
+                # Creating figure for each state variable
+                fig_syn_filt, ax = plt.subplots(4, 1, figsize=(8, 8), sharey=True)
+                ax = ax.ravel()
+                fig_syn_filt.suptitle("Temporal response of Short-term facilitation", c="black", alpha=0.7, fontsize=20)
+                c_a = 3
+                # ax = [fig_syn_filt.add_subplot(4, 1, i) for i in [1, 2, 3, 4]]
+            # **********************************************************************************************************
+
             # Building reference signal for constant and fixed rate changes
             i = num_freq_exp - 1
-            # ****************************************************************************************
-            # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
-            # fig_syn_filt = plt.figure(figsize=(8, 8))
-            # fig_syn_filt.suptitle("Temporal responses of Short-term facilitation", c="black", alpha=0.7, fontsize=20)
-            # c_a = 3
-            # ax = [fig_syn_filt.add_subplot(4, 1, i) for i in [1, 2, 3, 4]]
-            # ****************************************************************************************
-
             while i >= 0:  # while i < num_freq_exp:
                 loop_experiments = m_time()
 
@@ -469,13 +480,15 @@ class GC_prop_cons:
                 fix_input = np.concatenate((ref_signals, fix_aux, ref_signals), axis=1)
 
                 # ******************************************************************************************************
-                """
-                # Plotting example of input patter
+                # """
+                # Plotting example of proportional input pattern 
                 rate_schema = np.concatenate((np.ones(int(L / 3)) * f_vector[i], np.ones(int(L / 3)) *
                                               proportional_changes[i], np.ones(int(L / 3)) * f_vector[i]))
-                fig_gc_input = plot_gc_prop_input_example(time_vector, 1 / self.sfreq, 0, rate_schema, cons_input[0, :])
-                path_save = self.folder_plots + file_name + '_input_sample_prop.png'
-                fig_gc_input.savefig(path_save, format='png')
+                if flag_plots[1]:
+                    fig_gc_input = plot_gc_prop_input_example(time_vector, 1 / self.sfreq, 0, rate_schema,
+                                                              cons_input[0, :])
+                    path_save = self.folder_plots + file_name + '_input_sample_prop.png'
+                    fig_gc_input.savefig(path_save, format='png')
                 # """
                 # ******************************************************************************************************
 
@@ -528,24 +541,6 @@ class GC_prop_cons:
                     (self.neuron_prop.output_spike_events, self.neuron_prop.output_spike_events_tonic,
                      self.neuron_prop.ind_spike_events, self.neuron_prop.ind_spike_events_tonic,
                      self.neuron_prop.time_spike_events) = a
-
-                    """
-                    for s in range(self.stp_prop.n_syn):
-                        s_mask = syn_spike_masks[s]  # [num_masks, L]
-                        s_var_syn = state_variables[:, s, :]  # [num state variables, L]
-                        # Expand s_mask to (num_state_vars, n_intervals, L)
-                        n_intervals = s_mask.shape[0]
-                        mask_3d = np.broadcast_to(s_mask[np.newaxis, :, :], (num_state_vars, n_intervals, L))
-
-                        # Expand s_var_syn to (num_state_vars, n_intervals, L)
-                        var_3d = np.broadcast_to(s_var_syn[:, np.newaxis, :], (num_state_vars, n_intervals, L))
-
-                        # Element-wise multiplication
-                        masked_var_3d = var_3d * mask_3d  # still (num_state_vars, n_intervals, L)
-
-                        # Applying operators
-                        per_state_variable = np.array([op(xi) for xi, op in zip(masked_var_3d, operators_sv)])
-                    # """
                     # model_stp_parallel(self.stp_fix, self.lif_fix, stp_params, fix_input)
                 else:
                     # Reseting initial conditions
@@ -617,16 +612,44 @@ class GC_prop_cons:
                     num_spike_st_per_freq_e[sv][i] += num_spikes[4]
                     num_spike_tr_per_freq_e[sv][i] += num_spikes[5]
 
+                    # """
                     # **************************************************************************************************
-
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
                         t_tr = t_tr_[0]
                         path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
-                        plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
-                                                       title_graph_, max_t, path_save=path_save,
-                                                       save_figs=self.save_figs,
-                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
+                        path_save2 = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat_2.png'
+                        # """
+                        # ****************************************************************************************
+                        # Figure for PhD dissertation: methodology - state variables neuron in time + statistical descr.
+                        if flag_plots[2]:
+                            plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
+                                                       "Colour convention for windows (%dHz)" % f_vector[i], max_t, path_save=path_save,
+                                                       save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
+                                                       plot_stats=False, plt_grid=False, plot_phd_pre_results=True,
+                                                       color_win=color_win, color_stat=color_stat)
+                            plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
+                                                       "Colour convention for changes of rate (%dHz)" % f_vector[i], max_t, path_save=path_save2,
+                                                       save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
+                                                       plot_stats=False, plt_grid=False, plot_phd_pre_res_2=True,
+                                                       color_win=color_stat[1:3], color_stat=color_stat)
+                        # """
+                        # ****************************************************************************************
+                        # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
+                        ax_ca = None if not flag_plots[0] else ax[c_a]
+                        dt = 1 / self.sfreq
+                        if flag_plots[3]:
+                            plot_gc_t_series_windows(time_vector, i, signal_prop, signal_fix, t_tr,
+                                                     res_per_reali[sv], title_graph_, max_t, path_save=path_save,
+                                                     save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
+                                                     ref_rate=f_vector[i], dt=dt, th_percentage=th_percentage, ax=ax_ca,
+                                                     color_win=color_win, color_stat=color_stat)
+                            if flag_plots[0]:
+                                if c_a == 0: ax[c_a].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
+                                if c_a == 3: ax[c_a].set_xlabel("Time (s)", color="gray", fontsize=14)
+                                c_a -= 1
+                        # ****************************************************************************************
+                    # """
                     sv += 1
                 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -660,23 +683,30 @@ class GC_prop_cons:
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
                         t_tr = t_tr_syn[0]
+                        """
+                        # ****************************************************************************************
+                        # Figure for PhD dissertation: methodology - state variables neuron in time + statistical descr.
                         path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
-                        plot_gc_mem_potential_prop_fix(time_vector, i, signal_prop, signal_fix, t_tr,
-                                                       res_per_reali_syn[sv],
-                                                       title_graph_, max_t, path_save=path_save,
-                                                       save_figs=self.save_figs,
-                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False)
+                        if flag_plots[2]:
+                            plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr,
+                                                       res_per_reali_syn[sv], title_graph_, max_t, path_save=path_save,
+                                                       save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
+                                                       plot_stats=True, plt_grid=False)
 
-                        # ****************************************************************************************
                         # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
-                        # plot_gc_stoch_input(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali_syn[sv],
-                        #                     title_graph_, max_t, path_save=path_save, save_figs=self.save_figs,
-                        #                     y_lims_ind_plot=y_lims_ind_plot, ref_rate=f_vector[i], dt=1 / self.sfreq,
-                        #                     th_percentage=th_percentage, ax=ax[c_a])
-                        # if c_a == 0: ax[c_a].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
-                        # if c_a == 3: ax[c_a].set_xlabel("Time (s)", color="gray", fontsize=14)
-                        # c_a -= 1
+                        ax_ca = None if not flag_plots[0] else ax[c_a]
+                        dt = 1 / self.sfreq
+                        if flag_plots[3]:
+                            plot_gc_t_series_windows(time_vector, i, signal_prop, signal_fix, t_tr,
+                                                     res_per_reali_syn[sv], title_graph_, max_t, path_save=path_save,
+                                                     save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
+                                                     ref_rate=f_vector[i], dt=dt, th_percentage=th_percentage, ax=ax_ca)
+                            if flag_plots[0]:
+                                if c_a == 0: ax[c_a].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
+                                if c_a == 3: ax[c_a].set_xlabel("Time (s)", color="gray", fontsize=14)
+                                c_a -= 1
                         # ****************************************************************************************
+                        # """
                     sv += 1
                 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -696,9 +726,10 @@ class GC_prop_cons:
 
             # ****************************************************************************************
             # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
-            # fig_syn_filt.tight_layout()  # pad=0.5, w_pad=1.0, h_pad=1.0)
-            # path_save = self.folder_plots + file_name + '_temporal_response_stoc_input.png'
-            # if self.save_figs: fig_syn_filt.savefig(path_save, format='png')
+            if flag_plots[0]:
+                fig_syn_filt.tight_layout()  # pad=0.5, w_pad=1.0, h_pad=1.0)
+                path_save = self.folder_plots + file_name + '_temporal_response_stoc_input.png'
+                if self.save_figs: fig_syn_filt.savefig(path_save, format='png')
             # ****************************************************************************************
 
             # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

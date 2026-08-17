@@ -1,7 +1,7 @@
 from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
-gain_v = [0.1]              # Vector of gains
+gain_v = [0.5]              # Vector of gains
 s_model = 'TM'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
 n_model = "LIF"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
 ind = 4                     # Index to recover params of a given synaptic and neuron model (See table below)
@@ -33,13 +33,10 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = True            # Save results in folders
-force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
-stoch_input = False          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
+save_vars = False            # Save results in folders
+force_experiment = True    # Run pipeline even if file with results is saved (For refining the code)
+stoch_input = True          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 profiling = False           # Whether to run cProfile analysis
-
-plot_ind_memPot = False     # Plot temporal dynamics
-save_figs = False           # Save temporal dynamics in folders
 
 dyn_synapse = True          # Use Synaptic Dynamics or a simple static synapse (a weight)
 n_noise = True              # Activate noise in neuron model if available
@@ -52,6 +49,18 @@ threshold_per = 1e-3        # Threshold factor to detect time of steady-state
 
 total_realizations = 104    # Number of stochastic realisations if activated  104
 num_realizations = 1        # Number of parallel realisations                 8
+
+# **********************************************************************************************************************
+# Flags for plots
+plot_ind_memPot = True     # Plot temporal dynamics
+save_figs = True           # Save temporal dynamics in folders
+
+temp_filtering_ts_tr_mul_rates = True
+input_rate_gain_factor = False
+stat_descr_t_series = True
+t_series_by_windows = False
+flags_plots = [temp_filtering_ts_tr_mul_rates, input_rate_gain_factor, stat_descr_t_series, t_series_by_windows]
+
 # **********************************************************************************************************************
 # Time conditions
 # max_t = 6                               # Time of simulation (in seconds)
@@ -76,7 +85,7 @@ dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_
                'total_realizations': total_realizations, 'neuron_noise': n_noise}
 
 # Instance of Gain-Control class
-initial_frequencies = np.array([10, 100, 500]) if force_experiment else None
+initial_frequencies = np.array([10, 50, 100, 500]) if force_experiment else None
 gc_prop_cons = GC_prop_cons(dict_params)
 _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=max_freq)
 
@@ -91,39 +100,5 @@ for gain in gain_v:
     file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
     dr = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded),
                           plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
-                          th_percentage=threshold_per, filtering=filtering_tr, cutoff=cutoff_filt, profiling=profiling)
-    """
-    else:
-        print("Loading/computing stochastic experiments. First deterministic experiment")
-        # First load or compute deterministic response
-        # Forcing flags
-        gc_prop_cons.stoch_input = False
-        old_save_vars = save_vars
-        gc_prop_cons.save_vars = True
-
-        # running gain_control
-        aux_max_freq = int(np.min([max_freq * gain + max_freq + 50, (sfreq / 6) - 10]))
-        _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=aux_max_freq)
-        file_name = gc_prop_cons.get_folder_file_name(s_model, n_model, gain, ind, tau_n=tau_m_lif)
-        file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
-        gc_prop_cons.models_creation()
-        dr_det = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded or force_experiment),
-                                  plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
-                                  th_percentage=1e-5)
-        # Default setting of flags
-        gc_prop_cons.stoch_input = True
-        gc_prop_cons.save_vars = old_save_vars
-        _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=max_freq)
-        print("Loading/computing stochastic experiments. Second stochastic experiment")
-
-        # Now compute the stochastic response
-        st_k = ['st_ini_prop_q5', 'st_ini_prop_q10', 'st_ini_prop_q90', 'st_ini_prop_q95',
-                'st_ini_prop_min', 'st_ini_prop_max', 'st_ini_prop_mean', 'st_ini_prop_med']
-        st_prior = np.array([dr_det['initial_frequencies']] + [dr_det[k][0, :] for k in st_k])
-        file_name = gc_prop_cons.get_folder_file_name(s_model, n_model, gain, ind, tau_n=tau_m_lif)
-        file_loaded, dr_aux = gc_prop_cons.load_set_simulation_params()
-        gc_prop_cons.models_creation()
-        dr = gc_prop_cons.run(gain=gain, fixed_rate_change=5, soft_stop_cond=(not file_loaded or force_experiment),
-                              plot_ind_figs=plot_ind_memPot, y_lims_ind_plot=neuron_params['y_lim_plot'],
-                              th_percentage=1e-5, st_prior=st_prior)
-    # """
+                          th_percentage=threshold_per, filtering=filtering_tr, cutoff=cutoff_filt, profiling=profiling,
+                          flag_plots=flags_plots)
