@@ -1528,8 +1528,8 @@ def plot_properties_in_freq(dr_, var_, f_vec, H_list, aux_l, axb_, tr_time, c_g,
 def create_fig_freq_responses(name_sv, title, transpose, freq_res_single, num_single=6):
     ax_f = []
     fig_gc = []
-    nrows, ncols, figsize, sharexy = 3, 6, (18, 10), 'col'
-    if transpose: nrows, ncols, figsize, sharexy = 6, 3, (10, 13), 'row'
+    nrows, ncols, figsize, sharexy = 3, num_single, (20, 10), 'col'  # (18, 10) for n_single = 6
+    if transpose: nrows, ncols, figsize, sharexy = num_single, 3, (10, 13.7), 'row'  # (10, 13) for n_single = 6
     if freq_res_single:
         for j in range(len(name_sv)):
             fig, ax = [], []
@@ -1544,7 +1544,7 @@ def create_fig_freq_responses(name_sv, title, transpose, freq_res_single, num_si
     else:
         for j in range(len(name_sv)):
             # Creating figure for each state variable
-            fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharey=sharexy, sharex=sharexy)
+            fig, ax = plt.subplots(nrows, ncols, figsize=figsize, sharey=sharexy, sharex=sharexy, layout='constrained')
                                    # , constrained_layout=transpose)
             # Flattening array of axes (before it was 3x7), now 1x21
             ax = ax.ravel()
@@ -1561,14 +1561,29 @@ def create_fig_freq_responses(name_sv, title, transpose, freq_res_single, num_si
         # return fig, ax_f
 
 
+def aux_freq_res_mid_windows(ax, sign, col, f_vec, shift=False):
+    # Plotting xlines, vlines and values of max and rate to reach maximum for mid-window
+    y_l, x_l = np.max(avg_f(sign)), f_vec[np.argmax(avg_f(sign))]  # max and freq of max
+    ax.axhline(y_l, color=col, linestyle='dotted', linewidth=0.8)
+    ax.axvline(x_l, color=col, linestyle='dotted', linewidth=0.8)
+    ymin, ymax = ax.get_ylim()
+    xmin, xmax = ax.get_xlim()
+    f0 = x_l if shift else f_vec[0]
+    yf = ymin + 3 * np.abs(ymin) if shift else ymin + 0.1 * np.abs(ymin)
+    ax.text(f0, y_l, '%.1fmV' % (y_l * 1e3), fontsize=8, color='gray')
+    ax.text(x_l, yf, '%dHz' % x_l, fontsize=8, color='gray')
+
+
 def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, norm_neuron, titles, markers,
-                        alphas, c_g, plot_filt=False, ode='n', transpose=False, single_properties=False):
+                        alphas, c_g, plot_filt=False, ode='n', transpose=False, single_properties=False,
+                        min_max_mid_win=None):
     f_vec = dr_filt['initial_frequencies']
     c_f = ['tab:red', 'tab:olive', 'tab:blue']
     c_gc = ['tab:orange', 'tab:green']
     l_f = ['Amp', 'Med']
     ls = ['dashdot', 'dashed', 'dotted', 'solid']
     wins = [['ini', 'mid'], ['mid', 'end']]
+    min_max_mid_win = min_max_mid_win if min_max_mid_win is not None else [False for _ in range(len(name_state_vars))]
     # shift = [0, 7]
     aux = ''
     map_gain_shift = {0.1: 0, 0.5: 6, 1.0: 12}
@@ -1612,7 +1627,7 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
         eaux_filt = np.copy(nEff_e_st[:-1])[[0, 2], :]  # Selecting only amplitude and median
         eaux_filt_tr = np.copy(nEff_e_tr[:-1])[[0, 2], :]  # Selecting only amplitude and median
 
-        # 2 Transient dynamics
+        # 1 Transient dynamics
         # Positive changes - ini window
         idx = get_subplt_index_freq_res(1, k, transpose)  # For plot 1
         axs[n][idx].plot(f_vec, avg_f(paux_filt_tr[0]), alpha=alphas[0], c=c_f[0], label=r"$Eff_{i,tr}$ ",
@@ -1630,9 +1645,36 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
         axs[n][idx].fill_between(f_vec, np.quantile(eaux_filt_tr[0], 0.1, axis=0),
                                    np.quantile(eaux_filt_tr[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
 
-        # 1 temporal filtering
+        # 1 Transient dynamics - median
         # Positive changes - ini window
-        idx = get_subplt_index_freq_res(2, k, transpose)  # For plot 2
+        idx = get_subplt_index_freq_res(2, k, transpose)  # For plot 1
+        axs[n][idx].plot(f_vec, avg_f(paux_filt_tr[1]), alpha=alphas[0], c=c_f[0], label=r"$Eff_{i,tr}$ ",
+                         linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(paux_filt_tr[1], 0.1, axis=0),
+                                 np.quantile(paux_filt_tr[1], 0.9, axis=0), color=c_f[0], alpha=0.1)
+        if min_max_mid_win[n]:
+            # Plotting xlines, vlines and values of max and rate to reach maximum for mid-window
+            aux_freq_res_mid_windows(axs[n][idx], paux_filt_tr[1], c_f[0], f_vec)
+        # Negative changes - mid window
+        axs[n][idx].plot(f_vec, avg_f(naux_filt_tr[1]), alpha=alphas[0], c=c_f[1], label=r"$Eff_{m,tr}$ ",
+                         linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(naux_filt_tr[1], 0.1, axis=0),
+                                 np.quantile(naux_filt_tr[1], 0.9, axis=0), color=c_f[1], alpha=0.1)
+        if min_max_mid_win[n]:
+            # Plotting xlines, vlines and values of max and rate to reach maximum for mid-window
+            aux_freq_res_mid_windows(axs[n][idx], naux_filt_tr[1], c_f[1], f_vec)
+        # Negative changes - end window
+        axs[n][idx].plot(f_vec, avg_f(eaux_filt_tr[1]), alpha=alphas[0], c=c_f[2], label=r"$Eff_{e,tr}$ ",
+                         linestyle=ls[3])
+        axs[n][idx].fill_between(f_vec, np.quantile(eaux_filt_tr[1], 0.1, axis=0),
+                                 np.quantile(eaux_filt_tr[1], 0.9, axis=0), color=c_f[2], alpha=0.1)
+        if min_max_mid_win[n]:
+            # Plotting xlines, vlines and values of max and rate to reach maximum for mid-window
+            aux_freq_res_mid_windows(axs[n][idx], eaux_filt_tr[1], c_f[2], f_vec, True)
+
+        # 2 temporal filtering
+        # Positive changes - ini window
+        idx = get_subplt_index_freq_res(3, k, transpose)  # For plot 2
         axs[n][idx].plot(f_vec, avg_f(paux_filt[0]), alpha=alphas[0], c=c_f[0], label=r"$Eff_{i,st}$ ",
                          linestyle=ls[0])
         axs[n][idx].fill_between(f_vec, np.quantile(paux_filt[0], 0.1, axis=0),
@@ -1648,9 +1690,36 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
         axs[n][idx].fill_between(f_vec, np.quantile(eaux_filt[0], 0.1, axis=0),
                                    np.quantile(eaux_filt[0], 0.9, axis=0), color=c_f[2], alpha=0.1)
 
+        # 3 Synaptic efficacy - median
+        # Positive changes - ini window
+        idx = get_subplt_index_freq_res(4, k, transpose)  # For plot 2
+        axs[n][idx].plot(f_vec, avg_f(paux_filt[1]), alpha=alphas[0], c=c_f[0], label=r"$Eff_{i,st}$ ",
+                         linestyle=ls[0])
+        axs[n][idx].fill_between(f_vec, np.quantile(paux_filt[1], 0.1, axis=0),
+                                 np.quantile(paux_filt[1], 0.9, axis=0), color=c_f[0], alpha=0.1)
+        if min_max_mid_win[n]:
+            # Plotting xlines, vlines and values of max and rate to reach maximum for mid-window
+            aux_freq_res_mid_windows(axs[n][idx], paux_filt[1], c_f[0], f_vec)
+        # Negative changes - mid window
+        axs[n][idx].plot(f_vec, avg_f(naux_filt[1]), alpha=alphas[0], c=c_f[1], label=r"$Eff_{m,st}$ ",
+                         linestyle=ls[1])
+        axs[n][idx].fill_between(f_vec, np.quantile(naux_filt[1], 0.1, axis=0),
+                                 np.quantile(naux_filt[1], 0.9, axis=0), color=c_f[1], alpha=0.1)
+        if min_max_mid_win[n]:
+            # Plotting xlines, vlines and values of max and rate to reach maximum for mid-window
+            aux_freq_res_mid_windows(axs[n][idx], naux_filt[1], c_f[1], f_vec)
+        # end window
+        axs[n][idx].plot(f_vec, avg_f(eaux_filt[1]), alpha=alphas[0], c=c_f[2], label=r"$Eff_{e,st}$ ",
+                         linestyle=ls[2])
+        axs[n][idx].fill_between(f_vec, np.quantile(eaux_filt[1], 0.1, axis=0),
+                                 np.quantile(eaux_filt[1], 0.9, axis=0), color=c_f[2], alpha=0.1)
+        if min_max_mid_win[n]:
+            # Plotting xlines, vlines and values of max and rate to reach maximum for mid-window
+            aux_freq_res_mid_windows(axs[n][idx], eaux_filt[1], c_f[2], f_vec, True)
+
         # 3 Synaptic information - Entropy (stationary regime)
         # Positive changes - ini window
-        idx = get_subplt_index_freq_res(3, k, transpose)  # For plot 3
+        idx = get_subplt_index_freq_res(5, k, transpose)  # For plot 3
         axs[n][idx].plot(f_vec, pEff_i_st[3], alpha=alphas[0], label=r"$Eff_{i,st}$ ", c=c_f[0], linestyle=ls[0])
         # Negative changes - mid window
         axs[n][idx].plot(f_vec, nEff_m_st[3], alpha=alphas[0], label=r"$Eff_{m,st}$ ", c=c_f[1], linestyle=ls[1])
@@ -1667,7 +1736,7 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
 
         # 5 Gain control - Amplitude (tr - st)
         # Positive changes - ini to mid windows
-        idx = get_subplt_index_freq_res(4, k, transpose)  # For plot 4
+        idx = get_subplt_index_freq_res(6, k, transpose)  # For plot 4
         axs[n][idx].plot(f_vec, avg_f(paux_gain_tr[0]), alpha=alphas[0], c='tab:orange',
                            label=r'$PC_{pos}^\mathrm{amp}$ ', linestyle=ls[3])
         axs[n][idx].fill_between(f_vec, np.quantile(paux_gain_tr[0], 0.1, axis=0),
@@ -1693,7 +1762,7 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
 
         # 6 Gain control - Median (tr - st)
         # Positive changes - ini to mid windows
-        idx = get_subplt_index_freq_res(5, k, transpose)  # For plot 5
+        idx = get_subplt_index_freq_res(7, k, transpose)  # For plot 5
         axs[n][idx].plot(f_vec, avg_f(paux_gain_tr[2]), alpha=alphas[0], c='tab:orange',
                            label=r'$PC_{pos}^\mathrm{med}$ ', linestyle=ls[3])
         axs[n][idx].fill_between(f_vec, np.quantile(paux_gain_tr[2], 0.1, axis=0),
@@ -1719,7 +1788,7 @@ def plot_freq_responses(name_state_vars, dr_filt, dr_gain, tr_time, gain, axs, n
         # 7 Gain control - Entropy (tr - st)
         # Positive changes - ini to mid windows
         # Positive changes - ini to mid windows
-        idx = get_subplt_index_freq_res(6, k, transpose)  # For plot 6
+        idx = get_subplt_index_freq_res(8, k, transpose)  # For plot 6
         axs[n][idx].plot(f_vec, pG_mi_st[3], alpha=alphas[0], label=r'$PC_{pos}^\mathrm{H}$ ', c='tab:orange',
                            linestyle=ls[3])
         # Negative changes - mid to end windows
@@ -1815,6 +1884,12 @@ def adjust_legend_freq_resT(lbl_ind, fig, ax, gain):
         for l_i in l_:
             labels.append(l_i)
 
+    # Get the constrained layout engine
+    # layout_engine = fig.get_layout_engine().get_layout()
+    # Adjust the rectangle reserved for subplots: [left, bottom, width, height]
+    # Example: leave a bit more space at the bottom for the legend
+    # layout_engine.set_rect([0, 0.05, 1, 0.90])
+
     # Vertical position: center of the middle axis in that row
     # mid_ax = row_axes[row_i][6]  # e.g. axes 4, 11, 18
     bbox = ref_axes[0].get_window_extent().transformed(fig.transFigure.inverted())
@@ -1822,13 +1897,13 @@ def adjust_legend_freq_resT(lbl_ind, fig, ax, gain):
 
     fig.legend(
         handles, labels,
-        loc='lower center',
-        bbox_to_anchor=(0.5, -0.00),  # move below the axes
-        ncol=5,  # number of columns
+        loc='outside lower center',
+        # bbox_to_anchor=(0.5, -0.1),  # move below the axes
+        ncol=8,  # number of columns
         frameon=True,
         # title='gain factor ' + str(gain[row_j])
     )
-    # fig.get_constrained_layout().set_rect([0, 0.05, 1, 0.95])
+    # fig.get_constrained_layout().set_rect([0, 0.02, 1, 0.98])
 
 
 def create_fig_freq_portrait(names_sv, title, figsize=(12, 6)):
@@ -2115,10 +2190,10 @@ def adjust_freq_responses(ax, title_freqres, freq_res_T, freq_res_single, gain_v
                     if g == len(gain_v) - 1:
                         ax[j_].legend(bbox_to_anchor=(1.05, 1.), loc='upper left', borderaxespad=0.)
             else:
-                x_axis = False if j < 15 else True
+                x_axis = False if j < 18 else True
                 # Frequency responses for ini window
                 adjust_freq_portraits(ax[j], "Rate (Hz)", ylabel_axb[j], title_freqres[j],
-                                      xscale='log', axes_=False, x_axis=True)  # x_axis)
+                                      xscale='log', axes_=False, x_axis=x_axis)
         else:
             # Frequency responses for ini window
             adjust_freq_portraits(ax[j], "Rate (Hz)", ylabel_axb[j], title_freqres[j],

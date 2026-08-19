@@ -1,40 +1,34 @@
 from gain_control.utils_gc import *
 
-# STP model and extra global variables
-# (Experiment 2) freq. response decay around 100Hz
-# (Experiment 3) freq. response decay around 10Hz
-# (Experiment 4) freq. response from Gain Control paper
-# (Experiment 5) freq. response decay around 100Hz
-# (Experiment 6) freq. response decay around 10Hz
-
 SYSTEMS = {
-    1: ["TM", "LIF", 4, 'TM STD (4)', 1e-3],
-    2: ["TM", "LIF", 8, 'TM STF(8)', 1e-3],
-    3: ["MSSM", "LIF", 4, 'MSSM STD(4)', 1e-3],
-    4: ["MSSM", "LIF", 7, 'MSSM STF? (7)', 1e-3],
-    5: ["DoornSTD", "HH", 0, 'Doorn STD (0) healthy', 1.0],
-    6: ["DoornSTD", "HH", 1, 'Doorn STD (1) Dravet', 1.0],
-    7: ["DoornSTF", "HH", 7, 'Doorn STF (7) Pers. Exc.', 1.0],
-    8: ["DoornSTD", "HH", 8, 'Doorn STD (8) Dravet', 1.0],
+    1: ["TM", "LIF", 4, 'TM+LIF STD', 1e-3],                    # 4, freq. response from Gain Control paper
+    2: ["TM", "LIF", 8, 'TM+LIF STF', 1e-3],                    # 8, freq. response from differential signalling
+    3: ["MSSM", "LIF", 4, 'MSSM+LIF STD', 1e-3],                # 4, freq. response from Gain Control paper
+    4: ["MSSM", "LIF", 7, 'MSSM+LIF STF', 1e-3],                # 7,
+    5: ["DoornSTD", "HH", 0, 'Doorn STD -healthy-', 1.0],       # 0, Doorn model for healthy networks - STD
+    6: ["DoornSTD", "HH", 1, 'Doorn STD -Dravet-', 1.0],        # 1, Doorn model for Dravet networks - STD
+    7: ["DoornSTF", "HH", 7, 'Doorn STF -Pers. Exc.-', 1.0],    # 7, Doorn model for persistent excitation - STF
+    8: ["DoornSTD", "HH", 8, 'Doorn STD -Dravet-', 1.0],        # 8,  Doorn model for Dravet networks - STD
 }
 
-ind_sys = 2
+ind_sys = 7
 s_model, n_model, ind, sys_description, factor = SYSTEMS[ind_sys]
 
 # Flags for plotting
 save_figs = False
 plot_figs = True
-plot_phd_meth = True
-plot_freq_res = False
+plot_phd_meth = False
+plot_freq_res = True
 freq_res_T = True
-freq_res_single = False
+freq_res_single = True
+num_single = 8  # 6
 
 # Sampling frequency and conditions for running parallel or single LIF neurons
 sfreq = 10e3
 tau_lif = 30  # ms
 
 # Path variables
-aux_p = ''  # '_2'
+aux_p = '_2'  # '_2'
 path_vars = "../gain_control/variables/high_freq_10k" + aux_p + "/"
 check_create_folder(path_vars)
 folder_plots = '../gain_control/plots/freq_portrait/'
@@ -63,64 +57,46 @@ if len(gain_v) == 1: title += ', gain ' + str(int(gain_v[0] * 100)) + '%'
 else: title += ', multiple gains'
 
 # Plot
-# title_mp = ['Amplitude in steady-state', 'Varibility in steady-state', 'Median in steady-state',
-#             'Entropy in steady-state', 'Amplitude in transitory-state', 'Varibility in transitory-state',
-#             'Median in transitory-state', 'Entropy in transitory-state']
-# title_mp = ['Amplitude in steady-state', 'Median in transitory-state', 'Amplitude in transient dynamics',
-#             'Entropy in steady-state', 'Amplitude in transitory-state', 'Median in transient dynamics',
-#             'Entropy in transient dynamics', 'Entropy in transitory-state']
 title_mp = ['Amplitude in transitory-state', 'Median in transitory-state', 'Entropy in transitory-state',
             'Amplitude in transient dynamics', 'Median in transient dynamics', 'Entropy in transient dynamics']
-# x_label_ax_p = [r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)', r'$E_{ff_{i,st}}^{med}$ (mV)',
-#                 r'$H_{i,st}$ (bits)', r'$E_{ff_{i,st}}^{amp}$ (mV)', r'$E_{ff_{i,st}}^{var}$ (mV)',
-#                 r'$E_{ff_{i,st}}^{med}$ (mV)', r'$H_{i,st}$ (bits)']
-# y_label_ax_p = [r'$G_{m-i,st}^{amp} (mV)$', r'$G_{m-i,st}^{var} (mV)$', r'$G_{m-i,st}^{med} (mV)$',
-#                 r'$GH_{m-i,st}$ (bits)', r'$G_{m-i,tr}^{amp} (mV)$', r'$G_{m-i,tr}^{var} (mV)$',
-#                 r'$G_{m-i,tr}^{med} (mV)$', r'$GH_{m-i,tr}$ (bits)']
-# x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (mV)', r'$E_{ff_{st}}^{med}$ (mV)', r'$E_{ff_{tr}}^{amp}$ (mV)',
-#                 r'$H_{st}$ (bits)', r'$E_{ff_{st}}^{amp}$ (mV)', r'$E_{ff_{tr}}^{med}$ (mV)',
-#                 r'$H_{tr}$ (bits)', r'$H_{st}$ (bits)']
-# y_label_ax_p = [r'$G_{st-st}^{amp} (mV)$', r'$G_{tr-st}^{med} (mV)$', r'$G_{tr-tr}^{amp} (mV)$',
- #                r'$GH_{st-st}$ (bits)', r'$G_{tr-st}^{amp} (mV)$', r'$G_{tr-tr}^{med} (mV)$',
-#                 r'$GH_{tr-tr}$ (bits)', r'$GH_{tr-st}$ (bits)']
-x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (mV)', r'$E_{ff_{st}}^{med}$ (mV)', r'$H_{st}$ (bits)',
-                r'$E_{ff_{tr}}^{amp}$ (mV)', r'$E_{ff_{tr}}^{med}$ (mV)', r'$H_{tr}$ (bits)']
-y_label_ax_p = [r'$G_{tr-st}^{amp} (mV)$', r'$G_{tr-st}^{med} (mV)$', r'$GH_{tr-st}$ (bits)',
-                r'$G_{tr-tr}^{amp} (mV)$', r'$G_{tr-tr}^{med} (mV)$', r'$GH_{tr-tr}$ (bits)']
-# x_label_ax_n = [r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)', r'$E_{ff_{m,st}}^{med}$ (mV)',
-#                 r'$H_{m,st}$ (bits)', r'$E_{ff_{m,st}}^{amp}$ (mV)', r'$E_{ff_{m,st}}^{var}$ (mV)',
-#                 r'$E_{ff_{m,st}}^{med}$ (mV)', r'$H_{m,st}$ (bits)']
-# y_label_ax_n = [r'$G_{e-m,st}^{amp} (mV)$', r'$G_{e-m,st}^{var} (mV)$', r'$G_{e-m,st}^{med} (mV)$',
-#                 r'$GH_{e-m,st}$ (bits)', r'$G_{e-m,tr}^{amp} (mV)$', r'$G_{e-m,tr}^{var} (mV)$',
-#                 r'$G_{e-m,tr}^{med} (mV)$', r'$GH_{e-m,tr}$ (bits)']
-# title_freqres = ['H - filtering', 'H - Gain-control', 'Transitory time', 'Synaptic Filtering', 'GC - amp', 'GC - var',
-#             'GC - med']
-title_freqres = ['Transient dynamics', 'Temporal filtering', 'Entropy', 'Gain effect (amp)', 'Gain effect (med)',
-           'Gain effect (Entropy)']
-title_freq_save_fig = ['_transients', '_filtering', '_information', '_gain_amp', '_gain_med', '_gain_entropy']
+x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (V)', r'$E_{ff_{st}}^{med}$ (V)', r'$H_{st}$ (bits)',
+                r'$E_{ff_{tr}}^{amp}$ (V)', r'$E_{ff_{tr}}^{med}$ (V)', r'$H_{tr}$ (bits)']
+y_label_ax_p = [r'$G_{tr-st}^{amp} (V)$', r'$G_{tr-st}^{med} (V)$', r'$GH_{tr-st}$ (bits)',
+                r'$G_{tr-tr}^{amp} (V)$', r'$G_{tr-tr}^{med} (V)$', r'$GH_{tr-tr}$ (bits)']
+# title_freqres = ['Transient dynamics', 'Temporal filtering', 'Entropy', 'Gain effect -amp-', 'Gain effect -med-',
+#                  'Gain effect -Entropy-']
+title_freqres = ['Transient dynamics', 'Transient dynamics -med-', 'Temporal filtering', 'Synaptic efficacy -med-', 'Entropy',
+                 'Gain effect -amp-', 'Gain effect -med-', 'Gain effect -Entropy-']
+title_freq_save_fig = ['_transients', '_transients_med', '_filtering', '_eff_med', '_information', '_gain_amp',
+                       '_gain_med', '_gain_entropy']
+title_freqres_sing = ''
 if freq_res_single:
     s_d = sys_description
-    tit_aux = [s_d + ', %s' % i + ' %s(t)' for i in title_freqres]
+    tit_aux = [s_d + ', %s' % i + r', $%s(t)$' for i in title_freqres]
     title_freqres_sing = tit_aux
-    title_freqres = [[r'$\delta$ = %.1f' % gain for gain in gain_v] for _ in range(len(title_freqres_sing))]
+    title_freqres = [[r'$\delta$ = ' + str(int(g * 100)) + '%' for g in gain_v] for _ in range(len(title_freqres_sing))]
 
-if freq_res_T and not freq_res_single: title_freqres = ['', 'Transient dynamics', '',
+if freq_res_T and not freq_res_single: title_freqres = [r'$\delta$ = 10%', r'Transient dynamics ' + os.linesep + ' $\delta$ = 50%', r'$\delta$ = 100%',
+                                                        '', 'Transient dynamics (med)', '',
                                                         '', 'Temporal filtering', '',
+                                                        '', 'Synaptic efficacy (med)', '',
                                                         '', 'Entropy', '',
                                                         '', 'Gain effect (amp)', '',
                                                         '', 'Gain effect (med)', '',
                                                         '', 'Gain effect (Entropy)', '']
 
-# ylabel_axb = ["Entropy (bits)", "Entropy (bits)", "Time (s)", "Mem. pot. (mV)", "Mem. pot. (mV)", "Mem. pot. (mV)",
-#               "Mem. pot. (mV)"]
-ylabel_axb = ["Mem. pot. (mV)", "Mem. pot. (mV)", "Entropy (bits)", "Mem. pot. (mV)",
-              "Mem. pot. (mV)", "Entropy (bits)"]
-if freq_res_T: ylabel_axb = ['Mem. pot. (mV)', '', '',
-                            'Mem. pot. (mV)', '', '',
-                            'Entropy (bits)', '', '',
-                            'Mem. pot. (mV)', '', '',
-                            'Mem. pot. (mV)', '', '',
-                            'Entropy (bits)', '', '']
+ylabel_freqRes = ["Mem. pot. (V)", "Mem. pot. (V)", "Mem. pot. (V)", "Mem. pot. (V)", "Entropy (bits)",
+                  "Mem. pot. (V)", "Mem. pot. (V)", "Entropy (bits)"]
+# For state variables of neuron, only membrane potential
+min_max_mid_win = [True, False, False, False, False, False]
+if freq_res_T: ylabel_freqRes = ['Mem. pot. (V)', '', '',
+                                 'Mem. pot. (V)', '', '',
+                                 'Mem. pot. (V)', '', '',
+                                 'Mem. pot. (V)', '', '',
+                                 'Entropy (bits)', '', '',
+                                 'Mem. pot. (V)', '', '',
+                                 'Mem. pot. (V)', '', '',
+                                 'Entropy (bits)', '', '']
 c_g = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
        'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
 
@@ -158,12 +134,14 @@ if plot_figs:
             title_ = ""
             if freq_res_single: title_ = title_freqres_sing
             else: title_ = sys_description + '. Frequency responses for neuron - %s(t)'
-            n_freq_res, ax_f = create_fig_freq_responses(name_n_state_variables, title_, freq_res_T, freq_res_single)
+            n_freq_res, ax_f = create_fig_freq_responses(name_n_state_variables, title_, freq_res_T, freq_res_single,
+                                                         num_single=num_single)
 
             # Frequency responses - synapse
             if freq_res_single: title_ = title_freqres_sing
             else: title_ = sys_description + '. Frequency responses for synapse - %s(t)'
-            s_freq_res, ax_fs = create_fig_freq_responses(name_syn_state_variables, title_, freq_res_T, freq_res_single)
+            s_freq_res, ax_fs = create_fig_freq_responses(name_syn_state_variables, title_, freq_res_T, freq_res_single,
+                                                          num_single=num_single)
 
 fig_syn_b = False
 fig_H_100 = False
@@ -192,12 +170,6 @@ for gain in gain_v:
         dr_filt = loadObject(dr_syn_filtering_file, path_vars)
         # Auxiliar variables
         initial_frequencies, model = dr_filt['initial_frequencies'], dr_filt['stp_model']
-        # dyn_synapse, num_synapses = dr_filt['dyn_synapse'], dr_filt['num_synapses']
-        # num_realizations, sim_params = dr_filt['realizations'], dr_filt['sim_params']
-        # prop_rate_change_a = dr_filt['prop_rate_change_a']
-        # fix_rate_change_a, num_changes_rate, = dr_filt['fix_rate_change_a'], dr_filt['num_changes_rate'],
-        # description = dr_filt['description']
-        # seeds = dr_filt['seeds']
         total_realizations = dr_filt['t_realizations']
 
         # Name state variables
@@ -218,7 +190,7 @@ for gain in gain_v:
         # For Neurons
         plot_freq_responses(name_n_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_f,
                             norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='n',
-                            transpose=freq_res_T)
+                            transpose=freq_res_T, min_max_mid_win=min_max_mid_win)
         # For synapses
         plot_freq_responses(name_syn_state_variables, dr_filt, dr_gain, dr_['time_transition'], gain, ax_fs,
                             norm_neuron, title_mp, markers, alphas, c_g=c_g[i_g], plot_filt=i_g == 0, ode='s',
@@ -251,7 +223,7 @@ if plot_figs:
 
         if plot_freq_res:
             # Adjusting frequency responses for neurons
-            adjust_freq_responses(ax_f[n], title_freqres, freq_res_T, freq_res_single, gain_v, ylabel_axb)
+            adjust_freq_responses(ax_f[n], title_freqres, freq_res_T, freq_res_single, gain_v, ylabel_freqRes)
 
     for n in range(len(name_syn_state_variables)):
         for k in range(len(title_mp)):
@@ -260,7 +232,7 @@ if plot_figs:
 
         if plot_freq_res:
             # Adjusting frequency responses for synapses
-            adjust_freq_responses(ax_fs[n], title_freqres, freq_res_T, freq_res_single, gain_v, ylabel_axb)
+            adjust_freq_responses(ax_fs[n], title_freqres, freq_res_T, freq_res_single, gain_v, ylabel_freqRes)
 
     # Legends
     # Frequency portraits
@@ -274,7 +246,13 @@ if plot_figs:
     # Frequency responses
     if plot_freq_res:
         if not freq_res_single:
-            lbl_ind = [7, 18] if freq_res_T else []
+            lbl_ind = []
+
+            if freq_res_T:
+                if num_single == 6: lbl_ind = [7, 18]
+                if num_single == 7: lbl_ind = [10, 21]
+                if num_single == 8: lbl_ind = [13, 24]
+
             l_ = len(title_freqres)
             if 0.1 in gain_v and not freq_res_T: lbl_ind.append([int(len(title_mp) / 2) - 1, l_])
             if 0.5 in gain_v and not freq_res_T: lbl_ind.append([6 + int(len(title_mp) / 2) - 1, 6 + l_])
@@ -384,11 +362,9 @@ if plot_phd_meth:
     # Figure PhD thesis (methodology / Frequency responses of amplitude and median for each window)
     title += r", $\delta = %.1f$" % gain
     t_ = ['ini-window', 'mid-window', 'end-window']
-    # cols_ = ['tab:red', 'tab:green', 'tab:blue']
     legends = [r'$E_{ff_{[w],%s}}$', r'$E_{ff_{[w],%s}}^\mathrm{med}$']
     lbl_ = [r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$']
     prefix = ['mtr', 'st']
-    # prefix = ['syn_mtr', 'syn_st']
     prefix_mid = ['ini', 'mid', 'end']
     path_save = folder_plots + dr_gain_control_file
     path_save += '_freq_response_3w_facilitation_phd.png' if ind == 8 else '_freq_response_3w_depression_phd.png'
@@ -397,24 +373,6 @@ if plot_phd_meth:
                                      path_save, True, y_lims_ind_plot=y_lims, y_lbl=y_label)
 
     # Figure PhD thesis (methodology / Frequency responses of pos and neg changes of rate (stat. desc. efficacy)
-    # eff_i_tr = [dr['%s_%s_prop_max' % (prefix[0], prefix_mid[0])] - dr['%s_%s_prop_min' % (prefix[0], prefix_mid[0])],
-    #             dr['%s_%s_prop_q90' % (prefix[0], prefix_mid[0])] - dr['%s_%s_prop_q10' % (prefix[0], prefix_mid[0])],
-    #             dr['%s_%s_prop_med' % (prefix[0], prefix_mid[0])]]
-    # eff_m_tr = [dr['%s_%s_prop_max' % (prefix[0], prefix_mid[1])] - dr['%s_%s_prop_min' % (prefix[0], prefix_mid[1])],
-    #             dr['%s_%s_prop_q90' % (prefix[0], prefix_mid[1])] - dr['%s_%s_prop_q10' % (prefix[0], prefix_mid[1])],
-    #             dr['%s_%s_prop_med' % (prefix[0], prefix_mid[1])]]
-    # eff_e_tr = [dr['%s_%s_prop_max' % (prefix[0], prefix_mid[2])] - dr['%s_%s_prop_min' % (prefix[0], prefix_mid[2])],
-    #             dr['%s_%s_prop_q90' % (prefix[0], prefix_mid[2])] - dr['%s_%s_prop_q10' % (prefix[0], prefix_mid[2])],
-    #             dr['%s_%s_prop_med' % (prefix[0], prefix_mid[2])]]
-    # eff_i_st = [dr['%s_%s_prop_max' % (prefix[1], prefix_mid[0])] - dr['%s_%s_prop_min' % (prefix[1], prefix_mid[0])],
-    #             dr['%s_%s_prop_q90' % (prefix[1], prefix_mid[0])] - dr['%s_%s_prop_q10' % (prefix[1], prefix_mid[0])],
-    #             dr['%s_%s_prop_med' % (prefix[1], prefix_mid[0])]]
-    # eff_m_st = [dr['%s_%s_prop_max' % (prefix[1], prefix_mid[1])] - dr['%s_%s_prop_min' % (prefix[1], prefix_mid[1])],
-    #             dr['%s_%s_prop_q90' % (prefix[1], prefix_mid[1])] - dr['%s_%s_prop_q10' % (prefix[1], prefix_mid[1])],
-    #             dr['%s_%s_prop_med' % (prefix[1], prefix_mid[1])]]
-    # eff_e_st = [dr['%s_%s_prop_max' % (prefix[1], prefix_mid[2])] - dr['%s_%s_prop_min' % (prefix[1], prefix_mid[2])],
-    #             dr['%s_%s_prop_q90' % (prefix[1], prefix_mid[2])] - dr['%s_%s_prop_q10' % (prefix[1], prefix_mid[2])],
-    #             dr['%s_%s_prop_med' % (prefix[1], prefix_mid[2])]]
     eff_m_tr = [dr['%s_%s_prop_max' % (prefix[0], prefix_mid[1])] - dr['%s_%s_prop_min' % (prefix[0], prefix_mid[1])],
                 dr['%s_%s_prop_med' % (prefix[0], prefix_mid[1])]]
     eff_e_tr = [dr['%s_%s_prop_max' % (prefix[0], prefix_mid[2])] - dr['%s_%s_prop_min' % (prefix[0], prefix_mid[2])],
@@ -424,25 +382,18 @@ if plot_phd_meth:
     eff_m_st = [dr['%s_%s_prop_max' % (prefix[1], prefix_mid[1])] - dr['%s_%s_prop_min' % (prefix[1], prefix_mid[1])],
                 dr['%s_%s_prop_med' % (prefix[1], prefix_mid[1])]]
     f_ = 1  # f_vec
-    pc_m_i = [(eff_m_tr[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_tr))]  # + [(eff_m_st[i] - eff_i_st[i]) * f_
-                                                                               #    for i in range(len(eff_m_st))]
-    pc_e_m = [(eff_e_tr[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_tr))]  # + [(eff_e_st[i] - eff_m_st[i]) * f_
-                                                                               #    for i in range(len(eff_e_st))]
+    pc_m_i = [(eff_m_tr[i] - eff_i_st[i]) * f_ for i in range(len(eff_m_tr))]
+    pc_e_m = [(eff_e_tr[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_tr))]
     title = "Frequency responses for Proportional Changes (short-term "
     title += "facilitation)" if ind == 8 else "depression)"
     y_label = [r'$G_{pos}$ (mV)', r'$G_{neg}$ (mV)']
     path_save = folder_plots + dr_gain_control_file
     path_save += '_freq_response_pc_facilitation_phd.png' if ind == 8 else '_freq_response_pc_depression_phd.png'
-    # cols_ = [color_stat[1], color_stat[2]]
     title += r", $\delta = %.1f$" % gain
-    # legends = [r'$PC_{%s,tr}^\mathrm{amp}$', r'$PC_{%s,tr}^\mathrm{var}$', r'$PC_{%s,tr}^\mathrm{med}$',
-    #            r'$PC_{%s,st}$', r'$PC_{%s,st}^\mathrm{var}$', r'$PC_{%s,st}^\mathrm{med}$']  # %s = ['m-i', 'e-m']
     legends = [r'$PC_{%s}^\mathrm{amp}$', r'$PC_{%s}^\mathrm{med}$']
     leg_2 = ['pos', 'neg']
     color_w = [color_stat[1], color_stat[2]]
-    # cols_ = ['tab:red', 'tab:green', 'tab:blue', 'tab:red', 'tab:green', 'tab:blue']
     ls = ['solid', 'dashed']  # , '-', '-', '-']
-    # t_ = [r'$G_{m-i,tr}(r,\delta)$ and $G_{m-i,st}(r,\delta)$', r'$G_{e-m,tr}(r,\delta)$ and $G_{e-m,st}(r,\delta)$']
     t_ = ['Positive changes of rate', 'Negative changes of rate']
     y_lims = [-0.075, 0.11] if ind == 8 else [-0.045, 0.04]
     plot_diff_windows_tr_st_phd(f_vec, pc_m_i, pc_e_m, leg_2, legends, cols_, color_w, t_, title, path_save, True,
@@ -453,7 +404,6 @@ if plot_phd_meth:
     title += "facilitation)" if ind == 8 else "depression)"
     title += r", $\delta = %.1f$" % gain
     t_ = ['ini-window', 'mid-window', 'end-window']
-    # cols_ = ['tab:red', 'tab:green', 'tab:blue']
     legends = r'$H_{%s,%s}$'
     lbl_ = ['i', 'm', 'e']
     y_label = 'Entropy (bits)'

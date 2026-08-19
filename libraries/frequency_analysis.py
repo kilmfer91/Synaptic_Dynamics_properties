@@ -236,8 +236,11 @@ class Freq_analysis:
         c_ax = 0  # counter for axes to plot
         num_freq = len(self.loop_frequencies)
         while i < num_freq:  # 59:
+
             r = self.loop_frequencies[i]
             Input = self.Input_vector[i, :]
+
+            print("freq analaysis for freq %dHz" % r)
 
             # Aux ini
             self.ss_output[:] = np.nan
@@ -249,11 +252,23 @@ class Freq_analysis:
             kwargs_model = {'model': self.model_stp, 'Input': Input[np.newaxis, :], 'params_name': self.name_params,
                             'mode': 'ODE', 'model_neuron': self.model_neuron}
 
+            # Getting masks of interspike intervals (to compute spike responses for each state variable)
+            spike_mask = detect_spikes(Input[np.newaxis, :])
+            edges_syn = spike_edges_from_mask(spike_mask)
+
             # Evaluating the model
             self.model_stp.run_model(time_vector, *self.pa, **kwargs_model)
 
             # Steady-state calculations
             ss_output_aux = np.array(self.model_stp.output_spike_events)
+
+            # Computing inter-spike responses for state variables of neurons and synapses
+            # state_variables = self.model_stp.get_output_state_variables()
+            # a = self.model_stp.compute_spike_outputs_vectorized(state_variables, edges_syn, self.model_stp.operators_sv,
+            #                                           self.model_stp.arg_operators_sv, 1 / self.sfreq)
+            # (self.model_stp.output_spike_events, self.model_stp.output_spike_events_tonic,
+            #  self.model_stp.ind_spike_events, self.model_stp.ind_spike_events_tonic,
+            #  self.model_stp.time_spike_events) = a
 
             # Computing value and index of output's maximum
             model_output = None

@@ -208,7 +208,8 @@ def get_params_stp(name_model, ind):
         description = "MSSM " + str(ind) + " Experiment, facilitation"
         syn_params = [4.99904393e-02, 1.28833999e-02, 2.92508311e+00, 4.88095651e-02,
                       2.11579945e-04, 6.46772602e+01, 7.71595702e-01, 1.52095675e-03,
-                      1.76132558e-01 * 9e-2, 4.36917566e-03]
+                      # 1.76132558e-01 * 9e-2, 4.36917566e-03]
+                      1.76132558e-01 * 5e-3, 4.36917566e-03]
     if name_model == "TM" and ind == 7:
         description = "TM " + str(ind) + " Experiment, decay around 100Hz"
         syn_params = []
@@ -390,7 +391,7 @@ def model_stp(stp_model, n_model, params, Input, lif_n=None):
         if lif_n is not None:
             I_args = [stp_model.N[:, it]]
             lif_n.update_state(it, None, False, I_args)
-        # if it % 10000 == 0:
+        # if it % 1000 == 0:
         #     print_time(m_time() - ini_loop_time, "model_stp(), it %d" % it)
         #     ini_loop_time = time.time()
     # """

@@ -4,19 +4,29 @@ from gain_control.utils_gc import *
 import cProfile, pstats, tracemalloc, os, psutil
 
 # ******************************************************************************************************************
-# Depression using the MSSM
-s_model = 'MSSM'
-n_model = 'LIF'
+SYSTEMS = {
+    1: ["TM", "LIF", 4, 'TM+LIF STD', 1e-3],                    # 4, freq. response from Gain Control paper
+    2: ["TM", "LIF", 8, 'TM+LIF STF', 1e-3],                    # 8, freq. response from differential signalling
+    3: ["MSSM", "LIF", 4, 'MSSM+LIF STD', 1e-3],                # 4, freq. response from Gain Control paper
+    4: ["MSSM", "LIF", 7, 'MSSM+LIF STF', 1e-3],                # 7,
+    5: ["DoornSTD", "HH", 0, 'Doorn STD -healthy-', 1.0],       # 0, Doorn model for healthy networks - STD
+    6: ["DoornSTD", "HH", 1, 'Doorn STD -Dravet-', 1.0],        # 1, Doorn model for Dravet networks - STD
+    7: ["DoornSTF", "HH", 7, 'Doorn STF -Pers. Exc.-', 1.0],    # 7, Doorn model for persistent excitation - STF
+    8: ["DoornSTD", "HH", 8, 'Doorn STD -Dravet-', 1.0],        # 8,  Doorn model for Dravet networks - STD
+    9: ["MSSM", "LIF", 5, 'MSSM+LIF STD', 1e-3],
+}
 
-# (Experiment 4) freq. response from Gain Control paper
-# (Experiment 5) slow-decay frequency response
-ind = 5
+
+ind_sys = 4
+s_model, n_model, ind, sys_description, factor = SYSTEMS[ind_sys]
+
 tau_m = 30
 max_freq = 500
-aux_q90 = "_q95"  # " _q95"
+aux_q90 = "_q90"  # " _q95"
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
-plots_phd = True
+plots_phd = False
+save_figs = False
 dyn_synapse = True
 gaincontrol_sinusoidal = True
 
@@ -30,7 +40,7 @@ dict_results = {}
 folder_vars = "../gain_control/variables/high_freq_10k/"  # Folder to save results
 file_name = None
 save_vars = True
-num_realisations = 100
+num_realisations = 1
 aux_ = [[] for _ in range(num_realisations)]
 P_signal, P_noise = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
 SNR, gc_metric = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
@@ -46,15 +56,15 @@ profiler = None
 val_params, description, name_params = get_params_stp(s_model, ind)
 
 out_ylim_min, out_ylim_max, description_2 = -70, -50, ""
-# if ind == 4: out_ylim_min, out_ylim_max, description_2 = -67, -57, r'Fast-decay synapse with $freq_{st}$ of efficacy=260Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
-# if ind == 5: out_ylim_min, out_ylim_max, description_2 = -70, -50, r'Slow-decay synapse with $freq_{st}$ of efficacy=560Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
-if ind == 4: out_ylim_min, out_ylim_max, description_2 = -70, -35, r'Fast-decay synapse with $freq_{st}$ of efficacy=260Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
-if ind == 5: out_ylim_min, out_ylim_max, description_2 = -70, -35, r'Slow-decay synapse with $freq_{st}$ of efficacy=560Hz ($\tau_m$ ' + str (tau_m) + 'ms)'
-if ind == 7: out_ylim_min, out_ylim_max, description_2 = -60, 400, r'Facilitation ($\tau_m$ ' + str (tau_m) + 'ms)'
-if ind == 8: out_ylim_min, out_ylim_max, description_2 = -70, -20, r'Diff. signaling synapse from Tsodyks, et al. ($\tau_m$ ' + str (tau_m) + 'ms)'
+if ind == 4: out_ylim_min, out_ylim_max, description_2 = -70, -35, r'Fast-decay synapse with $freq_{st}$ of efficacy=260Hz ($\tau_m$ ' + str(tau_m) + 'ms)'
+if ind == 5: out_ylim_min, out_ylim_max, description_2 = -70, -35, r'Slow-decay synapse with $freq_{st}$ of efficacy=560Hz ($\tau_m$ ' + str(tau_m) + 'ms)'
+if ind == 7: out_ylim_min, out_ylim_max, description_2 = -60, 400, r'Facilitation ($\tau_m$ ' + str(tau_m) + 'ms)'
+if ind == 8: out_ylim_min, out_ylim_max, description_2 = -70, -20, r'Diff. signaling synapse from Tsodyks, et al. ($\tau_m$ ' + str(tau_m) + 'ms)'
 
 # time conditions
-max_t, min_imp, max_imp, sfreq = 15, 5, 15, 10e3  # 10.2, 0.2, 10.2, 10e3  #
+max_t, min_imp, max_imp, sfreq = 4.2, 2, 4, 10e3  # 10.2, 0.2, 10.2, 10e3  # 15, 5, 15, 10e3  # 6, 1, 6, 10e3
+k_amp = 1
+freq_sine = 1 / 2
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)
 L = time_vector.shape[0]
@@ -106,8 +116,8 @@ if 100 < max_freq:
         range_f2 = [i for i in range(100, max_freq, 10)]
 else:
     range_f = [i for i in range(10, max_freq, 5)]
-# range_f = [10, 20, 500]
-# range_f2, range_f3, range_f4 = [], [] , []
+# range_f = [1000, 500, 50, 20, 10]  # [1000, 500, 50, 20, 10]  # [10, 20, 50, 500, 1000]
+# range_f2, range_f3, range_f4 = [], [], []
 f_vector = np.array(range_f + range_f2 + range_f3 + range_f4)
 loop_frequencies = np.array(f_vector)
 # **********************************************************************************************************************
@@ -118,12 +128,12 @@ mean_rates, max_oscils, fix_rates = [], [], []
 delta = 0.5
 
 if gaincontrol_sinusoidal:
-    # mean_rates = [[50, 10, 50], [300, 10, 300], [1000, 10, 1000]]  # [[10, 10, 10], [20, 10, 20], [50, 10, 50], [100, 10, 100], [300, 10,  300], [500, 10,  500]]
-    # max_oscils = [[25,  5,  5], [150,  5,  5], [500, 5, 5]]  # [[5, 5,  5],  [10, 5,  5],   [25, 5,  5],  [50,  5,  5],   [150, 5,   5],   [250, 5,   5]]  #
-    # fix_rates = [[10, 50, 10], [10, 300, 10], [10, 1000, 10]]  # [[10, 10, 10], [10, 20, 10],  [10, 50, 10], [10, 100, 10],  [10,  300, 10], [10,   500, 10]]  #
+    # mean_rates = [[50, 10, 50], [300, 10, 300], [1000, 10, 1000]]
+    # max_oscils = [[25,  5,  5], [150,  5,  5], [500, 5, 5]]
+    # fix_rates = [[10, 50, 10], [10, 300, 10], [10, 1000, 10]]
     for i in f_vector:
         mean_rates.append([i, 10, i])
-        max_oscils.append([i - i*delta, 5, 5])
+        max_oscils.append([i - i * delta, 5, 5])
         fix_rates.append([10, i, 10])
 # **********************************************************************************************************************
 
@@ -142,7 +152,7 @@ dict_results = {'initial_frequencies': f_vector, 'num_synapses': num_syn, 'sfreq
                 'tau_lif': tau_m, 'gain_v': delta, 'stp_name_params': name_params, 'stp_value_params': syn_params,
                 'sim_params': sim_params, 'n_params': neuron_params, 'dyn_synapse': dyn_synapse}
 aux_name = "_ind_" + str(ind) + "_sf_" + str(
-            int(sfreq / 1000)) + "k_syn_" + str(num_syn)
+    int(sfreq / 1000)) + "k_syn_" + str(num_syn)
 if neuron_model == 'LIF': aux_name += "_tau" + n_model + "_" + str(tau_m) + "ms"
 aux_name += "_sinusoidal" + aux_q90
 file_name = s_model + aux_name
@@ -170,23 +180,44 @@ if profiling:
 if os.path.isfile(folder_vars + file_name):
     dict_results = loadObject(file_name, folder_vars)
     if plots_phd:
-        fig = plt.figure()
+        title = sys_description + '. Gain control metric - %s(t)'
+        f_vec = dict_results['initial_frequencies']
+        fig = plt.figure(figsize=(7, 3), constrained_layout=True)
+        fig.suptitle(title % 'v', fontsize=22)
         ax = fig.add_subplot(111)
-        SNR_mean = np.mean(np.array(dict_results['SNR']), axis=0)
-        SNR_std = np.std(np.array(dict_results['SNR']), axis=0)
+        # SNR_mean = np.mean(np.array(dict_results['SNR']), axis=0)
+        # SNR_std = np.std(np.array(dict_results['SNR']), axis=0)
         gc_mean = np.mean(np.array(dict_results['gc_metric']), axis=0)
         gc_std = np.std(np.array(dict_results['gc_metric']), axis=0)
-        ax.plot(dict_results['initial_frequencies'], SNR_mean, label='SNR', color='tab:red')
-        ax.fill_between(dict_results['initial_frequencies'], SNR_mean-SNR_std, SNR_mean+SNR_std, color='tab:red',
-                         alpha=0.5)
-        ax.plot(dict_results['initial_frequencies'], gc_mean, label='GC metric', color='tab:blue')
-        ax.fill_between(dict_results['initial_frequencies'], gc_mean - gc_std, gc_mean + gc_std, color='tab:blue',
-                         alpha=0.5)
-        ax.grid()
+        # ax.plot(f_vec, SNR_mean, label='SNR', color='tab:red')
+        # ax.fill_between(f_vec, SNR_mean-SNR_std, SNR_mean+SNR_std, color='tab:red', alpha=0.5)
+        ax.plot(f_vec, gc_mean, label='GC metric', color='black')
+        ax.fill_between(f_vec, gc_mean - gc_std, gc_mean + gc_std, color='gray', alpha=0.3)
+
         ax.legend()
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
+        ax.set_xlabel("Rate (Hz)", color='gray', fontsize=12)
+        ax.set_ylabel("Mem. pot. (mV)", color='gray', fontsize=12)
+        ax.axhline(0, color='gray', linestyle='--', linewidth=0.8)
         ax.set_xscale('log')
+
+        # Getting rates of intersection with zero (amplitude of underlined input equal to noise)
+        r_low = np.argmax(gc_mean - gc_std < 0)
+        r_high = np.argmax(gc_mean + gc_std < 0)
+        r_s_delta = np.argmax(gc_mean < 0)
+        ax.axvline(f_vec[r_low], color='gray', linestyle='dotted', linewidth=0.8)
+        ax.axvline(f_vec[r_s_delta - 1], color='black', linestyle='--', linewidth=0.8)
+        ax.axvline(f_vec[r_high], color='gray', linestyle='dotted', linewidth=0.8)
+        ymin, ymax = ax.get_ylim()
+        xmin, xmax = ax.get_xlim()
+        ax.text(f_vec[r_low], ymax - 0.1 * (ymax - ymin), '%dHz' % f_vec[r_low], fontsize=8, color='gray')
+        ax.text(f_vec[r_high], ymax - 0.1 * (ymax - ymin), '%dHz' % f_vec[r_high], fontsize=8, color='gray')
+        ax.text(f_vec[r_s_delta - 1], ymax, '%dHz' % f_vec[r_s_delta - 1], fontsize=8, color='black')
+
+        path_save = (r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) +
+                     '_gc_metric_taum_' + str(tau_m) + 'ms.png')
+        if save_figs: fig.savefig(path_save, format='png')
 
 if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
     ini_sin_time = m_time()
@@ -213,7 +244,7 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                 seeds2 = [j + se + 2 for j in range(int(L / 2))]
 
                 # Signals with firing rate modulation
-                modulation_signal1 = mean_rate[i] + max_oscil[i] * np.sin(2 * np.pi * (1 / 10) * time_vector_sin)
+                modulation_signal1 = mean_rate[i] + max_oscil[i] * np.sin(2 * np.pi * freq_sine * time_vector_sin)
                 modulation_signal2 = fix_rate[i] * np.ones(L)
 
                 # Sinusoidal modulated firing rate signal
@@ -226,8 +257,10 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                                                        seeds=seeds2)
 
                 # Organising input to correspond to the paper
-                if i == 1: Input_test = np.concatenate((modulated_signal2, modulated_signal1), axis=0)
-                else: Input_test = np.concatenate((modulated_signal1, modulated_signal2), axis=0)
+                if i == 1:
+                    Input_test = np.concatenate((modulated_signal2, modulated_signal1), axis=0)
+                else:
+                    Input_test = np.concatenate((modulated_signal1, modulated_signal2), axis=0)
 
                 # Running STP model
                 if dyn_synapse:
@@ -250,14 +283,15 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                     high_pass_mempot = highpass(mp_signal, 1, sfreq)
                     mem_pot_low_filt = low_pass_mempot[int(min_imp / dt): int(max_imp / dt)]
                     mem_pot_high_filt = high_pass_mempot[int(min_imp / dt): int(max_imp / dt)]
-                    hp_mp_q90, hp_mp_q10 = np.quantile(mem_pot_high_filt, q=0.95), np.quantile(mem_pot_high_filt, q=0.15)
+                    hp_mp_q90, hp_mp_q10 = np.quantile(mem_pot_high_filt, q=0.9), np.quantile(mem_pot_high_filt,
+                                                                                               q=0.1)
                     lp_mp_max, lp_mp_min = np.max(mem_pot_low_filt), np.min(mem_pot_low_filt)
 
-                    P_signal_i = np.mean(np.abs(mem_pot_low_filt - np.mean(mem_pot_low_filt))**2)
-                    P_noise_i = np.mean(np.abs(mem_pot_high_filt)**2)
+                    P_signal_i = np.mean(np.abs(mem_pot_low_filt - np.mean(mem_pot_low_filt)) ** 2)
+                    P_noise_i = np.mean(np.abs(mem_pot_high_filt) ** 2)
                     SNR_ = 10 * np.log10(P_signal_i / P_noise_i)
 
-                    amplitude = lp_mp_max - lp_mp_min
+                    amplitude = k_amp * (lp_mp_max - lp_mp_min)
                     variability = hp_mp_q90 - hp_mp_q10
                     limit_gc = amplitude - variability
 
@@ -294,9 +328,9 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                                   label='q10')
                         ax_s.plot([min_imp, max_imp], [hp_mp_q90, hp_mp_q90], color='tab:green')
                         ax_s.plot([min_imp, max_imp], [hp_mp_q10, hp_mp_q10], color='tab:green', linestyle='--')
-                        ax_s.set_ylim([-1., 2.])
-                        ax_n.set_ylim([-1., 2.])
-                        ax_v.set_ylim([-66, -62.9])
+                        # ax_s.set_ylim([-1., 2.])
+                        # ax_n.set_ylim([-1., 2.])
+                        # ax_v.set_ylim([-66, -62.9])
                         ax_v.grid(), ax_s.grid(), ax_n.grid()
                         ax_v.set_xlabel('Time (s)', color='gray')
                         ax_s.set_xlabel('Time (s)', color='gray')
@@ -306,15 +340,16 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                         ax_n.set_ylabel(r'$v_{\mathrm{HP}}(t)$ (mV)', color='gray')
                         ax_v.set_title('Membrane potential of output neuron for baseline rate %dHz' % mean_rate[0],
                                        color="black", alpha=0.7)
-                        ax_s.set_title('Underlined sinusoidal amplitude A(r) = %.2fmV' % (lp_mp_max - lp_mp_min),
+                        ax_s.set_title('Underlined sinusoidal amplitude A(r) = %.2fmV' % ((lp_mp_max - lp_mp_min) * k_amp * 1e0),
                                        color="black", alpha=0.7)
-                        ax_n.set_title('Noise of membrane potential $\eta(r)=$%.2fmV' % (hp_mp_q90 - hp_mp_q10),
+                        ax_n.set_title('Noise of membrane potential $\eta(r)=$%.2fmV' % ((hp_mp_q90 - hp_mp_q10) * 1e0),
                                        color="black", alpha=0.7)
                         ax_n.legend()
                         plt.tight_layout()
                         path_save = (r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) +
-                                     '_high_and_low_filters_br_' + str(mean_rate[0]) + '_taum_' + str(tau_m) + 'ms.png')
-                        fig_filters.savefig(path_save, format='png')
+                                     '_high_and_low_filters_br_' + str(mean_rate[0]) + '_nSyn_' + str(num_syn) +
+                                     '_taum_' + str(tau_m) + 'ms.png')
+                        if save_figs: fig_filters.savefig(path_save, format='png')
                 # ******************************************************************************************************************
                 # """
 
@@ -344,10 +379,10 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                                           num_graphs=len(mean_rates), pathsave=path_save, savefig=False)
                 fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
                 fig_esann.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
-                fig_esann.savefig(path_save, format='png')
+                if save_figs: fig_esann.savefig(path_save, format='png')
                 path_save = (r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) +
                              '_input_example.png')
-                # fig_essan3.savefig(path_save, format='png')
+                # if save_figs: fig_essan3.savefig(path_save, format='png')
 
             # time_desc = (f'[%dsin(0.2pit) + %d, %d], [%d, %dsin(0.2pit) + %d], [%dsin(0.2pit) + %d, %d]' %
             #              (max_oscil[0], mean_rate[0], fix_rate[0], fix_rate[1], max_oscil[1], mean_rate[1],
@@ -399,7 +434,7 @@ if freq_analysis:
     fa.set_model(model_str=s_model, sim_params=sim_params, name_params=list(params.keys()),
                  model_params=list(params.values()))
     fa.run(ax=ax)
-    # plot_freq_analysis(fa, " " + model + " a")
+    plot_freq_analysis(fa, " " + s_model + " a")
     title = ""
     if ind == 4: title = "Efficacy for fast-decay synapse"
     if ind == 5: title = "Efficacy for slow-decay synapse"
@@ -416,7 +451,8 @@ if freq_analysis:
     if ind == 4: title = "Frequency response for STD"
     if ind == 8: title = "Frequency response for STF"
     path = "../gain_control/plots/freq_response_" + title[-3:] + ".png"
-    plot_gc_sin_freq_response_efficacy(loop_frequencies, fa, title, freqst=False, savefig=True, path=path, log_sc=True)
+    plot_gc_sin_freq_response_efficacy(loop_frequencies, fa, title, freqst=False, savefig=save_figs, path=path,
+                                       log_sc=True)
     # ******************************************************************************************************************
 
     c_ax = 1
@@ -436,7 +472,8 @@ if freq_analysis:
         ax_.set_ylim([-0.001, 0.085])
         fig.tight_layout()
         # x.legend()
-        # fig.savefig("../gain_control/plots/MSSM_dep_freq_res_" + str(loop_frequencies[i]) + "_2.png", format='png')
+        # if save_figs: fig.savefig("../gain_control/plots/MSSM_dep_freq_res_" + str(loop_frequencies[i]) + "_2.png", 
+                                    format='png')
         # """
 
         # """
@@ -455,7 +492,7 @@ if freq_analysis:
             ax[c_ax].set_xlim(9, loop_frequencies[-1] + 50)
             c_ax += 2
     fig_phd.tight_layout()
-    # fig_phd.savefig("../gain_control/plots/MSSM_fac_temp_freq_res.png", format='png')
+    # if save_figs: fig_phd.savefig("../gain_control/plots/MSSM_fac_temp_freq_res.png", format='png')
     # plt.close(fig_phd)
     # ******************************************************************************************************************
     # """

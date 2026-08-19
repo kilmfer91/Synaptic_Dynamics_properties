@@ -140,12 +140,12 @@ class SynDynModel:
         assert isinstance(spike_range[1], int), "second element of param 'spike_range' must be integer"
         assert spike_range[1] >= spike_range[0], "Param 'spike_range' must contain order elements"
         assert isinstance(output, np.ndarray), "Param 'output' must be a numpy array"
-        # assert len(output.shape) == 2, "Param 'output' must be a 2D-array, current size is " + str(output.shape)
-        # assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
-        #                                            "the length of param 'output'")
-        assert len(output.shape) == 3, "Param 'output' must be a 3D-array, current size is " + str(output.shape)
-        assert output.shape[2] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+        assert len(output.shape) == 2, "Param 'output' must be a 2D-array, current size is " + str(output.shape)
+        assert output.shape[1] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
                                                    "the length of param 'output'")
+        # assert len(output.shape) == 3, "Param 'output' must be a 3D-array, current size is " + str(output.shape)
+        # assert output.shape[2] >= spike_range[1], ("second element of param 'spike_range' must be less or equal than "
+        #                                            "the length of param 'output'")
         if spike_range[1] == spike_range[0]:
             # phasic component of spiking responses
             self.output_spike_events[s].append(list(output[:, s, spike_range[0]]))
@@ -396,7 +396,95 @@ class SynDynModel:
         return (efficacy, eff_2, eff_3, output_steady_state, t_steady_state, ind_max, eff_tonic, eff_2_tonic,
                 eff_3_tonic, output_steady_state_tonic, ind_max_out_tonic)
 
-    # @staticmethod
+    @staticmethod
+    def compute_spike_outputs_vectorized(output, time_spike_events, operators_sv, arg_operators_sv, dt):
+        """
+        Compute per-spike output summaries for all synapses.
+
+        Parameters
+        ----------
+        output : np.ndarray
+            Shape (n_state_vars, n_syn, L)
+        time_spike_events : list[np.ndarray]
+            List of length n_syn; each is a 1D array of spike times.
+        operators_sv : list[callable]
+            One operator per state variable, e.g. [np.min, np.max, ...]
+        arg_operators_sv : list[callable]
+            One operator per state variable returning an index, e.g. [np.argmin, np.argmax, ...]
+        dt: float
+            Time step in seconds.
+        Returns
+        -------
+        output_spike_events : list[list]
+            output_spike_events[s][i] = list of per-state-variable summaries for spike i of synapse s.
+        output_spike_events_tonic : list[list]
+            Tonic component per spike.
+        ind_spike_events : list[list]
+        ind_spike_events_tonic : list[list]
+        """
+        n_state_vars, n_syn, L = output.shape
+        assert len(time_spike_events) == n_syn
+        assert len(operators_sv) == n_state_vars
+        assert len(arg_operators_sv) == n_state_vars
+
+        output_spike_events = [[] for _ in range(n_syn)]
+        output_spike_events_tonic = [[] for _ in range(n_syn)]
+        ind_spike_events = [[] for _ in range(n_syn)]
+        ind_spike_events_tonic = [[] for _ in range(n_syn)]
+        time_spike_events_t = [[] for _ in range(n_syn)]
+
+        # Tonic component at t=0 (same for all spikes, but you can repeat per spike if needed)
+        tonic_all = output[:, :, 0]  # shape (n_state_vars, n_syn)
+
+        for s in range(n_syn):
+            spikes = time_spike_events[s]
+            if len(spikes) == 0:
+                continue
+
+            # Tonic: for each spike, store the same tonic vector (matching your original logic)
+            tonic_s = tonic_all[:, s]  # (n_state_vars,)
+            for _ in spikes:
+                output_spike_events_tonic[s].append(list(tonic_s))
+
+            # Phasic / interval-based
+            for i, t_curr in enumerate(spikes):
+                if i == 0:
+                    # No previous spike: treat as single-time phasic
+                    per_state_variable = list(output[:, s, t_curr])
+                    output_spike_events[s].append(per_state_variable)
+                    ind_spike_events_tonic[s].append(t_curr - 1)
+                    ind_spike_events[s].append(t_curr)
+                    continue
+
+                t_prev = spikes[i - 1]
+                if t_curr == t_prev:
+                    # Same time step (edge case)
+                    per_state_variable = list(output[:, s, t_curr])
+                    output_spike_events[s].append(per_state_variable)
+                    ind_spike_events_tonic[s].append(t_curr - 1)
+                    ind_spike_events[s].append(t_curr)
+                else:
+                    # Interval [t_prev, t_curr)
+                    segment = output[:, s, t_prev:t_curr]  # (n_state_vars, interval_len)
+
+                    # Apply operators per state variable
+                    per_state_variable = [op(segment[sv, :]) for sv, op in enumerate(operators_sv)]
+                    output_spike_events[s].append(per_state_variable)
+
+                    # Arg operators
+                    a = np.array([
+                        op(segment[sv, :]) for sv, op in enumerate(arg_operators_sv)
+                    ])
+
+                    ind_spike_events_tonic[s].append(t_prev - 1)
+                    ind_spike_events[s].append(a + t_prev)
+
+            # time spike events
+            time_spike_events_t[s] = time_spike_events[s] * dt
+        a = (output_spike_events, output_spike_events_tonic, ind_spike_events, ind_spike_events_tonic,
+             time_spike_events_t)
+        return a
+
     def run_model(self, time_vector, *args, **kwargs):
         """
         Simulation of synapses of SynDynModel objects for a given input (kwargs['Input']), a given set of parameters
@@ -447,6 +535,13 @@ class SynDynModel:
         self.set_model_params(param)
         self.set_initial_conditions()
 
+        # Creating connectiviy matrix
+        num_neu = 1
+        num_syn = self.n_syn
+        id_mat = np.eye(num_neu)
+        id_rep = np.tile(np.eye(num_syn), num_neu).T
+        connectivity = np.repeat(id_mat, num_syn, axis=0)
+
         # If there is a neuron model
         model_neuron = None
         if "model_neuron" in kwargs:
@@ -468,9 +563,20 @@ class SynDynModel:
                 else:
                     assert False, "'ODE mode' must be either 'ODE' or 'odeint'"
 
+                # Converting model output into matrix alike
+                stp_output = self.get_output()
+                I_args = []
+
+                # stp_output.ndim == 2:
+                # stp_output shape: (n_syn, L)
+                aux_input = np.resize(np.repeat(stp_output[:, t], num_neu), (num_syn * num_neu, num_neu))
+                c = aux_input * connectivity
+                aux_2 = np.matmul(c.T, id_rep).T
+                I_args.append(aux_2)
+
                 # Evaluating neuron response
                 if model_neuron is not None:
-                    model_neuron.update_state(self.get_output[:, it], t)
+                    model_neuron.update_state(t,  None, False, I_args)
                     # Output based on the neuron model
                     output_model = model_neuron.membrane_potential
                 else:
@@ -485,9 +591,17 @@ class SynDynModel:
 
             # Computing output spike event in the last ISI
             t = L
-            spike_range = (self.time_spike_events[-1], t)
+            # spike_range = (self.time_spike_events[-1], t)
             # self.compute_output_spike_event(spike_range, output_model)
-            self.append_spike_event(t, [True for _ in range(1)], output_model, append_time=False)
+            # self.append_spike_event(t, [True for _ in range(1)], output_model, append_time=False)
+
+            # Detecting spike events and storing model output
+            if model_neuron is not None:
+                spike_range = (model_neuron.time_spike_events[-1], t)
+                model_neuron.append_spike_event(t, [True for _ in range(num_neu)],
+                                                model_neuron.get_output_state_variables(), append_time=False)
+            self.append_spike_event(t, [True for _ in range(num_neu)], self.get_output_state_variables(),
+                                         append_time=False)
 
         if return_only_spike_event:
             return np.array(self.output_spike_events).T

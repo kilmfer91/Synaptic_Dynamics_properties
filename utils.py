@@ -467,6 +467,45 @@ def lowpass(data: np.ndarray, cutoff: float, sample_rate: float, poles: int = 5)
     return filtered_data
 
 
+def detect_spikes(Input: np.ndarray) -> np.ndarray:
+    """
+    Detect spikes (rising edges) in Input.
+    Parameters
+    ----------
+    Input : np.ndarray
+        Shape (n_syn, L)
+    Returns
+    -------
+    spike_mask : np.ndarray
+        Boolean array, shape (n_syn, L), True where a spike occurs.
+    """
+    assert Input.ndim == 2
+    n_syn, L = Input.shape
+    spike_mask = np.zeros_like(Input, dtype=bool)
+    # t == 0
+    spike_mask[:, 0] = Input[:, 0] > 0.0
+    # t > 0: rising edge
+    if L > 1:
+        spike_mask[:, 1:] = Input[:, 1:] > Input[:, :-1]
+    return spike_mask
+
+
+def spike_edges_from_mask(spike_mask):
+    n_syn, L = spike_mask.shape
+    rows, cols = np.where(spike_mask)
+    mw_i, ew_i = int(L / 3), int(2 * L / 3)  # Indices of beginning mid and end windows
+    edges_per_syn = []
+    start = 0
+    for s in range(n_syn):
+        end = start + np.sum(rows == s)
+        spikes_s = cols[start:end]  # already sorted because cols is monotonic within each row
+        spikes_s_m_e_wind = np.sort(list(spikes_s) + [int(L / 3), int(2 * L / 3)])
+        edges_per_syn.append(spikes_s_m_e_wind)
+        start = end
+
+    return edges_per_syn
+
+
 # **********************************************************************************************************************
 # LOADING EXAMPLES OF FITTING
 class Example_fitting:

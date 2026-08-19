@@ -626,13 +626,13 @@ class GC_prop_cons:
                             plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
                                                        "Colour convention for windows (%dHz)" % f_vector[i], max_t, path_save=path_save,
                                                        save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
-                                                       plot_stats=False, plt_grid=False, plot_phd_pre_results=True,
+                                                       plot_stats=True, plt_grid=False, plot_phd_pre_results=True,
                                                        color_win=color_win, color_stat=color_stat)
-                            plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
-                                                       "Colour convention for changes of rate (%dHz)" % f_vector[i], max_t, path_save=path_save2,
-                                                       save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
-                                                       plot_stats=False, plt_grid=False, plot_phd_pre_res_2=True,
-                                                       color_win=color_stat[1:3], color_stat=color_stat)
+                            # plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
+                            #                            "Colour convention for changes of rate (%dHz)" % f_vector[i], max_t, path_save=path_save2,
+                            #                            save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
+                            #                            plot_stats=False, plt_grid=False, plot_phd_pre_res_2=True,
+                            #                            color_win=color_stat[1:3], color_stat=color_stat)
                         # """
                         # ****************************************************************************************
                         # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
