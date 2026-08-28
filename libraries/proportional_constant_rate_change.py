@@ -622,7 +622,7 @@ class GC_prop_cons:
                         # """
                         # ****************************************************************************************
                         # Figure for PhD dissertation: methodology - state variables neuron in time + statistical descr.
-                        if flag_plots[2]:
+                        if flag_plots[2] and k == 'v':
                             plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
                                                        "Colour convention for windows (%dHz)" % f_vector[i], max_t, path_save=path_save,
                                                        save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,

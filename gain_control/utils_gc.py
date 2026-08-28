@@ -79,8 +79,8 @@ def get_neuron_params(n_model, tau_m, ind, y_lim_ind_plot=False, num_syn=1, num_
                     'sigma': np.array([0 for _ in range(n)]),  # 4.1e-3,  # mV (noise std dev)
                     'g_AHP': np.array([10.0e-9 for _ in range(n)]),  # nS
                     'E_AHP': np.array([-80.0e-3 for _ in range(n)]),  # mV (= EK)
-                    'g_ampa': np.array([0.2808e-9 for _ in range(n)]),  # nS -> for sigma = 0
-                    'g_nmda': np.array([0.0981e-9 for _ in range(n)]),  # nS -> for sigma = 0
+                    'g_ampa': np.array([0.2808e-9 * 0.8e-2 for _ in range(n)]),  # nS -> for sigma = 0  0.2808e-9
+                    'g_nmda': np.array([0.0981e-9 * 0.8e-2 for _ in range(n)]),  # nS -> for sigma = 0  0.0981e-9
                     'E_ampa': np.array([0e-3 for _ in range(n)]),  # mV
                     'E_nmda': np.array([0e-3 for _ in range(n)]),  # mV
                     'tau_Ca': np.array([6.0e-3 for _ in range(n)]),  # ms  6000e-3
@@ -215,8 +215,10 @@ def get_params_stp(name_model, ind):
         syn_params = []
     # (Experiment 8) differential signaling
     if name_model == "MSSM" and ind == 8:
-        description = "MSSM " + str(ind) + " Experiment, facilitation diff. signaling"
-        syn_params = []
+        description = "MSSM " + str(ind) + " Experiment, facilitation own tests"
+        syn_params = [1.43804235e-01, 1.30955040e+00, 6.53571486e-01, 4.72377948e-02,
+                       2.15949232e-05, 6.13937749e+01, 9.96381830e-01, 1.01790542e-03,
+                       5.16671941e-01 * 5e-3, 1.09527986e-03]
     if name_model == "TM" and ind == 8:
         description = "TM " + str(ind) + " Experiment, facilitation diff. signaling"
         # params_name_tm = ['U0', 'tau_f', 'tau_d', 'Ase', 'tau_syn']
@@ -391,9 +393,9 @@ def model_stp(stp_model, n_model, params, Input, lif_n=None):
         if lif_n is not None:
             I_args = [stp_model.N[:, it]]
             lif_n.update_state(it, None, False, I_args)
-        # if it % 1000 == 0:
-        #     print_time(m_time() - ini_loop_time, "model_stp(), it %d" % it)
-        #     ini_loop_time = time.time()
+        if it % 1000 == 0:
+            print_time(m_time() - ini_loop_time, "model_stp(), it %d" % it)
+            ini_loop_time = time.time()
     # """
 
     """

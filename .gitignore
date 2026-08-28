@@ -15,7 +15,7 @@ performance_in_pc.txt
 # OS generated files #
 ######################
 *.DS_Store
-
+*.png
 
 # PYCHARM #
 ######################
@@ -27,6 +27,7 @@ synaptic_dynamic_models/__pycache__/
 
 /gain_control/schedule_experiments_prop_fix.xlsx
 /gain_control/~$schedule_experiments_prop_fix.xlsx
+/gain_control/example_gain_control_boxes.py
 /example_HH_Doorn.py
 /spiking_neuron_models/Doorn_realistic_model_example.py
 /spiking_neuron_models/Doorn_realistic_model_copy.py
@@ -35,3 +36,6 @@ synaptic_dynamic_models/__pycache__/
 /spiking_neuron_models/Doorn_control_model.py
 realistic_model_Doorn2023.py
 realistic_model_doorn2024.py
+elecranges.dat
+test_simulation
+test_simulation.csv

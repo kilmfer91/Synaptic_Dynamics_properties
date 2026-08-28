@@ -1,31 +1,33 @@
-import pylab as pl
+import cProfile
+import os
+import pstats
 
 from gain_control.utils_gc import *
-import cProfile, pstats, tracemalloc, os, psutil
 
 # ******************************************************************************************************************
 SYSTEMS = {
     1: ["TM", "LIF", 4, 'TM+LIF STD', 1e-3],                    # 4, freq. response from Gain Control paper
     2: ["TM", "LIF", 8, 'TM+LIF STF', 1e-3],                    # 8, freq. response from differential signalling
     3: ["MSSM", "LIF", 4, 'MSSM+LIF STD', 1e-3],                # 4, freq. response from Gain Control paper
-    4: ["MSSM", "LIF", 7, 'MSSM+LIF STF', 1e-3],                # 7,
+    4: ["MSSM", "LIF", 7, 'MSSM+LIF STF', 1e-3],                # 7, Strong STF
     5: ["DoornSTD", "HH", 0, 'Doorn STD -healthy-', 1.0],       # 0, Doorn model for healthy networks - STD
     6: ["DoornSTD", "HH", 1, 'Doorn STD -Dravet-', 1.0],        # 1, Doorn model for Dravet networks - STD
     7: ["DoornSTF", "HH", 7, 'Doorn STF -Pers. Exc.-', 1.0],    # 7, Doorn model for persistent excitation - STF
     8: ["DoornSTD", "HH", 8, 'Doorn STD -Dravet-', 1.0],        # 8,  Doorn model for Dravet networks - STD
     9: ["MSSM", "LIF", 5, 'MSSM+LIF STD', 1e-3],
+    10: ["MSSM", "LIF", 8, 'MSSM+LIF STF', 1e-3],               # 8, softer STF
 }
 
 
-ind_sys = 4
+ind_sys = 5
 s_model, n_model, ind, sys_description, factor = SYSTEMS[ind_sys]
 
 tau_m = 30
 max_freq = 500
-aux_q90 = "_q90"  # " _q95"
+aux_q90 = "_q90_"  # " _q95"
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
-plots_phd = False
+plots_phd = True
 save_figs = False
 dyn_synapse = True
 gaincontrol_sinusoidal = True
@@ -39,7 +41,7 @@ num_syn = 200
 dict_results = {}
 folder_vars = "../gain_control/variables/high_freq_10k/"  # Folder to save results
 file_name = None
-save_vars = True
+save_vars = False
 num_realisations = 1
 aux_ = [[] for _ in range(num_realisations)]
 P_signal, P_noise = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
@@ -64,6 +66,7 @@ if ind == 8: out_ylim_min, out_ylim_max, description_2 = -70, -20, r'Diff. signa
 # time conditions
 max_t, min_imp, max_imp, sfreq = 4.2, 2, 4, 10e3  # 10.2, 0.2, 10.2, 10e3  # 15, 5, 15, 10e3  # 6, 1, 6, 10e3
 k_amp = 1
+D_amp = 1e-3 if "Doorn" in s_model else 1
 freq_sine = 1 / 2
 dt = 1 / sfreq
 time_vector = np.arange(0, max_t, dt)
@@ -81,8 +84,8 @@ s_params = dict(zip(name_params, syn_params))
 neuron_params = get_neuron_params(n_model=n_model, tau_m=tau_m, ind=ind, y_lim_ind_plot=True, num_syn=1)
 
 # Reducing synaptic strength of neurotransmitters in case of Doorn models
-if 'g_nmda' in neuron_params: neuron_params['g_nmda'] = neuron_params['g_nmda'] * 5e-2
-if 'g_ampa' in neuron_params: neuron_params['g_ampa'] = neuron_params['g_ampa'] * 5e-2
+# if 'g_nmda' in neuron_params: neuron_params['g_nmda'] = neuron_params['g_nmda'] * 5e-2
+# if 'g_ampa' in neuron_params: neuron_params['g_ampa'] = neuron_params['g_ampa'] * 5e-2
 
 # Creating STP and neuron models
 stp_model, neuron_model = models_creation_gc_sin(s_model, n_model, s_params, neuron_params, sim_params,
@@ -116,8 +119,8 @@ if 100 < max_freq:
         range_f2 = [i for i in range(100, max_freq, 10)]
 else:
     range_f = [i for i in range(10, max_freq, 5)]
-# range_f = [1000, 500, 50, 20, 10]  # [1000, 500, 50, 20, 10]  # [10, 20, 50, 500, 1000]
-# range_f2, range_f3, range_f4 = [], [], []
+range_f = [1000, 500, 100, 10]  # [1000, 500, 50, 20, 10]  # [10, 20, 50, 500, 1000]
+range_f2, range_f3, range_f4 = [], [], []
 f_vector = np.array(range_f + range_f2 + range_f3 + range_f4)
 loop_frequencies = np.array(f_vector)
 # **********************************************************************************************************************
@@ -340,9 +343,9 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                         ax_n.set_ylabel(r'$v_{\mathrm{HP}}(t)$ (mV)', color='gray')
                         ax_v.set_title('Membrane potential of output neuron for baseline rate %dHz' % mean_rate[0],
                                        color="black", alpha=0.7)
-                        ax_s.set_title('Underlined sinusoidal amplitude A(r) = %.2fmV' % ((lp_mp_max - lp_mp_min) * k_amp * 1e0),
+                        ax_s.set_title('Underlined sinusoidal amplitude A(r) = %.2fmV' % ((lp_mp_max - lp_mp_min) * k_amp * D_amp),
                                        color="black", alpha=0.7)
-                        ax_n.set_title('Noise of membrane potential $\eta(r)=$%.2fmV' % ((hp_mp_q90 - hp_mp_q10) * 1e0),
+                        ax_n.set_title('Noise of membrane potential $\eta(r)=$%.2fmV' % ((hp_mp_q90 - hp_mp_q10) * D_amp),
                                        color="black", alpha=0.7)
                         ax_n.legend()
                         plt.tight_layout()
