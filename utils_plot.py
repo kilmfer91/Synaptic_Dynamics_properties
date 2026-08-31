@@ -1079,6 +1079,82 @@ def plot_features_Doorn0_2windows_phd(f_vector, dr, pre_, mid_, lbl, legends, co
     if save_figs: fig.savefig(path_save, format='png')
 
 
+def plot_features_1_f_law_syn_conductance_phd(f_vector, dr, pre_, mid_, lbl, legends, cols, t_, title_graph,
+                                              path_save, save_figs, y_lims_ind_plot=None, ls=None, normalise=False,
+                                              min_n=None, max_n=None, y_lbl=None, linestyle=None, tr_ini_amp=True,
+                                              f_aux_amp=None, f_aux_med=None):
+    fig, ax = plt.subplots(1, 2, figsize=(8, 2.5))
+    groupAy = [i for i in ax]
+    for ax_ in groupAy: ax_.sharey(groupAy[0])
+    if legends is not None: plt.suptitle(title_graph, color='black', fontsize=16)
+    ylims = y_lims_ind_plot if y_lims_ind_plot is not None else None  # [-70.15, -67.3]  # [-70.05, -52]
+    y_label = y_lbl if y_lbl is not None else None
+    if linestyle is None: linestyle = ['solid', 'solid', 'solid']
+    if f_aux_amp is None: f_aux_amp = [None, None, None]
+    if f_aux_med is None: f_aux_med = [None, None, None]
+
+    gains = list(dr.keys())
+    g0 = gains[0]
+
+    ax_st2 = ax[0]
+    # Amplitudes
+    sign1 = [dr[g0]['%s_%s_prop_max' % (pre_[0], mid_[0])] - dr[g0]['%s_%s_prop_min' % (pre_[0], mid_[0])],
+             dr[g0]['%s_%s_prop_max' % (pre_[0], mid_[1])] - dr[g0]['%s_%s_prop_min' % (pre_[0], mid_[1])],
+             dr[g0]['%s_%s_prop_max' % (pre_[0], mid_[2])] - dr[g0]['%s_%s_prop_min' % (pre_[0], mid_[2])]]
+    if not tr_ini_amp: sign1 = sign1[1:]
+
+    for j in range(len(sign1)):
+        i_j = j if tr_ini_amp else j + 1
+        # sign = norm_array(sign1[j], compute_norm=normalise, min_n=min_n, max_n=max_n)
+        s_shape = sign1[j].shape
+        factor = np.reshape(np.repeat(f_vector, s_shape[0]), (s_shape[1], s_shape[0])).T
+        sign = sign1[j] * factor
+        label = legends[j] % mid_[j]
+        ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[i_j], linestyle=linestyle[j], label=label)
+        ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                            color=cols[i_j], alpha=0.2)
+        #
+        if j != 0: aux_freq_res_mid_windows(ax_st2, avg_f(sign), cols[i_j], f_vector, 1, 'mV',
+                                            f_aux=f_aux_amp[j], shift=j % 2 == 0)
+
+    ax_st2.set_title(t_[0], color='black', alpha=0.7, fontsize=12)
+    ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
+    ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
+    # ax_st2.grid()
+    ax_st2.set_xscale('log')
+    if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+    # Proxy of synaptic conductances
+    ax_st2 = ax[1]
+    markers_flag = True
+    for gain_factor, dr_ in dr.items():
+        sign1 = [dr_['%s_%s_prop_max' % (pre_[0], mid_[0])] - dr_['%s_%s_prop_min' % (pre_[0], mid_[0])],
+                 dr_['%s_%s_prop_max' % (pre_[0], mid_[2])] - dr_['%s_%s_prop_min' % (pre_[0], mid_[2])]]
+        for j in range(len(sign1)):
+            s_shape = sign1[j].shape
+            factor = np.reshape(np.repeat(f_vector * gain_factor, s_shape[0]), (s_shape[1], s_shape[0])).T
+            sign = sign1[j] * factor
+            label = legends[j + 3] % (gain_factor, mid_[j])
+            ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=label, linestyle=linestyle[j])
+            ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
+                                color=cols[j], alpha=0.2)
+            if markers_flag:
+                aux_freq_res_mid_windows(ax_st2, avg_f(sign), cols[j], f_vector, 1, 'mV',
+                                         f_aux=f_aux_med[j], shift=j % 2 == 0)
+            markers_flag = False
+
+    ax_st2.set_title(t_[1], color='black', alpha=0.7, fontsize=12)
+    ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
+    ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
+    # ax_st2.grid()
+    ax_st2.set_xscale('log')
+    if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
+
+    if legends is not None: fig.legend(bbox_to_anchor=(1.0, 1.0), loc='outside lower center', borderaxespad=0.,
+                                          fontsize=12)
+    if save_figs: fig.savefig(path_save, format='png')
+
+
 def plot_features_tr_st_1window(f_vector, sign1, sign2, lbl, cols, t_, title_graph, path_save, save_figs,
                                     y_lims_ind_plot=None, normalise=False, min_n=None, max_n=None, y_lbl=None):
     fig_st2 = plt.figure(figsize=(6, 3.2))

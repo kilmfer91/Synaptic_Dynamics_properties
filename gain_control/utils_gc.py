@@ -98,8 +98,8 @@ def get_neuron_params(n_model, tau_m, ind, y_lim_ind_plot=False, num_syn=1, num_
             n_params['g_na'] = np.array([240e-9 for _ in range(n)])  # nS -> (80 mS/cm² * 300 um²)
             n_params['g_kd'] = np.array([19.5e-9 for _ in range(n)])  # nS -> (6.5 mS/cm² * 300 um²)
             n_params['g_AHP'] = np.array([5e-9 for _ in range(n)])  # nS
-            n_params['g_ampa'] = np.array([1.6e-9 for _ in range(n)])
-            n_params['g_nmda'] = np.array([0.4e-9 for _ in range(n)])
+            n_params['g_ampa'] = np.array([1.6e-9 * 0.8e-2 for _ in range(n)])
+            n_params['g_nmda'] = np.array([0.4e-9 * 0.8e-2 for _ in range(n)])
             # n_params['sigma'] = np.array([0e-3 for _ in range(n)])  # 8mV
             n_params['tau_Ca'] = np.array([8.0e-3 for _ in range(n)])  # 8000ms
         #  From paper "Breaking the burst" - Doorn, et al., 2024
@@ -357,7 +357,7 @@ def static_synapse(lif, Input, g):
     # mssm.compute_output_spike_event(spike_range, mssm.get_output())
 
 
-def model_stp(stp_model, n_model, params, Input, lif_n=None):
+def model_stp(stp_model, n_model, params, Input, lif_n=None, aux_debug=""):
     # Update parameters and initial conditions
     stp_model.set_model_params(params)
 
@@ -394,7 +394,7 @@ def model_stp(stp_model, n_model, params, Input, lif_n=None):
             I_args = [stp_model.N[:, it]]
             lif_n.update_state(it, None, False, I_args)
         if it % 1000 == 0:
-            print_time(m_time() - ini_loop_time, "model_stp(), it %d" % it)
+            print_time(m_time() - ini_loop_time, "model_stp(), %s, it %d" % (aux_debug, it))
             ini_loop_time = time.time()
     # """
 

@@ -22,7 +22,7 @@ s_model, n_model, ind, sys_description, factor = SYSTEMS[ind_sys]
 # Flags for plotting
 save_figs = False
 plot_figs = True
-plot_phd_meth = True
+plot_phd_meth = False
 plot_freq_res = False
 freq_res_T = True
 freq_port_T = True
@@ -107,6 +107,7 @@ units_v = (u_v, u_mv)
 # **********************************************************************************************************************
 gain_v = [0.1, 0.5, 1.0]
 ind_gain = {0.1: 0, 0.5: 1, 1.0: 2}
+dr_gains = {}
 filt_dict_loaded = False
 
 # Titles graphs
@@ -279,6 +280,7 @@ for gain in gain_v:
 
     if os.path.isfile(path_vars + dr_gain_control_file):
         dr_gain = loadObject(dr_gain_control_file, path_vars)
+        dr_gains[gain] = dr_gain
 
     f_vec = dr_gain['initial_frequencies']
     f_vecD = dr_filt['initial_frequencies']
@@ -466,6 +468,43 @@ for i in range(20): plt.plot(a[2, i:], alpha=0.5, linestyle='--')
 plt.grid()
 # """
 
+# Figure PhD thesis (Results / Frequency responses of Doorn models - control case (Transients - amp and med)
+title = sys_description + ", Temporal filtering, %s(t)" % 'v'
+title += r", $\delta$ = 100%"
+t_ = ['Amplitudes', 'Medians']
+
+path_save = folder_plots + dr_gain_control_file
+path_save += '_freq_response_3w_Doorn' + str(ind) + '_filt_phd.png'
+# if ind == 6: path_save += '_freq_response_3w_Doorn1_tr_med_phd.png'
+
+color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
+color_win = ["tab:red", "tab:olive", "tab:blue"]
+cols_ = [color_stat[0], color_stat[3]]
+lbl_ = [r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$']
+prefix = ['st']
+prefix_mid = ['ini', 'mid', 'end']
+linestyle = ['dashdot', 'dashed', 'dotted']
+legends = [r'$Eff_{%s,st}$', r'$Eff_{%s,st}$', r'$Eff_{%s,st}$']
+y_label = r"$V(t)$ (mV)"
+y_lims = [-0.01, 0.20] if ind == 8 else None
+y_lims2 = [-0.01, 0.20] if ind == 7 else None
+f_aux_amp = ['max', 'max', 'max']
+f_aux_med = [None, 55, 130] if ind == 1 else [None, None, None]
+
+plot_features_Doorn0_2windows_phd(f_vec, dr_gain, prefix, prefix_mid, lbl_, legends, color_win, t_, title,
+                                  path_save, save_figs, y_lims_ind_plot=y_lims, y_lbl=y_label, linestyle=linestyle,
+                                  f_aux_amp=f_aux_amp, f_aux_med=f_aux_med, law_1_f=False)
+# For 1/f law
+title = sys_description + ", Net depolarisation, %s(t)" % 'v'
+path_save = folder_plots + dr_gain_control_file
+path_save += '_freq_response_3w_Doorn' + str(ind) + '_net_depolarisation_phd.png'
+legends = [r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$',
+           r'$(\delta=%.1f) \Delta r*Eff_{%s,st(pos)}$', r'$(\delta=%.1f) \Delta mr*Eff_{%s,st(neg)}$']
+t_ = ['Net depolarisation', 'Synaptic conductance']
+plot_features_1_f_law_syn_conductance_phd(f_vec, dr_gains, prefix, prefix_mid, lbl_, legends, color_win, t_,
+                                          title, path_save, save_figs, y_lbl=y_label, linestyle=linestyle,
+                                          f_aux_amp=f_aux_amp, f_aux_med=f_aux_amp)
+
 if plot_phd_meth:
     color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
     color_win = ["tab:red", "tab:olive", "tab:blue"]
@@ -598,10 +637,10 @@ if plot_phd_meth:
     title = sys_description + ", Net depolarisation, %s(t)" % 'v'
     path_save = folder_plots + dr_gain_control_file
     path_save += '_freq_response_3w_Doorn' + str(ind) + '_net_depolarisation_phd.png'
-    t_ = ['Amplitudes times rates', 'Medians']
-    plot_features_Doorn0_2windows_phd(f_vec, dr_gain, prefix, prefix_mid, lbl_, legends, color_win, t_, title,
-                                      path_save, save_figs, y_lbl=y_label, linestyle=linestyle,
-                                      f_aux_amp=f_aux_amp, f_aux_med=f_aux_med, law_1_f=True)
+    t_ = ['Net depolarisation', 'Synaptic conductance']
+    plot_features_1_f_law_syn_conductance_phd(f_vec, dr_gain, gain, prefix, prefix_mid, lbl_, legends, color_win, t_,
+                                              title, path_save, save_figs, y_lbl=y_label, linestyle=linestyle,
+                                              f_aux_amp=f_aux_amp, f_aux_med=f_aux_med)
 
     # Figure PhD thesis (Results / Frequency responses of Doorn models - control case (Transients - amp and med)
     title = sys_description + ", Transient dynamics, %s(t)" % 'v'

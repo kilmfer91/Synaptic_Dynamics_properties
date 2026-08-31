@@ -33,8 +33,8 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 
 # ******************************************************************************************************************
 # GLOBAL VARIABLES
-save_vars = True            # Save results in folders
-force_experiment = False    # Run pipeline even if file with results is saved (For refining the code)
+save_vars = False            # Save results in folders
+force_experiment = True    # Run pipeline even if file with results is saved (For refining the code)
 stoch_input = False          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 profiling = False           # Whether to run cProfile analysis
 

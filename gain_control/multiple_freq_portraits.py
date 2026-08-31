@@ -14,6 +14,9 @@ def run_single_systems(s_model, n_model, ind_sys, sys_description, factor=1.0, e
     only_mem_pot = True
     num_single = 8  # 6
 
+    # Returns
+    handles, labels = [], []
+
     # Auxiliar frecuencies to plot in the transient dynamics responses
     f_auxs = ([[None, None, None], [None, None, None], [None, None, None]] for _ in range(num_single + 1))
     extra_f = True
@@ -393,6 +396,7 @@ def run_single_systems(s_model, n_model, ind_sys, sys_description, factor=1.0, e
     return handles, labels
 
 
+# **********************************************************************************************************************
 # "Doorn", "MSSM", "TM", "MSSM/TM"
 s_model = "Doorn"
 title = ""
@@ -407,6 +411,9 @@ SYSTEMS = {
     # 8: ["DoornSTD", "HH", 8, 'DoornSTD(8) Dravet, ', 1.0],
 }
 systems = SYSTEMS.copy()
+
+# Name of state variables
+name_n_state_variables = ['v']
 
 # Optionally, define colors / styles per system
 colors = plt.cm.tab10(range(len(SYSTEMS) * 2))
@@ -424,9 +431,14 @@ elif s_model == "MSSM/TM":
     systems = {1: SYSTEMS[1], 2: SYSTEMS[2], 3: SYSTEMS[3], 4: SYSTEMS[4]}
     title = "Frequency portraits for Prototype models MSSM and TM - %s(t)"
 
-global_fre_por, ax_global_freq_por = create_fig_freq_portrait3(['v'], title, freq_port_T=True)
+# **********************************************************************************************************************
+# Creating figures
+global_fre_por, ax_global_freq_por = create_fig_freq_portrait3(name_n_state_variables, title, freq_port_T=True)
 handles, labels = [], []
 
+
+# **********************************************************************************************************************
+# Running loop
 for i, (sys_id, (s_model, n_model, ind, lbl, factor)) in enumerate(systems.items()):
     # Run your existing pipeline for this system, but only compute what you need
     # You may want to modify run_single_system to return the portrait data

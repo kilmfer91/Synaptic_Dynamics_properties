@@ -19,12 +19,12 @@ SYSTEMS = {
 }
 
 
-ind_sys = 5
+ind_sys = 6
 s_model, n_model, ind, sys_description, factor = SYSTEMS[ind_sys]
 
 tau_m = 30
-max_freq = 500
-aux_q90 = "_q90_"  # " _q95"
+max_freq = 1201
+aux_q90 = "_q90_1_"  # " _q95"
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
 plots_phd = True
@@ -267,7 +267,8 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
 
                 # Running STP model
                 if dyn_synapse:
-                    model_stp(stp_model, neuron_model, params, Input_test)
+                    aux_debug = s_model + aux_name[:6] + aux_name[-18:] + str(mean_rate[0]) + "Hz"
+                    model_stp(stp_model, neuron_model, params, Input_test, aux_debug=aux_debug)
                 else:
                     static_synapse(neuron_model, Input_test, 0.0125)
 
