@@ -624,10 +624,11 @@ class GC_prop_cons:
                         # Figure for PhD dissertation: methodology - state variables neuron in time + statistical descr.
                         if flag_plots[2] and k == 'v':
                             plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
-                                                       "Colour convention for windows (%dHz)" % f_vector[i], max_t, path_save=path_save,
-                                                       save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
-                                                       plot_stats=True, plt_grid=False, plot_phd_pre_results=True,
-                                                       color_win=color_win, color_stat=color_stat)
+                                                       "%s(t), Colour convention for windows (%dHz)" % (k, f_vector[i]),
+                                                       max_t, path_save=path_save, save_figs=self.save_figs,
+                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False,
+                                                       plot_phd_pre_results=True, color_win=color_win,
+                                                       color_stat=color_stat)
                             # plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
                             #                            "Colour convention for changes of rate (%dHz)" % f_vector[i], max_t, path_save=path_save2,
                             #                            save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
@@ -683,7 +684,7 @@ class GC_prop_cons:
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
                         t_tr = t_tr_syn[0]
-                        """
+                        # """
                         # ****************************************************************************************
                         # Figure for PhD dissertation: methodology - state variables neuron in time + statistical descr.
                         path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'

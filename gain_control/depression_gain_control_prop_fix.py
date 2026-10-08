@@ -1,10 +1,10 @@
 from gain_control.utils_gc import *
 from libraries.proportional_constant_rate_change import GC_prop_cons
 
-gain_v = [0.5]              # Vector of gains
-s_model = 'MSSM'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
-n_model = "LIF"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
-ind = 7                     # Index to recover params of a given synaptic and neuron model (See table below)
+gain_v = [1.0]              # Vector of gains
+s_model = 'DoornSTD'        # Synaptic model to use: TM, MSSM, or Doorn variations (DoornSTD, DoornSTF)
+n_model = "HH"              # Neuron model to use: LIF (Leaky Integrate-and-Fire), HH (Hodgkin Huxley)
+ind = 0                     # Index to recover params of a given synaptic and neuron model (See table below)
 sfreq = 10e3                # Sampling frequency of the simulation  16.8KHz
 max_freq = 1201             # Maximum baseline rate of the experiment  3701
 tau_m_lif = 30               # If LIF neuron is used, this specifies the time constant (in milliseconds)
@@ -35,7 +35,7 @@ folder_plots = '../gain_control/plots/'                   # Folder to save plots
 # GLOBAL VARIABLES
 save_vars = False            # Save results in folders
 force_experiment = True    # Run pipeline even if file with results is saved (For refining the code)
-stoch_input = False          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
+stoch_input = True          # Whether to use stochastic inputs (from Poisson processes) or deterministic ones
 profiling = False           # Whether to run cProfile analysis
 
 dyn_synapse = True          # Use Synaptic Dynamics or a simple static synapse (a weight)
@@ -52,7 +52,7 @@ num_realizations = 1        # Number of parallel realisations                 8
 
 # **********************************************************************************************************************
 # Flags for plots
-plot_ind_memPot = False     # Plot temporal dynamics
+plot_ind_memPot = True     # Plot temporal dynamics
 save_figs = False           # Save temporal dynamics in folders
 
 temp_filtering_ts_tr_mul_rates = False
@@ -85,7 +85,7 @@ dict_params = {'stp_model': s_model, 'stp_name_params': name_params, 'stp_value_
                'total_realizations': total_realizations, 'neuron_noise': n_noise}
 
 # Instance of Gain-Control class
-initial_frequencies = np.array([10, 20, 50, 100, 300, 500, 1000]) if force_experiment else None
+initial_frequencies = np.array([10, 50, 80, 100]) if force_experiment else None
 gc_prop_cons = GC_prop_cons(dict_params)
 _ = gc_prop_cons.set_experiment_vars(gain_v, f_vec=initial_frequencies, max_freq=max_freq)
 

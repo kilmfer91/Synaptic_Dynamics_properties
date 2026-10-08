@@ -393,9 +393,9 @@ def model_stp(stp_model, n_model, params, Input, lif_n=None, aux_debug=""):
         if lif_n is not None:
             I_args = [stp_model.N[:, it]]
             lif_n.update_state(it, None, False, I_args)
-        if it % 1000 == 0:
-            print_time(m_time() - ini_loop_time, "model_stp(), %s, it %d" % (aux_debug, it))
-            ini_loop_time = time.time()
+        # if it % 1000 == 0:
+        #     print_time(m_time() - ini_loop_time, "model_stp(), %s, it %d" % (aux_debug, it))
+        #     ini_loop_time = time.time()
     # """
 
     """
@@ -457,6 +457,51 @@ def sliding_window_indices(t_ms, win_len_ms, step_ms):
         windows.append((i0, i1))
         start += step_ms
     return windows
+
+
+def line_from_two_points(p1, p2):
+    """
+    Compute slope and intercept of a 2D line y = m*x + b
+    from two points p1=(x1,y1), p2=(x2,y2).
+
+    Returns
+    -------
+    m, b : float
+        Slope and intercept.
+    """
+    x1, y1 = p1
+    x2, y2 = p2
+
+    if x1 == x2:
+        raise ValueError("Vertical line: slope is infinite, no unique intercept.")
+
+    m = (y2 - y1) / (x2 - x1)
+    b = y1 - m * x1
+    return m, b
+
+
+def fit_line_2d(x, y):
+    """
+    Fit 2D data (x, y) to a linear model y = m*x + b.
+
+    Parameters
+    ----------
+    x, y : array_like
+        1D arrays of the same length.
+
+    Returns
+    -------
+    m, b : float
+        Slope and intercept of the best-fit line.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    if x.ndim != 1 or y.ndim != 1 or x.shape != y.shape:
+        raise ValueError("x and y must be 1D arrays of the same length.")
+
+    m, b = np.polyfit(x, y, deg=1)
+    return m, b
 
 
 def compute_time_tr_st(window_length, num_slid_wins, sliding_step, dt, t):
@@ -1169,7 +1214,7 @@ def oscillatory_spike_train(sfreq, modulation_signal, num_realizations=1, poisso
         # else: Input_test = np.hstack((Input_test, aux_s))
         Input_test2[:, i: i + desired_len_aux_s] = aux_s
         i += desired_len_aux_s
-    # print(seed_print)
+    print(seed_print)
 
     return Input_test2[:, :L]
 

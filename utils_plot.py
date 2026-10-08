@@ -338,13 +338,14 @@ def plot_gc_sin_three_scenarios(fig, i, time_vector, mean_rate, max_oscil, lif, 
     ax8.plot(time_vector, lif.membrane_potential[0, :], c='black', alpha=0.8)
     ax8.plot(time_vector, lowpass(lif.membrane_potential[0, :], coff, sfreq), c='tab:red', alpha=0.8)
     ax8.grid()
-    ax8.set_ylim(-65.5, -27)
+    # ax8.set_ylim(-65.5, -27)
     ax8.set_ylabel("mV")
     # ax8.set_title(f"LIF, diff median {diff_median_mempot:.3f}mV", c='gray')
 
     if i == 2:
         ax7.set_xlabel("time (s)")  # , fontsize=18)
         ax8.set_xlabel("time (s)")
+    return ax7, ax8
 
 
 def plot_gc_prop_input_example(time_vector, dt, ind_exp, sin_high_rate, high_rate_spikes):
@@ -782,7 +783,7 @@ def plot_gc_t_series_windows(time_vector, i, s1, s2, t_tr, statis, title, max_t,
     else:
         axc = ax
 
-    axc.set_title("Input at rate %dHz" % ref_rate, color="gray", fontsize=16)
+    axc.set_title(title + "(t). Input %dHz" % ref_rate, color="gray", fontsize=16)  # ("Input at rate %dHz" % ref_rate, color="gray", fontsize=16)
     axc.set_ylabel("Mem. pot. (mV)", color="gray", fontsize=14)
     d = int(dt * L/3)
     axc.plot(time_vector[:int(L/3)], s1[0, :int(L/3)], c="gray")
@@ -1082,8 +1083,10 @@ def plot_features_Doorn0_2windows_phd(f_vector, dr, pre_, mid_, lbl, legends, co
 def plot_features_1_f_law_syn_conductance_phd(f_vector, dr, pre_, mid_, lbl, legends, cols, t_, title_graph,
                                               path_save, save_figs, y_lims_ind_plot=None, ls=None, normalise=False,
                                               min_n=None, max_n=None, y_lbl=None, linestyle=None, tr_ini_amp=True,
-                                              f_aux_amp=None, f_aux_med=None):
-    fig, ax = plt.subplots(1, 2, figsize=(8, 2.5))
+                                              f_aux_amp=None, f_aux_med=None, color_gain=None):
+    # fig, ax = plt.subplots(1, 3, figsize=(8, 2.5))
+    fig = plt.figure(figsize=(8, 2.5))
+    ax = [fig.add_subplot(1, 3, 1), fig.add_subplot(1, 3, 2)]
     groupAy = [i for i in ax]
     for ax_ in groupAy: ax_.sharey(groupAy[0])
     if legends is not None: plt.suptitle(title_graph, color='black', fontsize=16)
@@ -1092,6 +1095,7 @@ def plot_features_1_f_law_syn_conductance_phd(f_vector, dr, pre_, mid_, lbl, leg
     if linestyle is None: linestyle = ['solid', 'solid', 'solid']
     if f_aux_amp is None: f_aux_amp = [None, None, None]
     if f_aux_med is None: f_aux_med = [None, None, None]
+    if color_gain is None: color_gain = cols
 
     gains = list(dr.keys())
     g0 = gains[0]
@@ -1101,6 +1105,9 @@ def plot_features_1_f_law_syn_conductance_phd(f_vector, dr, pre_, mid_, lbl, leg
     sign1 = [dr[g0]['%s_%s_prop_max' % (pre_[0], mid_[0])] - dr[g0]['%s_%s_prop_min' % (pre_[0], mid_[0])],
              dr[g0]['%s_%s_prop_max' % (pre_[0], mid_[1])] - dr[g0]['%s_%s_prop_min' % (pre_[0], mid_[1])],
              dr[g0]['%s_%s_prop_max' % (pre_[0], mid_[2])] - dr[g0]['%s_%s_prop_min' % (pre_[0], mid_[2])]]
+    # sign1 = [dr[g0]['%s_%s_prop_mean' % (pre_[0], mid_[0])],
+    #          dr[g0]['%s_%s_prop_mean' % (pre_[0], mid_[1])],
+    #          dr[g0]['%s_%s_prop_mean' % (pre_[0], mid_[2])]]
     if not tr_ini_amp: sign1 = sign1[1:]
 
     for j in range(len(sign1)):
@@ -1114,8 +1121,8 @@ def plot_features_1_f_law_syn_conductance_phd(f_vector, dr, pre_, mid_, lbl, leg
         ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
                             color=cols[i_j], alpha=0.2)
         #
-        if j != 0: aux_freq_res_mid_windows(ax_st2, avg_f(sign), cols[i_j], f_vector, 1, 'mV',
-                                            f_aux=f_aux_amp[j], shift=j % 2 == 0)
+        # if j != 0: aux_freq_res_mid_windows(ax_st2, avg_f(sign), cols[i_j], f_vector, 1, 'mV',
+        #                                     f_aux=f_aux_amp[j], shift=j % 2 == 0)
 
     ax_st2.set_title(t_[0], color='black', alpha=0.7, fontsize=12)
     ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
@@ -1126,23 +1133,29 @@ def plot_features_1_f_law_syn_conductance_phd(f_vector, dr, pre_, mid_, lbl, leg
 
     # Proxy of synaptic conductances
     ax_st2 = ax[1]
-    markers_flag = True
+    markers_flag = False
+    linestyle = ['solid', '-.']
+    i_g = 0
     for gain_factor, dr_ in dr.items():
         sign1 = [dr_['%s_%s_prop_max' % (pre_[0], mid_[0])] - dr_['%s_%s_prop_min' % (pre_[0], mid_[0])],
                  dr_['%s_%s_prop_max' % (pre_[0], mid_[2])] - dr_['%s_%s_prop_min' % (pre_[0], mid_[2])]]
+        # sign1 = [dr_['%s_%s_prop_med' % (pre_[0], mid_[0])],
+        #          dr_['%s_%s_prop_med' % (pre_[0], mid_[1])]]
         for j in range(len(sign1)):
             s_shape = sign1[j].shape
             factor = np.reshape(np.repeat(f_vector * gain_factor, s_shape[0]), (s_shape[1], s_shape[0])).T
             sign = sign1[j] * factor
-            label = legends[j + 3] % (gain_factor, mid_[j])
-            ax_st2.plot(f_vector, np.median(sign, axis=0), c=cols[j], label=label, linestyle=linestyle[j])
+            # label = legends[j + 3] % (gain_factor, mid_[j]) if j == 0 else None
+            label = legends[j + 3] % gain_factor if j == 0 else None
+            ax_st2.plot(f_vector, np.median(sign, axis=0), c=color_gain[i_g], label=label, linestyle=linestyle[j])
             ax_st2.fill_between(f_vector, np.quantile(sign, 0.1, axis=0), np.quantile(sign, 0.9, axis=0),
-                                color=cols[j], alpha=0.2)
+                                color=color_gain[i_g], alpha=0.1)
             if markers_flag:
-                aux_freq_res_mid_windows(ax_st2, avg_f(sign), cols[j], f_vector, 1, 'mV',
+                aux_freq_res_mid_windows(ax_st2, avg_f(sign), color_gain[i_g], f_vector, 1, 'mV',
                                          f_aux=f_aux_med[j], shift=j % 2 == 0)
             markers_flag = False
 
+        i_g += 1
     ax_st2.set_title(t_[1], color='black', alpha=0.7, fontsize=12)
     ax_st2.set_xlabel("Rate (Hz)", color='gray', fontsize=10)
     ax_st2.set_ylabel(y_label, color='gray', fontsize=10)
@@ -1150,8 +1163,10 @@ def plot_features_1_f_law_syn_conductance_phd(f_vector, dr, pre_, mid_, lbl, leg
     ax_st2.set_xscale('log')
     if y_lims_ind_plot is not None: ax_st2.set_ylim(ylims)
 
-    if legends is not None: fig.legend(bbox_to_anchor=(1.0, 1.0), loc='outside lower center', borderaxespad=0.,
-                                          fontsize=12)
+    if legends is not None: fig.legend(bbox_to_anchor=(0.75, 0.8), loc='outside upper left', borderaxespad=0.,
+                                          fontsize=10)
+    # fig.legend(bbox_to_anchor=(0.8, 0.8), loc='outside upper left', borderaxespad=0., fontsize=12)
+    # fig.tight_layout()
     if save_figs: fig.savefig(path_save, format='png')
 
 
@@ -2144,21 +2159,25 @@ def create_fig_freq_portrait(names_sv, title, freq_port_T=False, figsize=(12, 6)
     for j in range(len(names_sv)):
         # Creating figure for each state variable
         if freq_port_T:
-            fig, ax = plt.subplots(3, 2, figsize=(10, 10))
+            # fig, ax = plt.subplots(3, 2, figsize=(10, 10))
+            fig = plt.figure(figsize=(12, 9))
+            ax = [fig.add_subplot(3, 3, i) for i in [1, 2, 4, 5, 6, 7, 8]]
 
         else:
-            fig, ax = plt.subplots(2, 3, figsize=(20, 8))
+            # fig, ax = plt.subplots(2, 3, figsize=(20, 8))
+            fig = plt.figure(figsize=(20, 8))
+            ax = [fig.add_subplot(3, 3, i) for i in [1, 2, 3, 4, 5, 6, 8]]
         # Flattening array of axes (before it was 2x4), now 1x8
-        ax = ax.ravel()
+        # ax = ax.ravel()
 
         if freq_port_T:
             groupAx = [ax[i] for i in [0, 1]]
-            groupBx = [ax[i] for i in [2, 3]]
-            groupCx = [ax[i] for i in [4, 5]]
+            groupBx = [ax[i] for i in [2, 3]]  # [2, 3]]
+            groupCx = [ax[i] for i in [5, 6]]     # [4, 5]]
 
-            groupAy = [ax[i] for i in [0, 1, 2, 3]]
+            groupAy = [ax[i] for i in [0, 1, 2, 3]]  # [0, 1, 2, 3]]
             groupBy = [ax[i] for i in []]  # [4, 5]]
-            groupCy = [ax[i] for i in [4, 5]]
+            groupCy = [ax[i] for i in [5, 6]]  # [4, 5]]
 
             # Link axes within each group
             for ax_ in groupAx[1:]: ax_.sharex(groupAx[0])
@@ -2338,7 +2357,8 @@ def aux_freq_portrait(list_eff_gc, ax, titles, color, label, factor=1.0, merge_d
         ax[j + 4].scatter(x[0], y[0], marker='o', alpha=alpha, color=color)
 
 
-def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_directions=False, freq_port_T=False):
+def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_directions=False, freq_port_T=False,
+                       plt_transient=False):
 
     style_line = 'dashed' if merge_directions else 'solid'
     alpha = 0.4 if merge_directions else 1
@@ -2355,11 +2375,13 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_
     Eff_i_st, Eff_i_tr, G_mi_st, G_mi_tr, _, _, _, _, Eff_m_st, Eff_m_tr, _, _ = list_eff_gc
 
     if freq_port_T:
-        x_1 = [Eff_i_st[0], Eff_m_tr[0], Eff_i_st[2], Eff_m_tr[2], Eff_i_st[3], Eff_m_tr[3]]
-        y_1 = [G_mi_tr[0], Eff_m_st[0] - Eff_m_tr[0], G_mi_tr[2], Eff_m_st[2] - Eff_m_tr[2],
-               G_mi_tr[3], Eff_m_st[3] - Eff_m_tr[3]]
         # x_1 = [Eff_i_st[0], Eff_m_tr[0], Eff_i_st[2], Eff_m_tr[2], Eff_i_st[3], Eff_m_tr[3]]
-        # y_1 = [G_mi_tr[0], Eff_m_st[0], G_mi_tr[2], Eff_m_st[2], G_mi_tr[3], Eff_m_st[3]]
+        # y_1 = [G_mi_tr[0], Eff_m_st[0] - Eff_m_tr[0], G_mi_tr[2], Eff_m_st[2] - Eff_m_tr[2],
+        #        G_mi_tr[3], Eff_m_st[3] - Eff_m_tr[3]]
+        x_1 = [Eff_i_st[0], Eff_m_tr[0], Eff_i_st[2], Eff_m_tr[2], Eff_i_tr[0], Eff_i_st[3], Eff_m_tr[3]]
+        y_1 = [G_mi_tr[0], Eff_m_st[0] - Eff_m_tr[0], G_mi_tr[2], Eff_m_st[2] - Eff_m_tr[2], Eff_i_st[0],
+               G_mi_tr[3], Eff_m_st[3] - Eff_m_tr[3]]
+
         for j in range(len(titles)):
             # getting signals
             x0 = np.copy(x_1[j])
@@ -2372,20 +2394,22 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_
                 x, y, hab = avg_f(x0) * factor, avg_f(y0) * factor, True
 
             # Color
-            color_ = color
-            label_ = label
-            if j & 1:  # Odd
-                ind_c = 1 if merge_directions else 0
-                color_ = colors_win[ind_c]
-                label_ = labels_win[ind_c]
+            color_ = color[j]
+            label_ = label[j]
+            # if j & 1:  # Odd
+            #     ind_c = 1 if merge_directions else 0
+            #     color_ = colors_win[ind_c]
+            #     label_ = labels_win[ind_c]
             # Plotting
-            ax[j].scatter(x, y, marker=marker, alpha=alpha, color=color_)
-            ax[j].plot(x, y, linestyle=style_line, alpha=alpha, color=color_, label=label_)
-            # Mean - Std
-            # if hab: ax[j].fill_between(x, y - np.std(y0 * factor, axis=0), y + np.std(y0 * factor, axis=0),
-            #                            color=col_fill, alpha=0.1)
-            ax[j].scatter(x[0], y[0], marker='o', color='black')  # alpha=alpha, color=color)
-            ax[j].scatter(x[-1], y[-1], marker='*', color='black')  # alpha=alpha, color=color)
+            if not merge_directions or j != 4:  # not (merge_directions and j == 4 and plt_transient):
+                if j != 4 or plt_transient:  # not (j == 4 and not plt_transient):
+                    ax[j].scatter(x, y, marker=marker, alpha=alpha, color=color_)
+                    ax[j].plot(x, y, linestyle=style_line, alpha=alpha, color=color_, label=label_)
+                    # Mean - Std
+                    # if hab: ax[j].fill_between(x, y - np.std(y0 * factor, axis=0), y + np.std(y0 * factor, axis=0),
+                    #                            color=col_fill, alpha=0.1)
+                    ax[j].scatter(x[0], y[0], marker='o', color='black')  # alpha=alpha, color=color)
+                    ax[j].scatter(x[-1], y[-1], marker='*', color='black')  # alpha=alpha, color=color)
 
             # for f_ in functions[j]:
             #     aux_freq_res_mid_windows(ax[j], x, 'gray', f_vec, factor_v, units_v, shift=False, f_aux=None)
@@ -2441,7 +2465,7 @@ def aux_freq_portrait2(list_eff_gc, ax, titles, color, label, factor=1.0, merge_
     # """
 
 
-def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, titles, color, ode='n',
+def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, labels, axp, titles, color, ode='n',
                         ext_label='', factor=1.0, freq_port_T=False, factor_v=1, plt_transient=False,
                         ext_col_transients=None, ext_lbl_transients=None):
     win1, win2, win3 = 'ini', 'mid', 'end'
@@ -2451,16 +2475,17 @@ def plot_freq_portrait2(name_state_vars, dr_filt, dr_gain, gain, axp, titles, co
             aux = name_state_vars[n] + '_'
         #     norm_neuron = True
         # else: norm_neuron = False
-        # For positive changes of rate
-
+        # ********* For positive changes of rate *********
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='ini', win2='mid', ode=ode)
-        aux_freq_portrait2(a, axp[n], titles, color, r"(Pos) %s$\delta$: %.1f" % (ext_label, gain), factor=factor,
-                           freq_port_T=freq_port_T)
+        # Plotting portraits
+        aux_freq_portrait2(a, axp[n], titles, color, labels, factor=factor, freq_port_T=freq_port_T,
+                           plt_transient=plt_transient)
 
-        # For negative changes of rate
+        # ********* For negative changes of rate *********
         a = get_sets_filtering_gainC(dr_filt, dr_gain, prefix=aux, win1='mid', win2='end', ode=ode)
-        aux_freq_portrait2(a, axp[n], titles, color, r"(Neg) %s$\delta$: %.1f" % (ext_label, gain),
-                           merge_directions=True, factor=factor, freq_port_T=freq_port_T)
+        # Plotting portraits
+        aux_freq_portrait2(a, axp[n], titles, color, labels, merge_directions=True, factor=factor,
+                           freq_port_T=freq_port_T, plt_transient=plt_transient)
 
 
 def plot_freq_portrait3(name_state_vars, dr_filt, dr_gain, gain, axp, titles, color, ode='n',
@@ -2514,9 +2539,10 @@ def plot_freq_portrait3(name_state_vars, dr_filt, dr_gain, gain, axp, titles, co
                 # THIS IS THE RIGHT WAY TO COMPUTE THE GAIN EFFECT OF ENTROPY, BETWEEN TR AND TS
                 # x_1 = [Eff_i_st[0], Eff_i_st[2], Eff_i_st[3], Eff_i_tr[0], Eff_i_tr[2]]
                 # y_1 = [G_mi_tr[0], G_mi_tr[2], G_mi_tr[3], Eff_i_st[0] - Eff_i_tr[0], Eff_i_st[2] - Eff_i_tr[2]]
-                # THIS IS THE RIGHT WAY TO COMPUTE THE GAIN EFFECT OF ENTROPY, BETWEEN TR AND TS
                 x_1 = [Eff_i_st[0], Eff_i_st[2], Eff_i_st[3], Eff_i_tr[0], Eff_i_tr[2]]
-                y_1 = [G_mi_tr[0], G_mi_tr[2], G_mi_tr[3], Eff_i_st[0], Eff_i_st[2] - Eff_i_tr[2]]
+                y_1 = [G_mi_tr[0], G_mi_tr[2], G_mi_tr[3], Eff_i_st[0], Eff_i_st[2]]
+                # x_1 = [Eff_i_st[0], Eff_i_st[2], Eff_i_st[3], Eff_i_tr[0], Eff_i_tr[2]]
+                # y_1 = [G_mi_tr[0] + G_mi_tr[2], G_mi_tr[2], G_mi_tr[3], Eff_i_st[0], Eff_i_st[2]]
 
                 # Plotting temporal filtering vs gain control - amplitude
                 ind_ax = 0
@@ -2551,6 +2577,18 @@ def plot_freq_portrait3(name_state_vars, dr_filt, dr_gain, gain, axp, titles, co
                                     label=ext_lbl_transients)
                     ax[ind_ax].scatter(x[0], y[0], marker='o', color='black')  # alpha=alpha, color=color)
                     ax[ind_ax].scatter(x[-1], y[-1], marker='*', color='black')  # alpha=alpha, color=color)
+                    m, b, r2 = fit_line_2d(x, y)
+                    m, b, r2 = fit_line_2d(x_1[ind_ax] * factor, y_1[ind_ax] * factor)
+                    print(r'Linear function between first and end point: %.2fx + %.2f with $R^2$ %.2f' % (m, b, r2))
+                    ax[ind_ax].plot(x, m * x + b, linestyle="-.", alpha=0.6, color=ext_col_transients,
+                                    label=ext_lbl_transients)
+                    # Medians
+                    # x, y, hab = avg_f(x_1[4]) * factor, avg_f(y_1[4]) * factor, True
+                    # ax[ind_ax].scatter(x, y, marker=marker, alpha=0.5, color=ext_col_transients)
+                    # ax[ind_ax].plot(x, y, linestyle=style_line, alpha=0.5, color=ext_col_transients,
+                    #                 label="median")
+                    # ax[ind_ax].scatter(x[0], y[0], marker='o', color='black')  # alpha=alpha, color=color)
+                    # ax[ind_ax].scatter(x[-1], y[-1], marker='*', color='black')  # alpha=alpha, color=color)
 
                     # ind_ = 4
                     # x, y, hab = avg_f(x_1[ind_]) * factor, avg_f(y_1[ind_]) * factor, True
@@ -2800,3 +2838,67 @@ def organise_keys_dr_gc(sufix):
          sufix + 'st_mid_prop_med', sufix + 'mtr_mid_prop_med', sufix + 'st_ini_prop_med', sufix + 'mtr_ini_prop_med']
     return v
 
+
+def line_from_two_points(p1, p2):
+    """
+    Compute slope and intercept of a 2D line y = m*x + b
+    from two points p1=(x1,y1), p2=(x2,y2).
+
+    Returns
+    -------
+    m, b : float
+        Slope and intercept.
+    """
+    x1, y1 = p1
+    x2, y2 = p2
+
+    if x1 == x2:
+        raise ValueError("Vertical line: slope is infinite, no unique intercept.")
+
+    m = (y2 - y1) / (x2 - x1)
+    b = y1 - m * x1
+    return m, b
+
+
+def fit_line_2d(x, y):
+    """
+    Fit 2D data (x, y) to a linear model y = m*x + b.
+
+    Parameters
+    ----------
+    x, y : array_like
+        1D arrays of the same length.
+
+    Returns
+    -------
+    m, b : float
+        Slope and intercept of the best-fit line.
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    # if x.shape != y.shape or x.ndim != 1:
+    #     raise ValueError("x and y must be 1D arrays of the same length.")
+    # if x.shape != y.shape or x.ndim != 2:
+    #     raise ValueError("x and y must be 2D arrays of the same shape.")
+
+    # Flatten to 1D: treat each (sample, repetition) as an observation
+    x_flat = x.ravel()
+    y_flat = y.ravel()
+
+    # Fit line
+    m, b = np.polyfit(x_flat, y_flat, deg=1)
+
+    # Predicted values
+    y_pred = m * x + b
+
+    # Residual sum of squares and total sum of squares
+    ss_res = np.sum((y - y_pred) ** 2)
+    ss_tot = np.sum((y - y.mean()) ** 2)
+
+    if ss_tot == 0:
+        r2 = np.nan  # or 1.0 if you prefer, depending on context
+    else:
+        r2 = 1 - ss_res / ss_tot
+
+    return m, b, r2

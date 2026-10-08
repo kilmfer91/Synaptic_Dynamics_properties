@@ -407,8 +407,8 @@ SYSTEMS = {
     4: ["MSSM", "LIF", 7, 'MSSM STF, ', 1.0],
     5: ["DoornSTD", "HH", 0, 'Doorn Control, ', 1.0],
     6: ["DoornSTD", "HH", 1, 'Doorn Superbursts, ', 1.0],
-    # 7: ["DoornSTF", "HH", 7, 'DoornSTF(7) Dravet, ', 1.0],
-    # 8: ["DoornSTD", "HH", 8, 'DoornSTD(8) Dravet, ', 1.0],
+    7: ["DoornSTF", "HH", 7, 'DoornSTF(7) Pers-Exc, ', 1.0],
+    8: ["DoornSTD", "HH", 8, 'DoornSTD(8) Dravet, ', 1.0],
 }
 systems = SYSTEMS.copy()
 
@@ -419,13 +419,13 @@ name_n_state_variables = ['v']
 colors = plt.cm.tab10(range(len(SYSTEMS) * 2))
 
 if s_model == "Doorn":
-    systems = {5: SYSTEMS[5], 6: SYSTEMS[6]}
+    systems = {5: SYSTEMS[5], 6: SYSTEMS[6], 7: SYSTEMS[7], 8: SYSTEMS[8]}
     title = "Frequency portraits for Doorn models - %s(t)"
 elif s_model == "MSSM":
     systems = {4: SYSTEMS[4], 3: SYSTEMS[3]}
     title = "Frequency portraits for Prototype models with MSSM - %s(t)"
 elif s_model == "TM":
-    systems = {1: SYSTEMS[1], 2: SYSTEMS[2]}
+    systems = {1: SYSTEMS[2], 2: SYSTEMS[1]}
     title = "Frequency portraits for Prototype models with TM model - %s(t)"
 elif s_model == "MSSM/TM":
     systems = {1: SYSTEMS[1], 2: SYSTEMS[2], 3: SYSTEMS[3], 4: SYSTEMS[4]}

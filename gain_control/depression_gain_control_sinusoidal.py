@@ -4,6 +4,7 @@ import pstats
 
 from gain_control.utils_gc import *
 
+i_e = 11
 # ******************************************************************************************************************
 SYSTEMS = {
     1: ["TM", "LIF", 4, 'TM+LIF STD', 1e-3],                    # 4, freq. response from Gain Control paper
@@ -19,15 +20,15 @@ SYSTEMS = {
 }
 
 
-ind_sys = 6
+ind_sys = 5
 s_model, n_model, ind, sys_description, factor = SYSTEMS[ind_sys]
 
 tau_m = 30
 max_freq = 1201
-aux_q90 = "_q90_1_"  # " _q95"
+aux_q90 = "_q90_" + str(i_e) + "_"  # " _q95"
 # For gain control, 100 inputs to a single LIF neuron
 plots_net = False
-plots_phd = True
+plots_phd = False
 save_figs = False
 dyn_synapse = True
 gaincontrol_sinusoidal = True
@@ -49,6 +50,8 @@ SNR, gc_metric = [[] for _ in range(num_realisations)], [[] for _ in range(num_r
 und_amp, und_amp_max = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
 und_q10, und_amp_min = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
 und_q90, und_var = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
+und_q5, und_amp_min = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
+und_q95, und_var = [[] for _ in range(num_realisations)], [[] for _ in range(num_realisations)]
 
 # Profiling
 profiling = False
@@ -119,7 +122,7 @@ if 100 < max_freq:
         range_f2 = [i for i in range(100, max_freq, 10)]
 else:
     range_f = [i for i in range(10, max_freq, 5)]
-range_f = [1000, 500, 100, 10]  # [1000, 500, 50, 20, 10]  # [10, 20, 50, 500, 1000]
+range_f = [10, 50, 100, 300]  # [1000, 500, 50, 20, 10]  # [10, 20, 50, 500, 1000]
 range_f2, range_f3, range_f4 = [], [], []
 f_vector = np.array(range_f + range_f2 + range_f3 + range_f4)
 loop_frequencies = np.array(f_vector)
@@ -181,7 +184,21 @@ if profiling:
 # ******************************************************************************************************************
 # SIMULATION GAIN CONTROL SINUSOIDAL INPUT (200 SYNAPSES TO ONE LIF NEURON)
 if os.path.isfile(folder_vars + file_name):
-    dict_results = loadObject(file_name, folder_vars)
+    if ind_sys in [5, 6]:
+        dict_results = {}
+        keys_dict = ['SNR', 'P_signal', 'P_noise', 'noise_q10', 'noise_q90', 'variability_noise', 'und_amplitude_max',
+                     'und_amplitude_min', 'und_amplitude', 'gc_metric']
+        for i in range(1, 11):
+            if os.path.isfile(folder_vars + file_name[:-2] + str(i) + "_"):
+                dict_aux = loadObject(file_name, folder_vars)
+                if i == 1:
+                    dict_results = dict_aux.copy()
+                else:
+                    for keys in keys_dict:
+                        dict_results[keys].append(dict_aux[keys][0])
+    else:
+        dict_results = loadObject(file_name, folder_vars)
+
     if plots_phd:
         title = sys_description + '. Gain control metric - %s(t)'
         f_vec = dict_results['initial_frequencies']
@@ -227,6 +244,7 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
     for reali in range(num_realisations):
         ind_exp = 0
         ini_reali_time = m_time()
+        # ax_shared = []
         while ind_exp < len(mean_rates):  # len(mean_rates): # for ind_exp in range(len(mean_rates)):
             ini_loop_time = m_time()
             mean_rate = mean_rates[ind_exp]
@@ -238,10 +256,11 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
             if plots_net:
                 fig3 = plt.figure(figsize=(6.5, 5))
                 fig3.suptitle("Types of input")
+                ax_shared = []
+            for i in range(len(mean_rate)):  # [0]:  # range(len(mean_rate)):
 
-            for i in [0]:  # range(len(mean_rate)):
-
-                se = int(time.time())
+                se = int(time.time() / i_e)
+                print("Seed: " + str(se))
                 seeds.append(se)
                 seeds1 = [j + se for j in range(int(L / 2))]
                 seeds2 = [j + se + 2 for j in range(int(L / 2))]
@@ -289,6 +308,8 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                     mem_pot_high_filt = high_pass_mempot[int(min_imp / dt): int(max_imp / dt)]
                     hp_mp_q90, hp_mp_q10 = np.quantile(mem_pot_high_filt, q=0.9), np.quantile(mem_pot_high_filt,
                                                                                                q=0.1)
+                    hp_mp_q95, hp_mp_q5 = np.quantile(mem_pot_high_filt, q=0.95), np.quantile(mem_pot_high_filt,
+                                                                                              q=0.05)
                     lp_mp_max, lp_mp_min = np.max(mem_pot_low_filt), np.min(mem_pot_low_filt)
 
                     P_signal_i = np.mean(np.abs(mem_pot_low_filt - np.mean(mem_pot_low_filt)) ** 2)
@@ -307,6 +328,8 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
                     und_amp[reali].append(amplitude)
                     und_q10[reali].append(hp_mp_q10)
                     und_q90[reali].append(hp_mp_q90)
+                    und_q5[reali].append(hp_mp_q5)
+                    und_q95[reali].append(hp_mp_q95)
                     und_var[reali].append(variability)
                     gc_metric[reali].append(limit_gc)
 
@@ -364,9 +387,10 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
 
                 # Plots
                 if plots_net:
-                    plot_gc_sin_three_scenarios(fig3, i, time_vector, mean_rate, max_oscil, neuron_model, coff, sfreq,
-                                                modulation_signal1, modulation_signal2,
-                                                modulated_signal1, modulated_signal2)
+                    axa, axb = plot_gc_sin_three_scenarios(fig3, i, time_vector, mean_rate, max_oscil, neuron_model,
+                                                           1, sfreq, modulation_signal1, modulation_signal2,
+                                                           modulated_signal1, modulated_signal2)
+                    ax_shared.append(axb)
                     fig3.tight_layout(pad=0.5, w_pad=1.0, h_pad=1.0)
                     if mean_rate[0] == 100 and i == 0:
                         fig_essan3 = plot_gc_sin_input_example(time_vector, dt, ind_exp, modulation_signal1,
@@ -376,6 +400,7 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
             if plots_net:
                 # plot_gc_sin_mp_high_rates_esann(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann,
                 #                                 out_ylim_min, out_ylim_max, output_mp_low_filt_esann)
+                for ax_ in ax_shared[1:]: ax_.sharey(ax_shared[0])
                 path_save = (r'../gain_control/plots/gain_control_sin_' + s_model + '_ind_' + str(ind) +
                              '_high_rate_v(t)_taum_' + str(tau_m) + 'ms.png')
                 plot_gc_sin_mp_high_rates(fig_esann, ind, ind_exp, time_vector, mean_rate, output_mp_esann,
@@ -403,11 +428,14 @@ if gaincontrol_sinusoidal and not os.path.isfile(folder_vars + file_name):
         dict_results['P_noise'] = P_noise
         dict_results['noise_q10'] = und_q10
         dict_results['noise_q90'] = und_q90
+        dict_results['noise_q5'] = und_q5
+        dict_results['noise_q95'] = und_q95
         dict_results['variability_noise'] = und_var
         dict_results['und_amplitude_max'] = und_amp_max
         dict_results['und_amplitude_min'] = und_amp_min
         dict_results['und_amplitude'] = und_amp
         dict_results['gc_metric'] = gc_metric
+        dict_results['seeds'] = seeds
         if save_vars:
             saveObject(dict_results, file_name, folder_vars)
     print_time(m_time() - ini_sin_time, "Total time for " + file_name)

@@ -20,13 +20,15 @@ ind_sys = 3
 s_model, n_model, ind, sys_description, factor = SYSTEMS[ind_sys]
 
 # Flags for plotting
-save_figs = False
+save_figs = True
 plot_figs = True
 plot_phd_meth = False
-plot_freq_res = False
+plot_freq_res = True
+plot_freq_port = False
 freq_res_T = True
+freq_port_2_2 = False
 freq_port_T = True
-freq_res_single = True
+freq_res_single = False
 only_mem_pot = True
 num_single = 8  # 6
 
@@ -118,42 +120,49 @@ else: title += ', multiple gains'
 
 # Plot
 # Landscape
-# 2x3
+# 3x3
 title_mp = ['Filtering vs gain effect (amp)', 'Filtering vs gain effect (med)', 'Filtering vs gain effect (Entropy)',
-            'Transients vs filtering (amp)', 'Transients vs filtering (med)', 'Transients vs filtering (Entropy)']
+            'Transients vs filtering (amp)', 'Transients vs filtering (med)', 'Transients vs filtering (Entropy)',
+            'Transients vs filtering (amp)']
 x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{st}}^{med}$ (' + u_v + ')', r'$H_{st}$ (bits)',
-                r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')', r'$E_{ff_{tr}}^{med}$ (' + u_v + ')', r'$H_{tr}$ (bits)']
+                r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')', r'$E_{ff_{tr}}^{med}$ (' + u_v + ')', r'$H_{tr}$ (bits)',
+                r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')']
 y_label_ax_p = [r'$G^{amp}$ (' + u_v + ')', r'$G^{med}$ (' + u_v + ')', r'$PC^{H}$ (bits)',
                 r'$E_{ff_{st}}^{amp}$ - $E_{ff_{tr}}^{amp}$ (' + u_v + ')',
                 r'$E_{ff_{st}}^{med}$ - $E_{ff_{tr}}^{med}$ (' + u_v + ')',
-                r'$E_{ff_{st}}^{H}$ - $E_{ff_{tr}}^{H}$ (bits)']
+                r'$E_{ff_{st}}^{H}$ - $E_{ff_{tr}}^{H}$ (bits)',
+                r'$E_{ff_{st}}^{amp}$ (' + u_v + ')']
 # 2x2
-title_mp = ['Filtering vs gain effect (amp)', 'Filtering vs gain effect (med)',
-            'Information vs gain effect (Entropy)', 'Transients vs filtering (amp)']
-x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{st}}^{med}$ (' + u_v + ')',
-                r'$H_{st}$ (bits)', r' $E_{ff_{tr}}^{med}$ (' + u_v + ')']
-y_label_ax_p = [r'$G^{amp}$ (' + u_v + ')', r'$G^{med}$ (' + u_v + ')',
-                r'$PC^{H}$ (bits)', r'$E_{ff_{st}}^{amp}$ - $E_{ff_{tr}}^{amp}$ (' + u_v + ')']
-
-# Portrait
-if freq_port_T:
-    # 3x2
-    title_mp = ['Filtering vs gain effect (amp)', 'Transients vs filtering (amp)',
-                'Filtering vs gain effect (med)', 'Transients vs filtering (med)',
-                'Filtering vs gain effect (Entropy)', 'Transients vs filtering (Entropy)']
-    x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')',
-                    r'$E_{ff_{st}}^{med}$ (' + u_v + ')', r' $E_{ff_{tr}}^{med}$ (' + u_v + ')',
-                    r'$H_{st}$ (bits)', r'$H_{tr}$ (bits)']
-    y_label_ax_p = [r'$G^{amp}$ (' + u_v + ')', r'$E_{ff_{st}}^{amp}$ - $E_{ff_{tr}}^{amp}$ (' + u_v + ')',
-                    r'$G^{med}$ (' + u_v + ')', r'$E_{ff_{st}}^{med}$ - $E_{ff_{tr}}^{med}$ (' + u_v + ')',
-                    r'$PC^{H}$ (bits)', r'$E_{ff_{st}}^{H}$ - $E_{ff_{tr}}^{H}$ (bits)']
-    # 2x2
+if freq_port_2_2:
     title_mp = ['Filtering vs gain effect (amp)', 'Filtering vs gain effect (med)',
                 'Information vs gain effect (Entropy)', 'Transients vs filtering (amp)']
     x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{st}}^{med}$ (' + u_v + ')',
-                     r'$H_{st}$ (bits)', r' $E_{ff_{tr}}^{med}$ (' + u_v + ')']
+                    r'$H_{st}$ (bits)', r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')']
     y_label_ax_p = [r'$G^{amp}$ (' + u_v + ')', r'$G^{med}$ (' + u_v + ')',
-                    r'$PC^{H}$ (bits)', r'$E_{ff_{st}}^{amp}$ - $E_{ff_{tr}}^{amp}$ (' + u_v + ')']
+                    r'$PC^{H}$ (bits)', r'$E_{ff_{st}}^{amp}$ (' + u_v + ')']
+
+# Portrait
+if freq_port_T:
+    # 3x3
+    title_mp = ['Filtering vs gain effect (amp)', 'Transients vs filtering (amp)',
+                'Filtering vs gain effect (med)', 'Transients vs filtering (med)', 'Transients vs filtering (amp)',
+                'Filtering vs gain effect (Entropy)', 'Transients vs filtering (Entropy)']
+    x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')',
+                    r'$E_{ff_{st}}^{med}$ (' + u_v + ')', r' $E_{ff_{tr}}^{med}$ (' + u_v + ')',
+                    r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')',
+                    r'$H_{st}$ (bits)', r'$H_{tr}$ (bits)']
+    y_label_ax_p = [r'$G^{amp}$ (' + u_v + ')', r'$E_{ff_{st}}^{amp}$ - $E_{ff_{tr}}^{amp}$ (' + u_v + ')',
+                    r'$G^{med}$ (' + u_v + ')', r'$E_{ff_{st}}^{med}$ - $E_{ff_{tr}}^{med}$ (' + u_v + ')',
+                    r'$E_{ff_{st}}^{amp}$ (' + u_v + ')',
+                    r'$PC^{H}$ (bits)', r'$E_{ff_{st}}^{H}$ - $E_{ff_{tr}}^{H}$ (bits)']
+    # 2x2
+    if freq_port_2_2:
+        title_mp = ['Filtering vs gain effect (amp)', 'Filtering vs gain effect (med)',
+                    'Information vs gain effect (Entropy)', 'Transients vs filtering (amp)']
+        x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{st}}^{med}$ (' + u_v + ')',
+                         r'$H_{st}$ (bits)', r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')']
+        y_label_ax_p = [r'$G^{amp}$ (' + u_v + ')', r'$G^{med}$ (' + u_v + ')',
+                        r'$PC^{H}$ (bits)', r'$E_{ff_{st}}^{amp}$ (' + u_v + ')']
 
 # title_freqres = ['Transient dynamics', 'Temporal filtering', 'Entropy', 'Gain effect -amp-', 'Gain effect -med-',
 #                  'Gain effect -Entropy-']
@@ -218,15 +227,22 @@ if plot_figs:
         # To reduce creation of graphics, debbuging
         if only_mem_pot: name_n_state_variables, name_syn_state_variables = ['v'], []
 
-        # Frequency portrait - Neuron
-        title_ = sys_description + '. Frequency portrait for Neuron - %s(t)'
-        # n_freq_por, ax_p = create_fig_freq_portrait(name_n_state_variables, title_, freq_port_T)
-        n_freq_por, ax_p = create_fig_freq_portrait3(name_n_state_variables, title_, freq_port_T)
+        if plot_freq_port:
+            # Frequency portrait - Neuron
+            title_ = sys_description + '. Frequency portrait for Neuron - %s(t)'
+            # n_freq_por, ax_p = create_fig_freq_portrait(name_n_state_variables, title_, freq_port_T)
+            if freq_port_2_2:
+                n_freq_por, ax_p = create_fig_freq_portrait3(name_n_state_variables, title_, freq_port_T)
+            else:
+                n_freq_por, ax_p = create_fig_freq_portrait(name_n_state_variables, title_, freq_port_T)
 
-        # Frequency portrait - Synapse
-        title_ = sys_description + '. Frequency portrait for Synapse - %s(t)'
-        # s_freq_por, ax_sp = create_fig_freq_portrait(name_syn_state_variables, title_, freq_port_T)
-        s_freq_por, ax_sp = create_fig_freq_portrait3(name_syn_state_variables, title_, freq_port_T)
+            # Frequency portrait - Synapse
+            title_ = sys_description + '. Frequency portrait for Synapse - %s(t)'
+            # s_freq_por, ax_sp = create_fig_freq_portrait(name_syn_state_variables, title_, freq_port_T)
+            if freq_port_2_2:
+                s_freq_por, ax_sp = create_fig_freq_portrait3(name_syn_state_variables, title_, freq_port_T)
+            else:
+                s_freq_por, ax_sp = create_fig_freq_portrait(name_syn_state_variables, title_, freq_port_T)
 
         if plot_freq_res:
             # Frequency responses - neuron
@@ -301,15 +317,31 @@ for gain in gain_v:
                             title_mp, markers, alphas, c_g=c_g[i_g], factor_v=factor_v, units_v=units_v,
                             plot_filt=i_g == 0, ode='s', transpose=freq_res_T, single_properties=freq_res_single)
 
-    if plot_figs:
+    if plot_figs and plot_freq_port:
         # FREQUENCY PORTRAITS OF NEURONS AND SYNAPSES
         # For neurons
-        plot_freq_portrait3(name_n_state_variables, dr_filt, dr_gain, gain, ax_p, title_mp, colors[ind_gain[gain]],
-                            ode='n', freq_port_T=freq_port_T, factor=factor_v, plt_transient=i_g == 0)
+        if freq_port_2_2:
+            plot_freq_portrait3(name_n_state_variables, dr_filt, dr_gain, gain, ax_p, title_mp, colors[ind_gain[gain]],
+                                ode='n', freq_port_T=freq_port_T, factor=factor_v, plt_transient=i_g == 0)
+        else:
+            colors_ = [colors[ind_gain[gain]], colors[ind_gain[gain]], colors[ind_gain[gain]], colors[ind_gain[gain]],
+                       'tab:red', colors[ind_gain[gain]], colors[ind_gain[gain]]]
+            labels = [r"(Pos) %s$\delta$: %.1f" % ('', gain) for _ in range(6)]
+            labels.insert(4, "Stimuli onset") if freq_port_T else labels + ['Stimuli onset']
+            plot_freq_portrait2(name_n_state_variables, dr_filt, dr_gain, labels, ax_p, title_mp, colors_, ode='n',
+                                freq_port_T=freq_port_T, factor=factor_v, plt_transient=i_g == 0)
 
         # For synapses
-        plot_freq_portrait2(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sp, title_mp,
-                            colors[ind_gain[gain]], ode='s', freq_port_T=freq_port_T)  # , H_filt, H_gain)
+        if freq_port_2_2:
+            plot_freq_portrait3(name_syn_state_variables, dr_filt, dr_gain, gain, ax_sp, title_mp,
+                                colors[ind_gain[gain]], ode='s', freq_port_T=freq_port_T)  # , H_filt, H_gain)
+        else:
+            colors_ = [colors[ind_gain[gain]], colors[ind_gain[gain]], colors[ind_gain[gain]], colors[ind_gain[gain]],
+                       'tab:red', colors[ind_gain[gain]], colors[ind_gain[gain]]]
+            labels = [r"(Neg) %s$\delta$: %.1f" % ('', gain) for _ in range(6)]
+            labels.insert(4, "Stimuli onset") if freq_port_T else labels + ['Stimuli onset']
+            plot_freq_portrait2(name_syn_state_variables, dr_filt, dr_gain, labels, ax_sp, title_mp,
+                                colors_, ode='s', freq_port_T=freq_port_T, plt_transient=i_g == 0)  # , H_filt, H_gain)
     # **********************************************************************************************************
 
     i_g += 1
@@ -322,22 +354,24 @@ if plot_figs:
     sizeF = 20
     # Neuronal state variables
     for n in range(len(name_n_state_variables)):
-        for k in range(len(title_mp)):
-            # ax_y = True if k != 4 else False
-            # Frequency portrait for Neuron
-            adjust_freq_portraits(ax_p[n][k], x_label_ax_p[k], y_label_ax_p[k], title_mp[k], ax_x=False,  # ax_y=ax_y,
-                                  axis_fontsize=fs_ax_portrait, title_fontsize=fs_ttl_portrait)  # xl, yl
-
+        if plot_freq_port:
+            for k in range(len(title_mp)):
+                # ax_y = True if k != 4 else False
+                # Frequency portrait for Neuron
+                adjust_freq_portraits(ax_p[n][k], x_label_ax_p[k], y_label_ax_p[k], title_mp[k], ax_x=False,  # ax_y=ax_y,
+                                      axis_fontsize=fs_ax_portrait, title_fontsize=fs_ttl_portrait)  # xl, yl
         if plot_freq_res:
             # Adjusting frequency responses for neurons
             adjust_freq_responses(ax_f[n], title_freqres, freq_res_T, freq_res_single, gain_v, ylabel_freqRes)
 
+    # Synaptic state variables
     for n in range(len(name_syn_state_variables)):
-        for k in range(len(title_mp)):
-            ax_x = True if "Entropy" not in title_mp[k] else False
-            # Frequency portrait for Synapses
-            adjust_freq_portraits(ax_sp[n][k], x_label_ax_p[k], y_label_ax_p[k], title_mp[k], ax_x=False,
-                                  axis_fontsize=fs_ax_portrait, title_fontsize=fs_ttl_portrait)  # xl, yl
+        if plot_freq_port:
+            for k in range(len(title_mp)):
+                ax_x = True if "Entropy" not in title_mp[k] else False
+                # Frequency portrait for Synapses
+                adjust_freq_portraits(ax_sp[n][k], x_label_ax_p[k], y_label_ax_p[k], title_mp[k], ax_x=False,
+                                      axis_fontsize=fs_ax_portrait, title_fontsize=fs_ttl_portrait)  # xl, yl
 
         if plot_freq_res:
             # Adjusting frequency responses for synapses
@@ -345,53 +379,61 @@ if plot_figs:
 
     # Legends
     # Frequency portraits
-    for n in range(len(name_n_state_variables)):
-        # ax_p[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0.,
-        #                                         title='gain factor')
-        handles, labels = [], []
-        h_, l_ = ax_p[n][2].get_legend_handles_labels()
-        for h_i in h_: handles.append(h_i)
-        for l_i in l_: labels.append(l_i)
-        # h_, l_ = ax_p[n][int(len(title_mp) / 2)].get_legend_handles_labels()
-        h_, l_ = ax_p[n][3].get_legend_handles_labels()
-        for h_i in h_: handles.append(h_i)
-        for l_i in l_: labels.append(l_i)
-        n_freq_por[n].legend(handles, labels, loc='outside lower center', ncol=5, frameon=True,
-                             title='gain factor')
+    if plot_freq_port:
+        for n in range(max(len(name_syn_state_variables), len(name_n_state_variables))):
+            # ax_p[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0.,
+            #                                         title='gain factor')
+            handles, labels = [], []
+            h_, l_ = ax_p[n][2].get_legend_handles_labels()
+            for h_i in h_: handles.append(h_i)
+            for l_i in l_: labels.append(l_i)
+            # h_, l_ = ax_p[n][int(len(title_mp) / 2)].get_legend_handles_labels()
+            h_, l_ = ax_p[n][4].get_legend_handles_labels()
+            for h_i in h_: handles.append(h_i)
+            for l_i in l_: labels.append(l_i)
+            # n_freq_por[n].legend(handles, labels, loc='outside lower center', ncol=5, frameon=True,
+            #                      title='gain factor')
+            if n < len(name_n_state_variables):
+                n_freq_por[n].legend(handles, labels, loc='outside lower center', ncol=5, frameon=True,
+                                     title='gain factor')
+            if n < len(name_syn_state_variables):
+                s_freq_por[n].legend(handles, labels, loc='outside lower center', ncol=5, frameon=True,
+                                     title='gain factor')
 
-    for n in range(len(name_syn_state_variables)):
-        ax_sp[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0.,
-                                                    title='gain factor')
+        # for n in range(len(name_syn_state_variables)):
+        #     ax_sp[n][int(len(title_mp) / 2) - 1].legend(bbox_to_anchor=(1.05, 0.7), loc='upper left', borderaxespad=0.,
+        #                                                 title='gain factor')
 
     # Frequency responses
-    if plot_freq_res:
-        if not freq_res_single:
-            lbl_ind = []
+if plot_figs and plot_freq_res:
+    if not freq_res_single:
+        lbl_ind = []
 
-            if freq_res_T:
-                if num_single == 6: lbl_ind = [7, 18]
-                if num_single == 7: lbl_ind = [10, 21]
-                if num_single == 8: lbl_ind = [13, 24]
+        if freq_res_T:
+            if num_single == 6: lbl_ind = [7, 18]
+            if num_single == 7: lbl_ind = [10, 21]
+            if num_single == 8: lbl_ind = [13, 24]
 
-            l_ = len(title_freqres)
-            if 0.1 in gain_v and not freq_res_T: lbl_ind.append([int(len(title_mp) / 2) - 1, l_])
-            if 0.5 in gain_v and not freq_res_T: lbl_ind.append([6 + int(len(title_mp) / 2) - 1, 6 + l_])
-            if 1.0 in gain_v and not freq_res_T: lbl_ind.append([12 + int(len(title_mp) / 2) - 1, 12 + l_])
+        l_ = len(title_freqres)
+        if 0.1 in gain_v and not freq_res_T: lbl_ind.append([int(len(title_mp) / 2) - 1, l_])
+        if 0.5 in gain_v and not freq_res_T: lbl_ind.append([6 + int(len(title_mp) / 2) - 1, 6 + l_])
+        if 1.0 in gain_v and not freq_res_T: lbl_ind.append([12 + int(len(title_mp) / 2) - 1, 12 + l_])
 
-            # For state variables of neurons
-            for n in range(len(name_n_state_variables)):
-                if freq_res_T: adjust_legend_freq_resT(lbl_ind, n_freq_res[n], ax_f[n], gain_v)
-                else: adjust_legend_freq_res(lbl_ind, n_freq_res[n], ax_f[n], gain_v)
-            # For state variables of synapses
-            for n in range(len(name_syn_state_variables)):
-                if freq_res_T: adjust_legend_freq_resT(lbl_ind, s_freq_res[n], ax_fs[n], gain_v)
-                else: adjust_legend_freq_res(lbl_ind, s_freq_res[n], ax_fs[n], gain_v)
+        # For state variables of neurons
+        for n in range(len(name_n_state_variables)):
+            if freq_res_T: adjust_legend_freq_resT(lbl_ind, n_freq_res[n], ax_f[n], gain_v)
+            else: adjust_legend_freq_res(lbl_ind, n_freq_res[n], ax_f[n], gain_v)
+        # For state variables of synapses
+        for n in range(len(name_syn_state_variables)):
+            if freq_res_T: adjust_legend_freq_resT(lbl_ind, s_freq_res[n], ax_fs[n], gain_v)
+            else: adjust_legend_freq_res(lbl_ind, s_freq_res[n], ax_fs[n], gain_v)
 
 # Saving plots
 if plot_figs and save_figs:
     for j in range(len(name_n_state_variables)):
         n = name_n_state_variables[j]
-        n_freq_por[j].savefig(path_save + "_freq_portrait_neuron_" + n + "_pos" + aux_p + ".png", format='png')
+        if plot_freq_port:
+            n_freq_por[j].savefig(path_save + "_freq_portrait_neuron_" + n + "_pos" + aux_p + ".png", format='png')
         if plot_freq_res:
             if freq_res_single:
                 for k in range(len(title_freq_save_fig)):
@@ -401,7 +443,8 @@ if plot_figs and save_figs:
                 n_freq_res[j].savefig(path_save + "_freq_responses_neuron_" + n + aux_p + ".png", format='png')
     for j in range(len(name_syn_state_variables)):
         n = name_syn_state_variables[j]
-        s_freq_por[j].savefig(path_save + "_freq_portrait_synapse_" + n + "_pos" + aux_p + ".png", format='png')
+        if plot_freq_port:
+            s_freq_por[j].savefig(path_save + "_freq_portrait_synapse_" + n + "_pos" + aux_p + ".png", format='png')
         if plot_freq_res:
             if freq_res_single:
                 for k in range(len(title_freq_save_fig)):
@@ -468,42 +511,36 @@ for i in range(20): plt.plot(a[2, i:], alpha=0.5, linestyle='--')
 plt.grid()
 # """
 
-# Figure PhD thesis (Results / Frequency responses of Doorn models - control case (Transients - amp and med)
-title = sys_description + ", Temporal filtering, %s(t)" % 'v'
-title += r", $\delta$ = 100%"
-t_ = ['Amplitudes', 'Medians']
-
-path_save = folder_plots + dr_gain_control_file
-path_save += '_freq_response_3w_Doorn' + str(ind) + '_filt_phd.png'
-# if ind == 6: path_save += '_freq_response_3w_Doorn1_tr_med_phd.png'
-
-color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
-color_win = ["tab:red", "tab:olive", "tab:blue"]
-cols_ = [color_stat[0], color_stat[3]]
-lbl_ = [r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$']
-prefix = ['st']
-prefix_mid = ['ini', 'mid', 'end']
-linestyle = ['dashdot', 'dashed', 'dotted']
-legends = [r'$Eff_{%s,st}$', r'$Eff_{%s,st}$', r'$Eff_{%s,st}$']
-y_label = r"$V(t)$ (mV)"
-y_lims = [-0.01, 0.20] if ind == 8 else None
-y_lims2 = [-0.01, 0.20] if ind == 7 else None
-f_aux_amp = ['max', 'max', 'max']
-f_aux_med = [None, 55, 130] if ind == 1 else [None, None, None]
-
-plot_features_Doorn0_2windows_phd(f_vec, dr_gain, prefix, prefix_mid, lbl_, legends, color_win, t_, title,
-                                  path_save, save_figs, y_lims_ind_plot=y_lims, y_lbl=y_label, linestyle=linestyle,
-                                  f_aux_amp=f_aux_amp, f_aux_med=f_aux_med, law_1_f=False)
 # For 1/f law
-title = sys_description + ", Net depolarisation, %s(t)" % 'v'
+color_win = ["tab:red", "tab:olive", "tab:blue"]
+color_gain = ['tab:gray', 'tab:purple', 'tab:cyan']
+lbl_ = [r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$']
+prefix_mid = ['ini', 'mid', 'end']
+f_aux_amp = ['max', 'max', 'max']
+linestyle = ['dashdot', 'dashed', 'dotted']
+y_label = r"$V(t)$ (mV)"
 path_save = folder_plots + dr_gain_control_file
-path_save += '_freq_response_3w_Doorn' + str(ind) + '_net_depolarisation_phd.png'
+# legends = [r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$',
+#                    r'$(\delta=%.1f) \Delta r*Eff_{%s,st(pos)}$', r'$(\delta=%.1f) \Delta mr*Eff_{%s,st(neg)}$']
 legends = [r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$',
-           r'$(\delta=%.1f) \Delta r*Eff_{%s,st(pos)}$', r'$(\delta=%.1f) \Delta mr*Eff_{%s,st(neg)}$']
-t_ = ['Net depolarisation', 'Synaptic conductance']
-plot_features_1_f_law_syn_conductance_phd(f_vec, dr_gains, prefix, prefix_mid, lbl_, legends, color_win, t_,
-                                          title, path_save, save_figs, y_lbl=y_label, linestyle=linestyle,
-                                          f_aux_amp=f_aux_amp, f_aux_med=f_aux_amp)
+                   r'$(\delta=%.1f) \Delta r*Eff_{st(pos)}$', r'$(\delta=%.1f) \Delta mr*Eff_{st(neg)}$']
+
+t_ = ['Net depolarisation', 'Transient synaptic conductance']
+
+name_syn_state_variables = dr_filt['name_syn_state_variables']
+list_output_syn = ['s_ampa', 's_nmda', 'epsc', 'epsp']
+name_syn_output = []
+for name_s in name_syn_state_variables:
+    if name_s in list_output_syn:
+        name_syn_output.append(name_s)
+
+        title = sys_description + ", 1/f law and $\Delta r A(r)$, %s(t)" % name_s
+        path_sav = path_save + '_freq_response_net_depolarisation_ ' + name_s + '_phd.png'
+
+        prefix = [name_s + '_st']
+        plot_features_1_f_law_syn_conductance_phd(f_vec, dr_gains, prefix, prefix_mid, lbl_, legends, color_win, t_,
+                                                  title, path_sav, save_figs, y_lbl=y_label, linestyle=linestyle,
+                                                  f_aux_amp=f_aux_amp, f_aux_med=f_aux_amp, color_gain=color_gain)
 
 if plot_phd_meth:
     color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
