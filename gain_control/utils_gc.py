@@ -1446,9 +1446,14 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     # Getting statistics for transition and steady-state components of mid window if time_transition is provided
     if t_transition_mid_win is not None:
         # SUBTHRESHOLD REGIME
+        lim_bm = int(2 * Le_time_win / dt)
+        # If deterministic inputs, then recalculate limit of steady-state to avoid spurious errors at computing
+        # statistical descriptors due to deleting last spike before change of rate to not interfere
+        if det_in:
+            lim_bm = int(lim_bm - (2 / (det_r * dt)))  # substracting the effect of 2 spikes
         # Extracting steady-state statistical descriptors of middle window
-        st_pm = sig_prop[:, int((Le_time_win + t_transition_mid_win) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
-        st_cm = sig_cons[:, int((Le_time_win + t_transition_mid_win) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
+        st_pm = sig_prop[:, int((Le_time_win + t_transition_mid_win) / dt):lim_bm]  # [, t_tr:4.0s]
+        st_cm = sig_cons[:, int((Le_time_win + t_transition_mid_win) / dt):lim_bm]  # [, t_tr:4.0s]
 
         # SUPRATHRESHOLD REGIME
         # **************************************************************************************************
@@ -1495,10 +1500,18 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
     # Getting statistical descriptors for transition and steady-state components of signals
     for r in range(sig_prop.shape[0]):
         # Getting stationary-state time-series of initial and ending windows
-        st_pi = sig_prop[r, int(th_tr_a[r] / dt):int(Le_time_win / dt)]  # [, t_tr:2s]
-        st_pe = sig_prop[r, int((2 * Le_time_win + th_tr_a[r]) / dt):int(max_t / dt)]  # [, t_tr:6.0s]
-        st_ci = sig_cons[r, int(th_tr_a[r] / dt):int(Le_time_win / dt)]  # [, t_tr:2s]
-        st_ce = sig_cons[r, int((2 * Le_time_win + th_tr_a[r]) / dt):int(max_t / dt)]  # [, t_tr:6.0s]
+        lim_bi = int(Le_time_win / dt)
+        lim_be = int(max_t / dt)
+        # If deterministic inputs, then recalculate limit of steady-state to avoid spurious errors at computing
+        # statistical descriptors due to deleting last spike before change of rate to not interfere
+        if det_in:
+            lim_bi = int(lim_bi - (2 / (det_r * dt)))  # substracting the effect of 2 spikes
+            lim_be = int(lim_be - (2 / (det_r * dt)))  # substracting the effect of 2 spikes
+
+        st_pi = sig_prop[r, int(th_tr_a[r] / dt):lim_bi]  # [, t_tr:2s]
+        st_pe = sig_prop[r, int((2 * Le_time_win + th_tr_a[r]) / dt):lim_be]  # [, t_tr:6.0s]
+        st_ci = sig_cons[r, int(th_tr_a[r] / dt):lim_bi]  # [, t_tr:2s]
+        st_ce = sig_cons[r, int((2 * Le_time_win + th_tr_a[r]) / dt):lim_be]  # [, t_tr:6.0s]
 
         # SUPRATHRESHOLD REGIME
         # **************************************************************************************************
@@ -1571,9 +1584,14 @@ def aux_statistics_prop_cons(sig_prop, sig_cons, Le_time_win, threshold_transiti
 
         # Getting statistics for transition and steady-state components of middle windows
         if t_transition_mid_win is None:
+            lim_bm = int(2 * Le_time_win / dt)
+            # If deterministic inputs, then recalculate limit of steady-state to avoid spurious errors at computing
+            # statistical descriptors due to deleting last spike before change of rate to not interfere
+            if det_in:
+                lim_bm = int(lim_bm - (2 / (det_r * dt)))  # substracting the effect of 2 spikes
             # Getting stationary-state time-series of middle window
-            st_pm = sig_prop[r, int((Le_time_win + th_tr_a[r]) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
-            st_cm = sig_cons[r, int((Le_time_win + th_tr_a[r]) / dt):int(2 * Le_time_win / dt)]  # [, t_tr:4.0s]
+            st_pm = sig_prop[r, int((Le_time_win + th_tr_a[r]) / dt):lim_bm]  # [, t_tr:4.0s]
+            st_cm = sig_cons[r, int((Le_time_win + th_tr_a[r]) / dt):lim_bm]  # [, t_tr:4.0s]
             bu, eu = statistics_signal(st_pm), statistics_signal(st_cm)
 
             # SUPRATHRESHOLD REGIME

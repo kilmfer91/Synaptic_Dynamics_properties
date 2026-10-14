@@ -30,7 +30,9 @@ freq_port_2_2 = False
 freq_port_T = True
 freq_res_single = False
 only_mem_pot = True
+stochastic = True
 num_single = 8  # 6
+col_labels = 'black'  # 'gray'
 
 # Auxiliar frecuencies to plot in the transient dynamics responses
 f_auxs = ([[None, None, None], [None, None, None], [None, None, None]] for _ in range(num_single + 1))
@@ -40,12 +42,12 @@ plt_iniw = True
 if ind_sys == 3:
     f_auxs = np.array(([[None, None, None], [None, None, None], [None, None, None]],  # transients amplitude
                       [[None, None, 200], [None, 110, 200], [None, 90, 200]],     # transients median
-                      [[None, None, None], [None, None, None], [None, None, None]],  # filtering amplitude
+                      [[100, None, None], [None, None, None], [None, None, None]],  # filtering amplitude
                       [[None, None, 200], [None, 110, 200], [None, 90, 200]],  # filtering median
                       [[35, None, None], [35, None, None], [35, None, None]],  # entropy transitory
                       [[None, None, None], [None, None, None], [None, None, None]],  # Entropy stationary
                       [[None, None, None], [None, None, None], [None, None, None]],  # Amplitude gain effect
-                      [[None, None, None], [None, None, None], [None, None, None]],  # Median gain effect
+                      [[100, None, None], [100, None, None], [100, None, None]],  # Median gain effect
                       [[None, None, None], [None, None, None], [None, None, None]])  # Entropy gain effect
                       )
 if ind_sys == 4:
@@ -124,6 +126,9 @@ else: title += ', multiple gains'
 title_mp = ['Filtering vs gain effect (amp)', 'Filtering vs gain effect (med)', 'Filtering vs gain effect (Entropy)',
             'Transients vs filtering (amp)', 'Transients vs filtering (med)', 'Transients vs filtering (Entropy)',
             'Transients vs filtering (amp)']
+vline_max = [True, False, True, False, False, False, False]
+vline_zero = [True, False, True, False, False, False, False]
+vline_bandwidth = [False, True, False, False, False, False, False]
 x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{st}}^{med}$ (' + u_v + ')', r'$H_{st}$ (bits)',
                 r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')', r'$E_{ff_{tr}}^{med}$ (' + u_v + ')', r'$H_{tr}$ (bits)',
                 r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')']
@@ -147,6 +152,9 @@ if freq_port_T:
     title_mp = ['Filtering vs gain effect (amp)', 'Transients vs filtering (amp)',
                 'Filtering vs gain effect (med)', 'Transients vs filtering (med)', 'Transients vs filtering (amp)',
                 'Filtering vs gain effect (Entropy)', 'Transients vs filtering (Entropy)']
+    vline_max = [True, False, False, False, False, True, False]
+    vline_zero = [True, False, False, False, False, True, False]
+    vline_bandwidth = [False, False, True, False, False, False, False]
     x_label_ax_p = [r'$E_{ff_{st}}^{amp}$ (' + u_v + ')', r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')',
                     r'$E_{ff_{st}}^{med}$ (' + u_v + ')', r' $E_{ff_{tr}}^{med}$ (' + u_v + ')',
                     r'$E_{ff_{tr}}^{amp}$ (' + u_v + ')',
@@ -296,6 +304,8 @@ for gain in gain_v:
 
     if os.path.isfile(path_vars + dr_gain_control_file):
         dr_gain = loadObject(dr_gain_control_file, path_vars)
+        if not stochastic:
+            dr_gain = loadObject(dr_syn_filtering_file, path_vars)
         dr_gains[gain] = dr_gain
 
     f_vec = dr_gain['initial_frequencies']
@@ -329,7 +339,8 @@ for gain in gain_v:
             labels = [r"(Pos) %s$\delta$: %.1f" % ('', gain) for _ in range(6)]
             labels.insert(4, "Stimuli onset") if freq_port_T else labels + ['Stimuli onset']
             plot_freq_portrait2(name_n_state_variables, dr_filt, dr_gain, labels, ax_p, title_mp, colors_, ode='n',
-                                freq_port_T=freq_port_T, factor=factor_v, plt_transient=i_g == 0)
+                                freq_port_T=freq_port_T, factor=factor_v, plt_transient=i_g == 0, vline_max=vline_max,
+                                vline_zero=vline_zero, vline_bandwidth=vline_bandwidth, ind_gain=i_g)
 
         # For synapses
         if freq_port_2_2:
@@ -340,8 +351,9 @@ for gain in gain_v:
                        'tab:red', colors[ind_gain[gain]], colors[ind_gain[gain]]]
             labels = [r"(Neg) %s$\delta$: %.1f" % ('', gain) for _ in range(6)]
             labels.insert(4, "Stimuli onset") if freq_port_T else labels + ['Stimuli onset']
-            plot_freq_portrait2(name_syn_state_variables, dr_filt, dr_gain, labels, ax_sp, title_mp,
-                                colors_, ode='s', freq_port_T=freq_port_T, plt_transient=i_g == 0)  # , H_filt, H_gain)
+            plot_freq_portrait2(name_syn_state_variables, dr_filt, dr_gain, labels, ax_sp, title_mp, colors_, ode='s',
+                                freq_port_T=freq_port_T, plt_transient=i_g == 0, vline_max=vline_max,
+                                vline_zero=vline_zero, vline_bandwidth=vline_bandwidth, ind_gain=i_g)
     # **********************************************************************************************************
 
     i_g += 1
@@ -512,6 +524,7 @@ plt.grid()
 # """
 
 # For 1/f law
+"""
 color_win = ["tab:red", "tab:olive", "tab:blue"]
 color_gain = ['tab:gray', 'tab:purple', 'tab:cyan']
 lbl_ = [r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$']
@@ -541,10 +554,13 @@ for name_s in name_syn_state_variables:
         plot_features_1_f_law_syn_conductance_phd(f_vec, dr_gains, prefix, prefix_mid, lbl_, legends, color_win, t_,
                                                   title, path_sav, save_figs, y_lbl=y_label, linestyle=linestyle,
                                                   f_aux_amp=f_aux_amp, f_aux_med=f_aux_amp, color_gain=color_gain)
+# """
 
 if plot_phd_meth:
     color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
     color_win = ["tab:red", "tab:olive", "tab:blue"]
+    lbl_fontsize = 16
+    tit_fontsize = 17
 
     # Figure PhD thesis (methodology / Frequency response of transient dynamics and temporal filtering)
     dr = dr_gain
@@ -555,33 +571,34 @@ if plot_phd_meth:
     t_ = ['Transient dynamics', 'Temporal filtering']
     tit_ = "Frequency response for short-term %s"
     title = tit_ % 'facilitation' if 'STF' in sys_description else tit_ % 'depression'
-    y_label = r"$E_{psp}(t)$ (mV)"
+    y_label = r"Mem. pot. (mV)"
     path_sav_ = folder_plots + dr_gain_control_file
     # For transient dynamics
-    aux_t = '_freq_response_%s_transient_phd.png'
+    aux_t = '_freq_response_%s_transient_phd.svg'
     aux_ti = aux_t % 'facilitation' if 'STF' in sys_description else aux_t % 'depression'
     path_save = path_sav_ + aux_ti
     plot_features_tr_st_1window_phd(f_vec, sg1, sg2, lbl_, cols_, t_[0], title, path_save, True, y_lbl=y_label,
-                                    linesty='solid')
+                                    linesty='solid', lbl_fontsize=lbl_fontsize, tit_fontsize=tit_fontsize)
     # For temporal filtering
-    aux_t = '_freq_response_%s_filtering_phd.png'
+    aux_t = '_freq_response_%s_filtering_phd.svg'
     aux_ti = aux_t % 'facilitation' if 'STF' in sys_description else aux_t % 'depression'
     path_save = path_sav_ + aux_ti
     plot_features_tr_st_1window_phd(f_vec, sg2, sg2, lbl_, cols_, t_[1], title, path_save, True, y_lbl=y_label,
-                                    linesty='dashdot')
+                                    linesty='dashdot', lbl_fontsize=lbl_fontsize, tit_fontsize=tit_fontsize)
 
     # Figure PhD thesis (methodology / Frequency responses of amplitude and median for each window)
-    title += r", $\delta = %.1f$" % gain
+    title += r", $\delta$ = " + str(int(gain * 100)) + r"$\%$"
     t_ = ['ini-window', 'mid-window', 'end-window']
     legends = [r'$E_{ff_{[w],%s}}$', r'$E_{ff_{[w],%s}}^\mathrm{med}$']
     lbl_ = [r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$']
     prefix = ['mtr', 'st']
     prefix_mid = ['ini', 'mid', 'end']
     path_save = folder_plots + dr_gain_control_file
-    path_save += '_freq_response_3w_facilitation_phd.png' if ind == 8 else '_freq_response_3w_depression_phd.png'
+    path_save += '_freq_response_3w_facilitation_phd.svg' if ind == 8 else '_freq_response_3w_depression_phd.svg'
     y_lims = [-0.01, 0.20] if ind == 8 else [-0.005, 0.135]  # y_lims = [-0.005, 0.14] if ind == 8 else [-0.005, 0.08]
     plot_features_tr_st_3windows_phd(f_vec, dr_gain, prefix, prefix_mid, lbl_, legends, cols_, color_win, t_, title,
-                                     path_save, True, y_lims_ind_plot=y_lims, y_lbl=y_label)
+                                     path_save, True, y_lims_ind_plot=y_lims, y_lbl=y_label,
+                                     lbl_fontsize=lbl_fontsize - 2, tit_fontsize=tit_fontsize - 2)
 
     # Figure PhD thesis (methodology / Frequency responses of pos and neg changes of rate (stat. desc. efficacy)
     eff_m_tr = [dr['%s_%s_prop_max' % (prefix[0], prefix_mid[1])] - dr['%s_%s_prop_min' % (prefix[0], prefix_mid[1])],
@@ -597,10 +614,10 @@ if plot_phd_meth:
     pc_e_m = [(eff_e_tr[i] - eff_m_st[i]) * f_ for i in range(len(eff_e_tr))]
     title = "Frequency responses for Proportional Changes (short-term "
     title += "facilitation)" if ind == 8 else "depression)"
-    y_label = [r'$G_{pos}$ (mV)', r'$G_{neg}$ (mV)']
+    y_label = [r'$PC_{pos}$ (mV)', r'$PC_{neg}$ (mV)']
     path_save = folder_plots + dr_gain_control_file
-    path_save += '_freq_response_pc_facilitation_phd.png' if ind == 8 else '_freq_response_pc_depression_phd.png'
-    title += r", $\delta = %.1f$" % gain
+    path_save += '_freq_response_pc_facilitation_phd.svg' if ind == 8 else '_freq_response_pc_depression_phd.svg'
+    title += r", $\delta$ = " + str(int(gain * 100)) + r"$\%$"
     legends = [r'$PC_{%s}^\mathrm{amp}$', r'$PC_{%s}^\mathrm{med}$']
     leg_2 = ['pos', 'neg']
     color_w = [color_stat[1], color_stat[2]]
@@ -608,21 +625,23 @@ if plot_phd_meth:
     t_ = ['Positive changes of rate', 'Negative changes of rate']
     y_lims = [-0.075, 0.11] if ind == 8 else [-0.045, 0.04]
     plot_diff_windows_tr_st_phd(f_vec, pc_m_i, pc_e_m, leg_2, legends, cols_, color_w, t_, title, path_save, True,
-                                y_lims_ind_plot=y_lims, y_lbl=y_label, ls=ls)
+                                y_lims_ind_plot=y_lims, y_lbl=y_label, ls=ls, lbl_fontsize=lbl_fontsize - 2,
+                                tit_fontsize=tit_fontsize - 2)
 
     # Figure PhD thesis (methodology / Frequency responses of Entropy for each window)
     title = "Frequency responses of Entropy (short-term "
     title += "facilitation)" if ind == 8 else "depression)"
-    title += r", $\delta = %.1f$" % gain
+    title += r", $\delta$ = " + str(int(gain * 100)) + r"$\%$"
     t_ = ['ini-window', 'mid-window', 'end-window']
     legends = r'$H_{%s,%s}$'
     lbl_ = ['i', 'm', 'e']
-    y_label = 'Entropy (bits)'
+    y_label = 'H (bits)'
     path_save = folder_plots + dr_gain_control_file
-    path_save += '_freq_response_3w_H_facilitation_phd.png' if ind == 8 else '_freq_response_3w_H_depression_phd.png'
+    path_save += '_freq_response_3w_H_facilitation_phd.svg' if ind == 8 else '_freq_response_3w_H_depression_phd.svg'
     y_lims = [2.9, 10.3] if ind == 8 else [1.25, 10.]  # y_lims = [-0.005, 0.14] if ind == 8 else [-0.005, 0.08]
     plot_features_H_3windows_phd(f_vec, dr_gain, legends, lbl_, color_win, t_, title, path_save, True,
-                                 y_lims_ind_plot=y_lims, y_lbl=y_label)
+                                 y_lims_ind_plot=y_lims, y_lbl=y_label, lbl_fontsize=lbl_fontsize - 2,
+                                 tit_fontsize=tit_fontsize - 2)
 
     # Figure PhD thesis (methodology / Frequency responses of pos and neg changes of rate (Entropy)
     H_i_st, H_m_st, H_e_st = dr['H_v_neu_st'][0, :], dr['H_v_neu_st'][1, :], dr['H_v_neu_st'][2, :]
@@ -631,10 +650,10 @@ if plot_phd_meth:
     GH_em_tr = H_e_tr - H_m_st
     title = "Frequency responses of Entropy (short-term "
     title += "facilitation)" if ind == 8 else "depression)"
-    title += r", $\delta = %.1f$" % gain
+    title += r", $\delta$ = " + str(int(gain * 100)) + r"$\%$"
     y_label = [r'$G_{pos}^\mathrm{H}$ (bits)', r'$G_{neg}^\mathrm{H}$ (bits)']
     path_save = folder_plots + dr_gain_control_file
-    path_save += '_freq_response_pc_H_facilitation_phd.png' if ind == 8 else '_freq_response_pc_H_depression_phd.png'
+    path_save += '_freq_response_pc_H_facilitation_phd.svg' if ind == 8 else '_freq_response_pc_H_depression_phd.svg'
     legends = [r'$PC_{pos}^\mathrm{H}$', r'$PC_{neg}^\mathrm{H}$']
     leg_2 = ['pos', 'neg']
     color_w = [color_stat[1], color_stat[2]]
@@ -642,16 +661,17 @@ if plot_phd_meth:
     t_ = ['Positive changes of rate', 'Negative changes of rate']
     y_lims = [-1.3, 2.] if ind == 8 else [-1.1, 2.08]
     plot_diff_windows_tr_st_H_phd(f_vec, GH_mi_tr, GH_em_tr, leg_2, legends, cols_, color_w, t_, title, path_save, True,
-                                y_lims_ind_plot=y_lims, y_lbl=y_label, ls=ls)
+                                y_lims_ind_plot=y_lims, y_lbl=y_label, ls=ls, lbl_fontsize=lbl_fontsize - 2,
+                                  tit_fontsize=tit_fontsize - 2)
 
     # Figure PhD thesis (Results / Frequency responses of Doorn models - control case (Transients - amp and med)
     title = sys_description + ", Temporal filtering, %s(t)" % 'v'
-    title += r", $\delta$ = 100%"
+    title += r", $\delta$ = " + str(int(gain * 100)) + r"$\%$"
     t_ = ['Amplitudes', 'Medians']
 
     path_save = folder_plots + dr_gain_control_file
-    path_save += '_freq_response_3w_Doorn' + str(ind) + '_filt_phd.png'
-    # if ind == 6: path_save += '_freq_response_3w_Doorn1_tr_med_phd.png'
+    path_save += '_freq_response_3w_Doorn' + str(ind) + '_filt_phd.svg'
+    # if ind == 6: path_save += '_freq_response_3w_Doorn1_tr_med_phd.svg'
 
     color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
     color_win = ["tab:red", "tab:olive", "tab:blue"]
@@ -669,24 +689,49 @@ if plot_phd_meth:
 
     plot_features_Doorn0_2windows_phd(f_vec, dr_gain, prefix, prefix_mid, lbl_, legends, color_win, t_, title,
                                       path_save, save_figs, y_lims_ind_plot=y_lims, y_lbl=y_label, linestyle=linestyle,
-                                      f_aux_amp=f_aux_amp, f_aux_med=f_aux_med, law_1_f=False)
+                                      f_aux_amp=f_aux_amp, f_aux_med=f_aux_med, law_1_f=False,
+                                      lbl_fontsize=lbl_fontsize, tit_fontsize=tit_fontsize)
+
     # For 1/f law
-    title = sys_description + ", Net depolarisation, %s(t)" % 'v'
+    color_win = ["tab:red", "tab:olive", "tab:blue"]
+    color_gain = ['tab:gray', 'tab:purple', 'tab:cyan']
+    lbl_ = [r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$', r'$E_{ff_{%s}}^{amp}$']
+    prefix_mid = ['ini', 'mid', 'end']
+    f_aux_amp = ['max', 'max', 'max']
+    linestyle = ['dashdot', 'dashed', 'dotted']
+    y_label = r"$V(t)$ (mV)"
     path_save = folder_plots + dr_gain_control_file
-    path_save += '_freq_response_3w_Doorn' + str(ind) + '_net_depolarisation_phd.png'
-    t_ = ['Net depolarisation', 'Synaptic conductance']
-    plot_features_1_f_law_syn_conductance_phd(f_vec, dr_gain, gain, prefix, prefix_mid, lbl_, legends, color_win, t_,
-                                              title, path_save, save_figs, y_lbl=y_label, linestyle=linestyle,
-                                              f_aux_amp=f_aux_amp, f_aux_med=f_aux_med)
+    # legends = [r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$',
+    #                    r'$(\delta=%.1f) \Delta r*Eff_{%s,st(pos)}$', r'$(\delta=%.1f) \Delta mr*Eff_{%s,st(neg)}$']
+    legends = [r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$', r'$r*Eff_{%s,st}$',
+               r'$(\delta=%.1f) \Delta r*Eff_{st(pos)}$', r'$(\delta=%.1f) \Delta mr*Eff_{st(neg)}$']
+
+    t_ = ['Net depolarisation', 'Transient synaptic conductance']
+
+    name_syn_state_variables = dr_filt['name_syn_state_variables']
+    list_output_syn = ['s_ampa', 's_nmda', 'epsc', 'epsp']
+    name_syn_output = []
+    for name_s in name_syn_state_variables:
+        if name_s in list_output_syn:
+            name_syn_output.append(name_s)
+
+            title = sys_description + ", 1/f law and $\Delta r A(r)$, %s(t)" % name_s
+            path_sav = path_save + '_freq_response_net_depolarisation_ ' + name_s + '_phd.svg'
+
+            prefix = [name_s + '_st']
+            plot_features_1_f_law_syn_conductance_phd(f_vec, dr_gains, prefix, prefix_mid, lbl_, legends, color_win, t_,
+                                                      title, path_sav, save_figs, y_lbl=y_label, linestyle=linestyle,
+                                                      f_aux_amp=f_aux_amp, f_aux_med=f_aux_amp, color_gain=color_gain,
+                                                      lbl_fontsize=lbl_fontsize, tit_fontsize=tit_fontsize)
 
     # Figure PhD thesis (Results / Frequency responses of Doorn models - control case (Transients - amp and med)
     title = sys_description + ", Transient dynamics, %s(t)" % 'v'
-    title += r", $\delta$ = 100%"
+    title += r", $\delta$ = " + str(int(gain * 100)) + r"$\%$"
     t_ = ['Amplitudes', 'Medians']
 
     path_save = folder_plots + dr_gain_control_file
-    path_save += '_freq_response_3w_Doorn' + str(ind) + '_tr_phd.png'
-    # if ind == 6: path_save += '_freq_response_3w_Doorn1_tr_med_phd.png'
+    path_save += '_freq_response_3w_Doorn' + str(ind) + '_tr_phd.svg'
+    # if ind == 6: path_save += '_freq_response_3w_Doorn1_tr_med_phd.svg'
 
     color_stat = ["tab:purple", "tab:orange", "tab:green", "tab:cyan"]
     color_win = ["tab:red", "tab:olive", "tab:blue"]
@@ -703,5 +748,6 @@ if plot_phd_meth:
     tr_ini_amp = False if ind == 0 else True
     plot_features_Doorn0_2windows_phd(f_vec, dr_gain, prefix, prefix_mid, lbl_, legends, color_win, t_, title,
                                       path_save, save_figs, y_lims_ind_plot=y_lims, y_lbl=y_label, tr_ini_amp=tr_ini_amp,
-                                      f_aux_amp=f_aux_amp, f_aux_med=f_aux_med)
+                                      f_aux_amp=f_aux_amp, f_aux_med=f_aux_med, lbl_fontsize=lbl_fontsize,
+                                      tit_fontsize=tit_fontsize)
 # """

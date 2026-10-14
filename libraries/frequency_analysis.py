@@ -354,6 +354,7 @@ class Freq_analysis:
             # """
             i += 1
 
+        # """
         self.time_max = np.array(self.time_max).T
         self.time_ss = np.array(self.time_ss).T
         self.efficacy = np.array(self.efficacy).T
@@ -365,4 +366,5 @@ class Freq_analysis:
         self.efficacy_2_tonic = np.array(self.efficacy_2_tonic).T
         self.efficacy_3_tonic = np.array(self.efficacy_3_tonic).T
         self.eff_st_tonic = np.array(self.eff_st_tonic).T
+        # """
 

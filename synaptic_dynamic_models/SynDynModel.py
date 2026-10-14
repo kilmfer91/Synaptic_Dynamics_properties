@@ -435,7 +435,7 @@ class SynDynModel:
 
         # Tonic component at t=0 (same for all spikes, but you can repeat per spike if needed)
         tonic_all = output[:, :, 0]  # shape (n_state_vars, n_syn)
-
+        aux_zeros = np.array([0 for _ in range(len(operators_sv))])
         for s in range(n_syn):
             spikes = time_spike_events[s]
             if len(spikes) == 0:
@@ -452,8 +452,8 @@ class SynDynModel:
                     # No previous spike: treat as single-time phasic
                     per_state_variable = list(output[:, s, t_curr])
                     output_spike_events[s].append(per_state_variable)
-                    ind_spike_events_tonic[s].append(t_curr - 1)
-                    ind_spike_events[s].append(t_curr)
+                    ind_spike_events_tonic[s].append(aux_zeros + t_curr - 1)
+                    ind_spike_events[s].append(aux_zeros + t_curr)
                     continue
 
                 t_prev = spikes[i - 1]
@@ -461,8 +461,8 @@ class SynDynModel:
                     # Same time step (edge case)
                     per_state_variable = list(output[:, s, t_curr])
                     output_spike_events[s].append(per_state_variable)
-                    ind_spike_events_tonic[s].append(t_curr - 1)
-                    ind_spike_events[s].append(t_curr)
+                    ind_spike_events_tonic[s].append(aux_zeros + t_curr - 1)
+                    ind_spike_events[s].append(aux_zeros + t_curr)
                 else:
                     # Interval [t_prev, t_curr)
                     segment = output[:, s, t_prev:t_curr]  # (n_state_vars, interval_len)
@@ -476,7 +476,8 @@ class SynDynModel:
                         op(segment[sv, :]) for sv, op in enumerate(arg_operators_sv)
                     ])
 
-                    ind_spike_events_tonic[s].append(t_prev - 1)
+                    # ind_spike_events_tonic[s].append(t_prev - 1)
+                    ind_spike_events_tonic[s].append(a + t_prev - 1)
                     ind_spike_events[s].append(a + t_prev)
 
             # time spike events
@@ -542,6 +543,10 @@ class SynDynModel:
         id_rep = np.tile(np.eye(num_syn), num_neu).T
         connectivity = np.repeat(id_mat, num_syn, axis=0)
 
+        # Getting masks of interspike intervals (to compute spike responses for each state variable)
+        spike_mask = self.detect_spikes(Input)
+        edges_syn = self.spike_edges_from_mask(spike_mask)
+
         # If there is a neuron model
         model_neuron = None
         if "model_neuron" in kwargs:
@@ -584,7 +589,7 @@ class SynDynModel:
                     output_model = self.get_output()
 
                 # Detecting spike events and storing model output
-                self.detect_spike_event(t, Input, output_model)
+                # self.detect_spike_event(t, Input, output_model)
                 # Detecting spike events for synapse and neuron, storing model output
                 # n_model.detect_spike_event(flex_t, Input, n_model.membrane_potential)
                 # stp_model.detect_spike_event(flex_t, Input, stp_model.get_output())
@@ -595,6 +600,7 @@ class SynDynModel:
             # self.compute_output_spike_event(spike_range, output_model)
             # self.append_spike_event(t, [True for _ in range(1)], output_model, append_time=False)
 
+            """
             # Detecting spike events and storing model output
             if model_neuron is not None:
                 spike_range = (model_neuron.time_spike_events[-1], t)
@@ -602,6 +608,30 @@ class SynDynModel:
                                                 model_neuron.get_output_state_variables(), append_time=False)
             self.append_spike_event(t, [True for _ in range(num_neu)], self.get_output_state_variables(),
                                          append_time=False)
+            # """
+
+            # Computing inter-spike responses for state variables of neurons and synapses
+            state_variables = self.get_output_state_variables()
+            a = self.compute_spike_outputs_vectorized(state_variables, edges_syn, self.operators_sv,
+                                                      self.arg_operators_sv, self.dt)
+            # (self.output_spike_events, self.output_spike_events_tonic,
+            #  self.ind_spike_events, self.ind_spike_events_tonic,
+            #  self.time_spike_events) = a
+            output_spike_ev, output_spike_ev_tonic, ind_spike_ev, ind_spike_ev_tonic, time_spike_ev = a
+
+            # Only computing output of state variable [:, :, -1]
+            self.output_spike_events = np.array(output_spike_ev)[:, :, -1]
+            self.output_spike_events_tonic = np.array(output_spike_ev_tonic)[:, :, -1]
+            self.ind_spike_events = np.array(ind_spike_ev)[:, :, -1]
+            self.ind_spike_events_tonic = np.array(ind_spike_ev_tonic)[:, :, -1]
+            self.time_spike_events = np.array(time_spike_ev)
+
+            # Estate_variables = self.neuron_prop.get_output_state_variables()
+            # a = self.compute_spike_outputs_vectorized(state_variables, edges_syn, self.neuron_prop.operators_sv,
+            #                                           self.neuron_prop.arg_operators_sv, 1 / self.sfreq)
+            # (self.neuron_prop.output_spike_events, self.neuron_prop.output_spike_events_tonic,
+            #  self.neuron_prop.ind_spike_events, self.neuron_prop.ind_spike_events_tonic,
+            #  self.neuron_prop.time_spike_events) = a
 
         if return_only_spike_event:
             return np.array(self.output_spike_events).T
@@ -609,3 +639,42 @@ class SynDynModel:
             return model_neuron.membrane_potential
         else:
             return self.get_output()
+
+    @staticmethod
+    def detect_spikes(Input: np.ndarray) -> np.ndarray:
+        """
+        Detect spikes (rising edges) in Input.
+        Parameters
+        ----------
+        Input : np.ndarray
+            Shape (n_syn, L)
+        Returns
+        -------
+        spike_mask : np.ndarray
+            Boolean array, shape (n_syn, L), True where a spike occurs.
+        """
+        assert Input.ndim == 2
+        n_syn, L = Input.shape
+        spike_mask = np.zeros_like(Input, dtype=bool)
+        # t == 0
+        spike_mask[:, 0] = Input[:, 0] > 0.0
+        # t > 0: rising edge
+        if L > 1:
+            spike_mask[:, 1:] = Input[:, 1:] > Input[:, :-1]
+        return spike_mask
+
+    @staticmethod
+    def spike_edges_from_mask(spike_mask):
+        n_syn, L = spike_mask.shape
+        rows, cols = np.where(spike_mask)
+        mw_i, ew_i = int(L / 3), int(2 * L / 3)  # Indices of beginning mid and end windows
+        edges_per_syn = []
+        start = 0
+        for s in range(n_syn):
+            end = start + np.sum(rows == s)
+            spikes_s = cols[start:end]  # already sorted because cols is monotonic within each row
+            spikes_s_m_e_wind = np.sort(list(spikes_s) + [int(L / 3), int(2 * L / 3)])
+            edges_per_syn.append(spikes_s_m_e_wind)
+            start = end
+
+        return edges_per_syn

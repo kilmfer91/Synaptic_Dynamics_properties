@@ -339,7 +339,8 @@ class GC_prop_cons:
         pass
 
     def run(self, gain, fixed_rate_change=None, dr=None, soft_stop_cond=True, plot_ind_figs=False, th_percentage=1e-2,
-            y_lims_ind_plot=None, st_prior=None, filtering=False, cutoff=5, profiling=False, flag_plots=None):
+            y_lims_ind_plot=None, st_prior=None, filtering=False, cutoff=5, profiling=False, flag_plots=None,
+            col_labels='gray'):
         if dr is None: dr = self.dict_results
         self.validate_dict_params(dr)
 
@@ -437,7 +438,7 @@ class GC_prop_cons:
                 # Creating figure for each state variable
                 fig_syn_filt, ax = plt.subplots(4, 1, figsize=(8, 8), sharey=True)
                 ax = ax.ravel()
-                fig_syn_filt.suptitle("Temporal response of Short-term facilitation", c="black", alpha=0.7, fontsize=20)
+                fig_syn_filt.suptitle("Temporal response of Short-term facilitation", c="black", alpha=1.0, fontsize=22)
                 c_a = 3
                 # ax = [fig_syn_filt.add_subplot(4, 1, i) for i in [1, 2, 3, 4]]
             # **********************************************************************************************************
@@ -486,9 +487,9 @@ class GC_prop_cons:
                                               proportional_changes[i], np.ones(int(L / 3)) * f_vector[i]))
                 if flag_plots[1]:
                     fig_gc_input = plot_gc_prop_input_example(time_vector, 1 / self.sfreq, 0, rate_schema,
-                                                              cons_input[0, :])
-                    path_save = self.folder_plots + file_name + '_input_sample_prop.png'
-                    fig_gc_input.savefig(path_save, format='png')
+                                                              cons_input[0, :], col_labels=col_labels)
+                    path_save = self.folder_plots + file_name + '_input_sample_prop.svg'
+                    fig_gc_input.savefig(path_save, format='svg')
                 # """
                 # ******************************************************************************************************
 
@@ -553,7 +554,7 @@ class GC_prop_cons:
 
                 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 # STATE VARIABLES OF THE NEURON
-                # For suprathreshold calculations
+                # For subthreshold calculations
                 t_spikes_gen = [np.array(self.neuron_prop.time_spikes_generated[k]) / self.sfreq
                                 for k in range(self.neuron_prop.n_neurons)]
                 ind_spikes_gen = [np.array(self.neuron_prop.time_spikes_generated[k])
@@ -587,7 +588,7 @@ class GC_prop_cons:
                     a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
                                                  sim_params, [None, t_tra_mid_win, None], 1 / sfreq,
                                                  th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
-                                                 title=title_graph_, det_in=True, det_r=f_vector[i],
+                                                 title=title_graph_, det_in=not self.stoch_input, det_r=f_vector[i],
                                                  ind_spikes_gen=ind_neuron_spikes)  # det_in=not self.stoch_input
                     if a[0].shape[1] != res_per_reali[sv].shape[2]:
                         assert a[0].shape[1] == res_per_reali[sv].shape[2], "not same shape"
@@ -617,23 +618,25 @@ class GC_prop_cons:
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
                         t_tr = t_tr_[0]
-                        path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
-                        path_save2 = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat_2.png'
+                        path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.svg'
+                        path_save2 = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat_2.svg'
                         # """
                         # ****************************************************************************************
                         # Figure for PhD dissertation: methodology - state variables neuron in time + statistical descr.
                         if flag_plots[2] and k == 'v':
                             plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
-                                                       "%s(t), Colour convention for windows (%dHz)" % (k, f_vector[i]),
+                                                       r'%s(t), Colour convention for windows (Reference rate %d$\,$Hz)' % (k, f_vector[i]),
                                                        max_t, path_save=path_save, save_figs=self.save_figs,
-                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=True, plt_grid=False,
+                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=False, plt_grid=False,
                                                        plot_phd_pre_results=True, color_win=color_win,
-                                                       color_stat=color_stat)
-                            # plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
-                            #                            "Colour convention for changes of rate (%dHz)" % f_vector[i], max_t, path_save=path_save2,
-                            #                            save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
-                            #                            plot_stats=False, plt_grid=False, plot_phd_pre_res_2=True,
-                            #                            color_win=color_stat[1:3], color_stat=color_stat)
+                                                       color_stat=color_stat, col_labels=col_labels)
+                            plt_gc_stat_descr_t_series(time_vector, i, signal_prop, signal_fix, t_tr, res_per_reali[sv],
+                                                       r'Colour convention for changes of rate (Reference rate %d$\,$Hz)' % f_vector[i],
+                                                       max_t, path_save=path_save2, save_figs=self.save_figs,
+                                                       y_lims_ind_plot=y_lims_ind_plot, plot_stats=False,
+                                                       plt_grid=False, plot_phd_pre_res_2=True,
+                                                       color_win=color_stat[1:3], color_stat=color_stat,
+                                                       col_labels=col_labels)
                         # """
                         # ****************************************************************************************
                         # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
@@ -644,10 +647,11 @@ class GC_prop_cons:
                                                      res_per_reali[sv], title_graph_, max_t, path_save=path_save,
                                                      save_figs=self.save_figs, y_lims_ind_plot=y_lims_ind_plot,
                                                      ref_rate=f_vector[i], dt=dt, th_percentage=th_percentage, ax=ax_ca,
-                                                     color_win=color_win, color_stat=color_stat)
+                                                     color_win=color_win, color_stat=color_stat, col_labels=col_labels)
                             if flag_plots[0]:
-                                if c_a == 0: ax[c_a].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
-                                if c_a == 3: ax[c_a].set_xlabel("Time (s)", color="gray", fontsize=14)
+                                if c_a == 1: ax[c_a].legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0, fontsize=15)
+                                if c_a == 3: ax[c_a].set_xlabel("Time (s)", color=col_labels, fontsize=18)
+                                # if c_a == 2: ax[c_a].set_ylabel("Mem. pot. (mv)", color=col_labels, fontsize=18)
                                 c_a -= 1
                         # ****************************************************************************************
                     # """
@@ -673,7 +677,7 @@ class GC_prop_cons:
                     a = aux_statistics_prop_cons(signal_prop, signal_fix, Le_time_win, None,
                                                  sim_params, [None, t_tra_mid_win_syn, None], 1 / sfreq,
                                                  th_percentage=th_percentage, filtering=filtering, cutoff=cutoff,
-                                                 title=title_graph_, det_in=True, det_r=f_vector[i])
+                                                 title=title_graph_, det_in=not self.stoch_input, det_r=f_vector[i])
                     # det_in=not self.stoch_input
 
                     if a[0].shape[1] != res_per_reali_syn[sv].shape[2]:
@@ -684,7 +688,7 @@ class GC_prop_cons:
                     # Plotting individual figures if indicated
                     if plot_ind_figs:
                         t_tr = t_tr_syn[0]
-                        # """
+                        """
                         # ****************************************************************************************
                         # Figure for PhD dissertation: methodology - state variables neuron in time + statistical descr.
                         path_save = self.folder_plots + file_name + '_' + str(f_vector[i]) + '_stat.png'
@@ -729,8 +733,8 @@ class GC_prop_cons:
             # Figure for PhD dissertation: methodology - temporal filtering - stochastic input
             if flag_plots[0]:
                 fig_syn_filt.tight_layout()  # pad=0.5, w_pad=1.0, h_pad=1.0)
-                path_save = self.folder_plots + file_name + '_temporal_response_stoc_input.png'
-                if self.save_figs: fig_syn_filt.savefig(path_save, format='png')
+                path_save = self.folder_plots + file_name + '_temporal_response_stoc_input.svg'
+                if self.save_figs: fig_syn_filt.savefig(path_save, format='svg')
             # ****************************************************************************************
 
             # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -994,48 +998,6 @@ class GC_prop_cons:
             H_SV_syn_iw_tr, H_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
             H_SV_syn_mw_tr, H_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
             H_SV_syn_ew_tr, H_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-
-            """
-            # ******************************************************************************************************
-            # ENTROPY COMPUTATION USING FREEDMAN DIACONIS RULE
-            # Entropy for input spikes (ts-tr based on neuron output)
-            Hfd_ISI_iw_tr, Hfd_ISI_mw_tr, Hfd_ISI_ew_tr = [], [], []
-            Hfd_ISI_iw_st, Hfd_ISI_mw_st, Hfd_ISI_ew_st = [], [], []
-            # Entropy for neuronal output
-            Hfd_SV_neu_iw_tr, Hfd_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            Hfd_SV_neu_mw_tr, Hfd_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            Hfd_SV_neu_ew_tr, Hfd_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            # Entropy for synaptic output(s)
-            Hfd_SV_syn_iw_tr, Hfd_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            Hfd_SV_syn_mw_tr, Hfd_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            Hfd_SV_syn_ew_tr, Hfd_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            # ******************************************************************************************************
-            # ENTROPY COMPUTATION USING SCOTT RULE
-            # Entropy for input spikes (ts-tr based on neuron output)
-            Hs_ISI_iw_tr, Hs_ISI_mw_tr, Hs_ISI_ew_tr = [], [], []
-            Hs_ISI_iw_st, Hs_ISI_mw_st, Hs_ISI_ew_st = [], [], []
-            # Entropy for neuronal output
-            Hs_SV_neu_iw_tr, Hs_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            Hs_SV_neu_mw_tr, Hs_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            Hs_SV_neu_ew_tr, Hs_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            # Entropy for synaptic output(s)
-            Hs_SV_syn_iw_tr, Hs_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            Hs_SV_syn_mw_tr, Hs_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            Hs_SV_syn_ew_tr, Hs_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            # ******************************************************************************************************
-            # ENTROPY COMPUTATION USING KNUTH RULE
-            # Entropy for input spikes (ts-tr based on neuron output)
-            Hk_ISI_iw_tr, Hk_ISI_mw_tr, Hk_ISI_ew_tr = [], [], []
-            Hk_ISI_iw_st, Hk_ISI_mw_st, Hk_ISI_ew_st = [], [], []
-            # Entropy for neuronal output
-            Hk_SV_neu_iw_tr, Hk_SV_neu_iw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            Hk_SV_neu_mw_tr, Hk_SV_neu_mw_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            Hk_SV_neu_ew_tr, Hk_SV_neu_ew_st = [[] for _ in range(l_sv)], [[] for _ in range(l_sv)]
-            # Entropy for synaptic output(s)
-            Hk_SV_syn_iw_tr, Hk_SV_syn_iw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            Hk_SV_syn_mw_tr, Hk_SV_syn_mw_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            Hk_SV_syn_ew_tr, Hk_SV_syn_ew_st = [[] for _ in range(l_svs)], [[] for _ in range(l_svs)]
-            # """
 
             # Histograms variables
             # Histograms and edges for input spikes (ts-tr based on neuron output)
